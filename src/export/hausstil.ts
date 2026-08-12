@@ -1,0 +1,181 @@
+/**
+ * Aufbau einer Stellungnahme nach dem Hausstil des Büros.
+ *
+ * Die Vorgaben stammen wörtlich aus
+ * `skills/stellungnahme-erstellen/references/hausstil-aufbau-stellungnahme.md`.
+ * Anrede, Einleitungssatz, Ergebnis-Absatz und Signatur sind feste
+ * Bausteine — sie kommen aus Vorlagen, nicht aus dem Sprachmodell. Nur die
+ * Argumentation der einzelnen Positionen wird formuliert.
+ */
+
+export type Ergebnisart = 'vollstaendig' | 'teilweise' | 'scharfe_kritik' | 'einzelfrage'
+
+export interface Kopfdaten {
+  ort: string
+  datum: Date
+  empfaengerName: string
+  empfaengerStrasse: string | null
+  empfaengerPlzOrt: string | null
+  betreff: string
+  anrede: string
+  /** Datum des Anschreibens, an das die Einleitung anknüpft. */
+  einleitungDatum: string | null
+  einleitungMedium: 'schreiben' | 'mail'
+  /** Kürzel des Prüfdienstleisters, falls die Einleitung ihn nennen soll. */
+  pruefdienstleister?: string | null
+  vorbemerkungEinfuegen: boolean
+}
+
+export interface Positionstext {
+  nummer: number
+  ueberschrift: string
+  text: string
+}
+
+export const ERGEBNIS_ABSAETZE: Record<Ergebnisart, string> = {
+  vollstaendig:
+    'Die Schadenpositionen aus dem vorliegenden Gutachten sind zur Regulierung des ' +
+    'entstandenen Schadens vollumfänglich zu erstatten.',
+  teilweise:
+    'Die Schadenpositionen aus dem vorliegenden Gutachten, aktualisiert um die ' +
+    'Stundenverrechnungssätze der Referenzwerkstatt, sind zur Regulierung des entstandenen ' +
+    'Schadens zu erstatten.',
+  scharfe_kritik:
+    'Die Abzüge des Prüfdienstleisters können aus Sachverständigensicht nicht nachvollzogen ' +
+    'werden. Die Schadenpositionen aus dem vorliegenden Gutachten sind zur Regulierung des ' +
+    'entstandenen Schadens vollumfänglich zu erstatten.',
+  einzelfrage: '',
+}
+
+export const SIGNATUR = ['Der Sachverständige', '', 'Mit freundlichen Grüßen', 'Sachverständigenbüro Gollenstede']
+
+/** Formatiert ein Datum als TT.MM.JJJJ. */
+export function deutschesDatum(d: Date): string {
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
+}
+
+/**
+ * Baut den Einleitungssatz.
+ *
+ * Fester Baustein mit drei Varianten je nach Übermittlungsweg; nennt der
+ * Bericht einen Prüfdienstleister, wird er ausdrücklich erwähnt.
+ */
+export function baueEinleitung(kopf: Kopfdaten): string | null {
+  if (!kopf.einleitungDatum) return null
+
+  const medium = kopf.einleitungMedium === 'mail' ? 'mit der Mail vom' : 'mit dem Schreiben vom'
+
+  if (kopf.pruefdienstleister) {
+    return (
+      `${medium} ${kopf.einleitungDatum} überließen Sie uns u.a. den Kürzungsbericht des ` +
+      `Dienstleisters ${kopf.pruefdienstleister} mit der Bitte um Stellungnahme. Hierzu machen ` +
+      'wir folgende Feststellungen:'
+    )
+  }
+
+  return (
+    `${medium} ${kopf.einleitungDatum} überließen Sie uns das Abrechnungsschreiben des ` +
+    'Versicherers mit der Bitte um Stellungnahme. Hierzu machen wir folgende Feststellungen:'
+  )
+}
+
+export interface DokumentAufbau {
+  kopf: Kopfdaten
+  vorbemerkung: string | null
+  positionen: Positionstext[]
+  ergebnisart: Ergebnisart
+  /** Frei überschriebener Ergebnis-Absatz, falls gewünscht. */
+  ergebnisAbsatz: string | null
+}
+
+export interface Absatz {
+  art: 'betreff' | 'anrede' | 'fliesstext' | 'ueberschrift' | 'leer' | 'signatur'
+  text: string
+}
+
+/**
+ * Setzt die Stellungnahme zu einer Absatzfolge zusammen.
+ *
+ * Die Absatzfolge ist das gemeinsame Zwischenformat für beide Ausgaben:
+ * Word und Klartext lesen dieselbe Struktur, sodass sie nicht auseinander-
+ * laufen können.
+ */
+/**
+ * Hängt mehrere Absätze eines Textes an und trennt sie durch Leerzeilen.
+ *
+ * Ohne die Trennung liefen zwei Absätze derselben Position im Klartext zu
+ * einem zusammen — im Word-Dokument stünden sie getrennt, in der
+ * Klartextfassung nicht. Beide Ausgaben müssen dasselbe zeigen.
+ */
+function fuegeAbsaetzeEin(ziel: Absatz[], text: string): void {
+  const teile = text
+    .split(/\n{2,}/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+
+  for (const [i, teil] of teile.entries()) {
+    if (i > 0) ziel.push({ art: 'leer', text: '' })
+    ziel.push({ art: 'fliesstext', text: teil })
+  }
+}
+
+export function baueAbsaetze(aufbau: DokumentAufbau): Absatz[] {
+  const absaetze: Absatz[] = []
+  const fuegeEin = (art: Absatz['art'], text: string) => absaetze.push({ art, text })
+
+  fuegeEin('betreff', aufbau.kopf.betreff)
+  fuegeEin('leer', '')
+  fuegeEin('anrede', aufbau.kopf.anrede)
+  fuegeEin('leer', '')
+
+  const einleitung = baueEinleitung(aufbau.kopf)
+  if (einleitung) {
+    fuegeEin('fliesstext', einleitung)
+    fuegeEin('leer', '')
+  }
+
+  if (aufbau.vorbemerkung) {
+    fuegeAbsaetzeEin(absaetze, aufbau.vorbemerkung)
+    fuegeEin('leer', '')
+  }
+
+  for (const p of aufbau.positionen) {
+    fuegeEin('ueberschrift', `${p.nummer}. ${p.ueberschrift}`)
+    fuegeEin('leer', '')
+    fuegeAbsaetzeEin(absaetze, p.text)
+    fuegeEin('leer', '')
+  }
+
+  const ergebnis = aufbau.ergebnisAbsatz?.trim() || ERGEBNIS_ABSAETZE[aufbau.ergebnisart]
+  if (ergebnis) {
+    fuegeEin('fliesstext', ergebnis)
+    fuegeEin('leer', '')
+  }
+
+  for (const zeile of SIGNATUR) {
+    fuegeEin(zeile ? 'signatur' : 'leer', zeile)
+  }
+
+  return absaetze
+}
+
+/** Erzeugt die Klartextfassung. */
+export function alsKlartext(absaetze: Absatz[]): string {
+  return absaetze.map((a) => a.text).join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n'
+}
+
+/**
+ * Dateiname nach der Konvention des Hausstils:
+ * `Stellungnahme_[Nachname-oder-Firma]_[JJJJ-MM-TT]`.
+ */
+export function dateiname(bezeichnung: string | null, datum: Date, endung: string): string {
+  const teil =
+    (bezeichnung ?? 'Unbekannt')
+      .replace(/[^\p{L}\p{N}\s-]/gu, '')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 3)
+      .join('-') || 'Unbekannt'
+  const iso = `${datum.getFullYear()}-${String(datum.getMonth() + 1).padStart(2, '0')}-${String(datum.getDate()).padStart(2, '0')}`
+  return `Stellungnahme_${teil}_${iso}.${endung}`
+}

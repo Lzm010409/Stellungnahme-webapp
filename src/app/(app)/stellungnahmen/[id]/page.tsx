@@ -5,6 +5,9 @@ import { holeVorschlaege } from '@/stellungnahme/aktionen'
 import type { Sonderfallbefund } from '@/pruefbericht/sonderfaelle'
 import type { Extraktion } from '@/pruefbericht/schema'
 import { Auswahlmaske } from './auswahlmaske'
+import { Ausgabebereich } from './ausgabe'
+import { Kopfbereich } from './kopf'
+import { kiVerfuegbar } from '@/ki/client'
 
 function euro(wert: string | number | null | undefined): string {
   if (wert === null || wert === undefined) return '—'
@@ -165,6 +168,28 @@ export default async function StellungnahmeSeite({
           }))}
         />
       )}
+
+      <Kopfbereich
+        stellungnahmeId={s.id}
+        empfaengerName={s.empfaengerName}
+        empfaengerStrasse={s.empfaengerStrasse}
+        empfaengerPlzOrt={s.empfaengerPlzOrt}
+        betreff={s.betreff}
+        anrede={s.anrede}
+        einleitungDatum={s.einleitungDatum}
+        einleitungMedium={s.einleitungMedium}
+        ergebnisAbsatz={s.ergebnisAbsatz}
+      />
+
+      <Ausgabebereich
+        stellungnahmeId={s.id}
+        hatBausteine={s.positionen.some((p) => p.bausteine.length > 0)}
+        kiAktiv={kiVerfuegbar()}
+        vorgemerkt={
+          s.positionen.flatMap((p) => p.bausteine).filter((b) => b.inBibliothekUebernehmen).length
+        }
+        versendet={Boolean(s.versendetAm)}
+      />
     </>
   )
 }

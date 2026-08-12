@@ -16,8 +16,8 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 | P0 | Gerüst, Datenbankschema, Anmeldung mit Rollen, Deployment | **fertig** |
 | P1 | Argumentbibliothek: Migration, Suche, Detailansicht, Freigabe | **fertig** |
 | P2 | autoiXpert-Anbindung: Fall über Aktenzeichen oder ID | **fertig** |
-| P3 | Auswahlmaske, Positionsextraktion, Ausformulierung | offen |
-| P4 | Wächter und Ausgabe (Word/Klartext) | offen |
+| P3 | Prüfbericht einlesen, Positionen auslesen, Auswahlmaske | **fertig** |
+| P4 | Ausformulieren, vier Wächter, Word- und Klartext-Ausgabe | **fertig** |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
 ## Dokumente
@@ -62,6 +62,17 @@ src/bibliothek/
 src/autoixpert/
   client.ts                  Zugriff auf die externe Schnittstelle
   felder.ts                  Falldaten → Platzhalter und Empfängervorschlag
+src/pruefbericht/
+  einlesen.ts                PDF → Seiten, je Seite Text oder Bild
+  extraktion.ts              Kürzungspositionen auslesen
+  sonderfaelle.ts            Prüfliste B.1-B.8
+src/stellungnahme/
+  treffer.ts                 Positionen → Bibliothekseinträge
+  komposition.ts             Ausformulieren im Hausstil
+src/export/
+  waechter.ts                Die vier Prüfungen vor dem Export
+  hausstil.ts                Aufbau des Schreibens
+  docx.ts                    Word-Ausgabe über die Geschäftspapier-Vorlage
 src/auth/                    Sitzungen, Passwort, Microsoft Entra
 src/db/schema.ts             Datenmodell
 scripts/starten.mjs          Migration, Startbefüllung, Serverstart
@@ -73,6 +84,11 @@ scripts/starten.mjs          Migration, Startbefüllung, Serverstart
 Markdown ist verlustfrei und durch Tests abgesichert. Solange der Rückexport
 läuft, funktionieren die bestehenden Skills im Chat unverändert weiter — die
 Webapp ist keine Einbahnstraße.
+
+**Vier Wächter vor jeder Ausgabe.** Offene Platzhalter und interne
+Feldnotizen **sperren** den Export; Zahlen ohne Beleg im Fall und
+Formulierungen an der RDG-Grenze **warnen**. Alle vier sind deterministisch
+— eine Sperre, die selbst raten muss, ist keine Sperre.
 
 **Freigeben ist Menschensache.** Der Status `freigegeben` wird ausschließlich
 über die Oberfläche gesetzt und verlangt die Rolle `freigeber`. Kein
