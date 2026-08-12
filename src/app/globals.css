@@ -1514,3 +1514,110 @@ body.zieht-baustein .brief-flaeche .d-abschnitt {
 body.zieht-baustein .brief-flaeche .d-abschnitt[data-ausgelassen] {
   outline-color: var(--line);
 }
+
+/* ---------- Bilder im Brief ---------- */
+
+.brief-flaeche .d-bild {
+  margin: 1.4em 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brief-flaeche .d-bild-rahmen {
+  position: relative;
+  max-width: 100%;
+  line-height: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-klein);
+}
+
+.brief-flaeche .d-bild-rahmen img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-klein);
+}
+
+.brief-flaeche .d-bild.gewaehlt .d-bild-rahmen,
+.brief-flaeche .d-bild.zieht .d-bild-rahmen {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.2rem rgba(0, 127, 255, 0.2);
+}
+
+/**
+ * Der Griff sitzt in der unteren rechten Ecke des Bildes und zieht
+ * stufenlos. Er erscheint erst beim Überfahren — im Lesefluss soll das
+ * Bild ein Bild sein und kein Bedienelement.
+ */
+.brief-flaeche .d-bild-griff {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  cursor: ew-resize;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  touch-action: none;
+}
+
+.brief-flaeche .d-bild:hover .d-bild-griff,
+.brief-flaeche .d-bild.gewaehlt .d-bild-griff,
+.brief-flaeche .d-bild.zieht .d-bild-griff,
+.brief-flaeche .d-bild-griff:focus-visible {
+  opacity: 1;
+}
+
+.brief-flaeche .d-bild-mass {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: var(--radius-klein);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.brief-flaeche .d-bild.zieht .d-bild-mass {
+  opacity: 1;
+}
+
+.brief-flaeche .d-bild-unterschrift {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 7px 0 0;
+  line-height: 1.45;
+  min-height: 1.4em;
+  /* Volle Breite, damit die leere Beschriftung anklickbar bleibt — sonst
+     schrumpft sie im Flusslayout auf null. */
+  width: 100%;
+}
+
+.brief-flaeche .d-bild-unterschrift.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-soft);
+  opacity: 0.7;
+  float: none;
+  height: auto;
+  pointer-events: none;
+  font-size: 12px;
+}
+
+/* Beim Ziehen einer Datei zeigt der Brief, dass er sie annimmt. */
+.brief.nimmt-datei {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+}

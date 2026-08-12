@@ -9,7 +9,59 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { deflateSync } from 'node:zlib'
 import { chromium, type Page } from 'playwright'
+
+/**
+ * Ein echtes PNG mit Farbverlauf.
+ *
+ * Kein Bild aus dem Netz und keine mitgelieferte Datei: der Rundgang soll
+ * ohne Zutaten laufen. Gebaut wird von Hand — Signatur, IHDR, IDAT, IEND,
+ * jede Blockprüfsumme selbst gerechnet.
+ */
+function baueTestPng(breite: number, hoehe: number): Buffer {
+  const tabelle = Array.from({ length: 256 }, (_, n) => {
+    let c = n
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    return c >>> 0
+  })
+  const crc = (daten: Buffer) => {
+    let c = 0xffffffff
+    for (const b of daten) c = tabelle[(c ^ b) & 0xff]! ^ (c >>> 8)
+    return (c ^ 0xffffffff) >>> 0
+  }
+  const block = (art: string, inhalt: Buffer) => {
+    const kopf = Buffer.concat([Buffer.from(art, 'latin1'), inhalt])
+    const laenge = Buffer.alloc(4)
+    laenge.writeUInt32BE(inhalt.length)
+    const summe = Buffer.alloc(4)
+    summe.writeUInt32BE(crc(kopf))
+    return Buffer.concat([laenge, kopf, summe])
+  }
+
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(breite, 0)
+  ihdr.writeUInt32BE(hoehe, 4)
+  ihdr[8] = 8 // Bittiefe
+  ihdr[9] = 2 // Echtfarbe
+  const roh = Buffer.alloc(hoehe * (1 + breite * 3))
+  for (let y = 0; y < hoehe; y++) {
+    const zeile = y * (1 + breite * 3)
+    for (let x = 0; x < breite; x++) {
+      const p = zeile + 1 + x * 3
+      roh[p] = Math.round((x / breite) * 255)
+      roh[p + 1] = Math.round((y / hoehe) * 200)
+      roh[p + 2] = 180
+    }
+  }
+
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    block('IHDR', ihdr),
+    block('IDAT', deflateSync(roh)),
+    block('IEND', Buffer.alloc(0)),
+  ])
+}
 
 /**
  * Ein winziges, gültiges PDF mit zwei Textseiten.
@@ -179,6 +231,37 @@ async function main() {
     console.log(`  Markierte Stellen vor dem Ziehen ${vorher_gezogen}, danach ${nachher}`)
     await schritt('6-gezogen')
   }
+
+  // Ein Bild einfügen, beschriften und in der Breite ziehen.
+  const bildPfad = join(ZIEL, 'kalkulationsauszug.png')
+  writeFileSync(bildPfad, baueTestPng(640, 360))
+  await seite.setInputFiles('input[type=file][accept*="image"]', bildPfad)
+  await seite.waitForSelector('.d-bild', { timeout: 15000 })
+  await seite.waitForTimeout(900)
+  console.log(`  Bilder im Brief: ${await seite.locator('.d-bild').count()}`)
+
+  const beschriftung = seite.locator('.d-bild-unterschrift').first()
+  await beschriftung.click()
+  await seite.keyboard.type('Auszug aus der Kalkulation, Position 1')
+  await seite.waitForTimeout(300)
+
+  const rahmen = seite.locator('.d-bild-rahmen').first()
+  const vorherBreite = (await rahmen.boundingBox())?.width ?? 0
+  const bildgriff = seite.locator('.d-bild-griff').first()
+  const kasten = await bildgriff.boundingBox()
+  if (kasten) {
+    await seite.mouse.move(kasten.x + kasten.width / 2, kasten.y + kasten.height / 2)
+    await seite.mouse.down()
+    await seite.mouse.move(kasten.x - 120, kasten.y + kasten.height / 2, { steps: 12 })
+    await schritt('6b-bild-zieht')
+    await seite.mouse.up()
+    await seite.waitForTimeout(1400)
+  }
+  const nachherBreite = (await rahmen.boundingBox())?.width ?? 0
+  console.log(
+    `  Bildbreite vor dem Ziehen ${Math.round(vorherBreite)} px, danach ${Math.round(nachherBreite)} px`,
+  )
+  await schritt('6c-bild')
 
   // Erscheinungsbild umschalten.
   await seite.locator('.erscheinung').click()

@@ -21,6 +21,7 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 | P4b | Der Schreibtisch: Brief-Editor mit Anmerkungen am Rand | **fertig** |
 | P4c | Ziehen und Fallenlassen, Fortschritt, Erscheinungsbild | **fertig** |
 | P4d | Oberfläche nach der Vorlage „Judia" | **fertig** |
+| P4e | Bilder: einfügen, stufenlos ziehen, beschriften | **fertig** |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
 ## Dokumente
@@ -81,6 +82,9 @@ src/dokument/
   pruefung.ts                Dokumentbaum → Eingabe der vier Wächter
   editor-schema.ts           Die Editor-Erweiterungen (nur im Browser)
   editor-hilfen.ts           Griffe in den laufenden Editor
+src/bilder/
+  lesen.ts                   Format und Masse aus den Bytes, Masse in EMU
+  ablage.ts                  Bilder in der Datenbank
 src/export/
   waechter.ts                Die vier Prüfungen vor dem Export
   hausstil.ts                Aufbau des Schreibens
@@ -110,6 +114,32 @@ Bausteine lassen sich **anklicken oder ziehen**. Wer zieht, sieht solange
 die Abschnitte des Briefes umrandet; fallen gelassen wird hinter dem Absatz
 unter dem Zeiger, nie mitten in einen Satz. Der Knopf bleibt gleichwertig —
 Ziehen ist die Abkürzung, nicht der Weg.
+
+## Bilder
+
+Ein Bild kommt an **jede** Stelle des Briefes: aus der Zwischenablage
+eingefügt, als Datei hineingezogen oder über den Knopf in der Leiste.
+Eingesetzt wird hinter dem Absatz unter dem Zeiger, nie mitten in einen
+Satz.
+
+Die Breite lässt sich **stufenlos** am Griff in der Ecke ziehen; während
+des Ziehens steht die Breite in Zentimetern daneben. Voreinstellung sind
+rund 12 cm — die Breite, die der Hausstil nennt. Gespeichert wird nicht die
+Pixelzahl, sondern der Anteil des Satzspiegels: nur so bedeutet die Breite
+auf dem Schirm dasselbe wie im Word-Dokument.
+
+Unter jedem Bild steht eine **Beschriftung** als gewöhnlicher Text des
+Dokuments — sie wird deshalb mitgeprüft, mitgedruckt und mit ausgegeben.
+Freiwillig: der Hausstil verzichtet auf sie, wo der Originalfall es tat.
+
+Im Word-Dokument landet das Bild als eingebettete Zeichnung mit festem
+Seitenverhältnis, zentriert, mit der Beschriftung als kleinerer Absatz
+darunter. In der Klartextfassung steht an gleicher Stelle der Marker
+`[Bild N: dateiname – siehe Word-Dokument]`.
+
+Die Bytes liegen in der Datenbank, nicht im Dateisystem: der Container ist
+flüchtig. Im Dokumentbaum steht nur die Kennung — ein Bild als Datenstrom
+im Baum würde jedes Speichern im Sekundentakt um Megabytes aufblähen.
 
 ## Warten mit Auskunft
 

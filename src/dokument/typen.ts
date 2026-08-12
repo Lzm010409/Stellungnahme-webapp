@@ -22,6 +22,7 @@ export const KNOTEN = {
   ueberschrift: 'positionsUeberschrift',
   ergebnis: 'ergebnis',
   signatur: 'signatur',
+  bild: 'bild',
 } as const
 
 /** Die Marke, die eingefügten Bibliothekstext als solchen erkennbar hält. */
@@ -60,6 +61,68 @@ export interface Herkunftsmarke {
   nummer: string | null
   titel: string | null
   herkunft: 'vorschlag' | 'bibliothekssuche' | 'eigener_text' | 'formuliert'
+}
+
+/**
+ * Ein Bild im Schreiben.
+ *
+ * Der Knoten trägt nur die Kennung und die gewünschte Breite; die Bytes
+ * liegen in der Datenbank. Der **Inhalt** des Knotens ist die Beschriftung —
+ * damit ist sie gewöhnlicher Text im Dokument und wird wie jeder andere
+ * bearbeitet, statt in einem Feld nebenan zu leben.
+ */
+export interface Bildattribute {
+  bildId: string
+  /** Anteil der Satzspiegelbreite, 0,1 bis 1. */
+  breite: number
+  breitePx: number
+  hoehePx: number
+  dateiname: string
+}
+
+/** Voreinstellung nach Hausstil: „ca. 10–12 cm", bei 17,5 cm Satzspiegel. */
+export const BILD_BREITE_STANDARD = 0.68
+
+export function bildknoten(attrs: Bildattribute, beschriftung = ''): Elementknoten {
+  return {
+    type: KNOTEN.bild,
+    attrs: { ...attrs },
+    content: beschriftung ? [text(beschriftung)] : [],
+  }
+}
+
+/**
+ * Kein Typwächter, sondern eine schlichte Frage.
+ *
+ * Als `k is Elementknoten` geschrieben würde der Rest eines `else`-Zweigs
+ * für den Übersetzer zu `never` — Bild und Absatz sind derselbe Typ, sie
+ * unterscheiden sich nur im Feld `type`.
+ */
+export function istBild(k: Knoten): boolean {
+  return !istText(k) && k.type === KNOTEN.bild
+}
+
+export function bildattribute(k: Elementknoten): Bildattribute | null {
+  const a = k.attrs
+  if (!a || typeof a.bildId !== 'string' || !a.bildId) return null
+  const zahl = (wert: unknown, ersatz: number) =>
+    typeof wert === 'number' && Number.isFinite(wert) && wert > 0 ? wert : ersatz
+  return {
+    bildId: a.bildId,
+    breite: Math.min(1, Math.max(0.1, zahl(a.breite, BILD_BREITE_STANDARD))),
+    breitePx: zahl(a.breitePx, 1000),
+    hoehePx: zahl(a.hoehePx, 750),
+    dateiname: typeof a.dateiname === 'string' ? a.dateiname : 'Bild',
+  }
+}
+
+/** Alle Bilder im Dokument, in Reihenfolge — daraus entsteht ihre Nummer. */
+export function bilder(dokument: Knoten): Elementknoten[] {
+  const gefunden: Elementknoten[] = []
+  for (const k of alleKnoten(dokument)) {
+    if (istBild(k)) gefunden.push(k as Elementknoten)
+  }
+  return gefunden
 }
 
 export interface Abschnittsattribute {

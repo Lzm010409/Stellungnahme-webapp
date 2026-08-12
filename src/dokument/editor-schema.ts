@@ -11,12 +11,14 @@
  */
 
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core'
+import { ReactNodeViewRenderer } from '@tiptap/react'
 import { Plugin } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
 import { SIGNATUR } from '@/export/hausstil'
-import { KNOTEN, MARKE_BIBLIOTHEK } from './typen'
+import { BILD_BREITE_STANDARD, KNOTEN, MARKE_BIBLIOTHEK } from './typen'
+import { BildAnsicht } from '@/app/(app)/stellungnahmen/[id]/bild-ansicht'
 
 /**
  * Der Rahmen des Schreibens ist fest.
@@ -83,7 +85,7 @@ export const PositionsUeberschrift = Node.create({
 export const PositionsAbschnitt = Node.create({
   name: KNOTEN.abschnitt,
   group: 'block',
-  content: `${KNOTEN.ueberschrift} (paragraph|bulletList|orderedList)+`,
+  content: `${KNOTEN.ueberschrift} (paragraph|bulletList|orderedList|${KNOTEN.bild})+`,
   defining: true,
   isolating: true,
 
@@ -197,6 +199,67 @@ export const Bibliothekstext = Mark.create({
 })
 
 /**
+ * Ein Bild im Schreiben.
+ *
+ * Der Inhalt des Knotens ist die **Beschriftung** — sie ist damit
+ * gewöhnlicher Text des Dokuments und wird wie jeder andere bearbeitet,
+ * geprüft und ausgegeben. Ein Feld daneben wäre bequemer zu bauen und
+ * schlechter zu benutzen.
+ *
+ * `isolating` hält die Grenzen dicht: eine Rückschritt-Taste in der
+ * Beschriftung zerlegt nicht den Absatz darüber.
+ */
+export const Bild = Node.create({
+  name: KNOTEN.bild,
+  group: 'block',
+  content: 'inline*',
+  draggable: true,
+  isolating: true,
+
+  addAttributes: () => ({
+    bildId: {
+      default: null,
+      parseHTML: (el: HTMLElement) => el.getAttribute('data-bild-id'),
+      renderHTML: (attrs: Record<string, unknown>) =>
+        attrs.bildId ? { 'data-bild-id': attrs.bildId as string } : {},
+    },
+    breite: {
+      default: BILD_BREITE_STANDARD,
+      parseHTML: (el: HTMLElement) => Number(el.getAttribute('data-breite')) || BILD_BREITE_STANDARD,
+      renderHTML: (attrs: Record<string, unknown>) => ({ 'data-breite': String(attrs.breite) }),
+    },
+    breitePx: {
+      default: 1000,
+      parseHTML: (el: HTMLElement) => Number(el.getAttribute('data-breite-px')) || 1000,
+      renderHTML: (attrs: Record<string, unknown>) => ({ 'data-breite-px': String(attrs.breitePx) }),
+    },
+    hoehePx: {
+      default: 750,
+      parseHTML: (el: HTMLElement) => Number(el.getAttribute('data-hoehe-px')) || 750,
+      renderHTML: (attrs: Record<string, unknown>) => ({ 'data-hoehe-px': String(attrs.hoehePx) }),
+    },
+    dateiname: {
+      default: 'Bild',
+      parseHTML: (el: HTMLElement) => el.getAttribute('data-dateiname') ?? 'Bild',
+      renderHTML: (attrs: Record<string, unknown>) => ({
+        'data-dateiname': String(attrs.dateiname ?? 'Bild'),
+      }),
+    },
+  }),
+
+  parseHTML: () => [{ tag: 'figure[data-bild-id]' }],
+  renderHTML: ({ HTMLAttributes }) => [
+    'figure',
+    mergeAttributes(HTMLAttributes, { class: 'd-bild' }),
+    ['figcaption', {}, 0],
+  ],
+
+  addNodeView() {
+    return ReactNodeViewRenderer(BildAnsicht)
+  },
+})
+
+/**
  * Markiert Abschnitte ohne Text.
  *
  * Die Nummerierung im Editor entsteht über einen CSS-Zähler, die im
@@ -263,6 +326,7 @@ export function briefErweiterungen() {
     PositionsAbschnitt,
     Ergebnis,
     Signatur,
+    Bild,
     Bibliothekstext,
     LeereAbschnitte,
     Placeholder.configure({
@@ -271,6 +335,7 @@ export function briefErweiterungen() {
         if (node.type.name === KNOTEN.ueberschrift) return 'Überschrift der Position'
         if (node.type.name === KNOTEN.betreff) return 'Betreff'
         if (node.type.name === KNOTEN.anrede) return 'Anrede'
+        if (node.type.name === KNOTEN.bild) return 'Beschriftung (freiwillig)'
         return 'Text — oder rechts einen Baustein wählen'
       },
     }),

@@ -230,6 +230,37 @@ export function fuegeAnStelleEin(
   return { positionId }
 }
 
+/**
+ * Fügt einen Block an der Schreibmarke oder an einer Stelle ein — überall.
+ *
+ * Anders als beim Baustein ist hier kein Positionsabschnitt nötig: ein Bild
+ * darf zwischen Einleitung und erstem Abschnitt genauso stehen wie mitten
+ * in einer Begründung. Eingefügt wird hinter dem Block, in dem die Stelle
+ * liegt, damit kein Satz zerschnitten wird.
+ */
+export function fuegeBlockEin(
+  editor: Editor,
+  knoten: Knoten,
+  koordinaten?: { left: number; top: number },
+): boolean {
+  const stelle = koordinaten
+    ? editor.view.posAtCoords(koordinaten)?.pos
+    : editor.state.selection.from
+  if (stelle === undefined) return false
+
+  const $pos = editor.state.doc.resolve(stelle)
+
+  // Die Tiefe des Blocks suchen, der unmittelbar im Dokument oder in einem
+  // Abschnitt steht — dahinter wird eingefügt.
+  let tiefe = $pos.depth
+  while (tiefe > 1 && $pos.node(tiefe - 1).type.name !== KNOTEN.abschnitt) tiefe--
+
+  const ziel = tiefe >= 1 ? $pos.after(tiefe) : editor.state.doc.content.size
+
+  editor.chain().focus().insertContentAt(ziel, knoten as never).run()
+  return true
+}
+
 /** Ersetzt den gesamten Inhalt eines Abschnitts, die Überschrift bleibt. */
 export function ersetzeAbschnittsInhalt(
   editor: Editor,

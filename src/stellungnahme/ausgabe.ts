@@ -3,7 +3,8 @@ import { gutachtenSchema } from '@/autoixpert/typen'
 import { leseFalldaten } from '@/autoixpert/felder'
 import type { Extraktion } from '@/pruefbericht/schema'
 import { alsKlartext, dateiname, type Kopfdaten } from '@/export/hausstil'
-import { baueDocx } from '@/export/docx'
+import { baueDocx, type DocxBild } from '@/export/docx'
+import { ladeBilder } from '@/bilder/ablage'
 import { leseDokument } from '@/dokument/dienst'
 import { dokumentNachAbsaetzen, leseStruktur } from '@/dokument/nach-absaetzen'
 import { istDokument, type Elementknoten } from '@/dokument/typen'
@@ -111,6 +112,24 @@ export async function* erzeugeAusgabe(
 
   const absaetze = dokumentNachAbsaetzen(dokument)
 
+  // Die Bilder kommen erst hier aus der Datenbank — im Dokumentbaum steht
+  // nur die Kennung, und das Speichern im Sekundentakt soll leicht bleiben.
+  const bildIds = [...new Set(absaetze.filter((a) => a.bild).map((a) => a.bild!.bildId))]
+  const bilder = new Map<string, DocxBild>()
+  if (bildIds.length > 0) {
+    yield {
+      art: 'fortschritt',
+      text: `${bildIds.length} ${bildIds.length === 1 ? 'Bild wird' : 'Bilder werden'} eingebettet …`,
+      anteil: 0.55,
+    }
+    for (const [id, inhalt] of await ladeBilder(stellungnahmeId, bildIds)) {
+      bilder.set(id, {
+        daten: inhalt.daten,
+        endung: inhalt.mimetyp === 'image/png' ? 'png' : 'jpg',
+      })
+    }
+  }
+
   yield {
     art: 'fortschritt',
     text: `${struktur.abschnitte.length} Positionen — das Word-Dokument wird gebaut …`,
@@ -118,7 +137,7 @@ export async function* erzeugeAusgabe(
   }
 
   try {
-    const docx = await baueDocx({ kopf, absaetze })
+    const docx = await baueDocx({ kopf, absaetze, bilder })
     yield {
       art: 'fertig',
       klartext: alsKlartext(absaetze),

@@ -175,3 +175,109 @@ describe('Absatztrennung', () => {
     expect(text).toMatch(/formschlüssig\.\n\nSie sind zu erneuern\./)
   })
 })
+
+/* ------------------------------------------------------------------ *
+ * Bilder
+ * ------------------------------------------------------------------ */
+
+/** Ein winziges, gültiges PNG (1×1, durchsichtig). */
+const MINI_PNG = new Uint8Array(
+  Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  ),
+)
+
+const BILDABSAETZE = [
+  { art: 'ueberschrift' as const, text: '1. Halterung Stoßfänger' },
+  { art: 'leer' as const, text: '' },
+  { art: 'fliesstext' as const, text: 'Die Halterung ist zu erneuern.' },
+  { art: 'leer' as const, text: '' },
+  {
+    art: 'bild' as const,
+    text: '[Bild 1: kalkulation.png – siehe Word-Dokument]',
+    bild: {
+      bildId: 'b1',
+      breite: 0.68,
+      breitePx: 1600,
+      hoehePx: 900,
+      dateiname: 'kalkulation.png',
+      nummer: 1,
+    },
+  },
+  { art: 'bildunterschrift' as const, text: 'Auszug aus der Kalkulation' },
+]
+
+describe('Bilder im Word-Dokument', () => {
+  it('legt Medien, Beziehung und Zeichnung an', async () => {
+    const roh = await baueDocx({
+      kopf: KOPF,
+      absaetze: BILDABSAETZE,
+      bilder: new Map([['b1', { daten: MINI_PNG, endung: 'png' as const }]]),
+    })
+    const dateien = unzipSync(roh)
+
+    const medien = Object.keys(dateien).filter((n) => n.startsWith('word/media/bild-'))
+    expect(medien).toEqual(['word/media/bild-b1.png'])
+
+    const rels = new TextDecoder().decode(dateien['word/_rels/document.xml.rels']!)
+    const beziehung = rels.match(/Id="(rId\d+)"[^>]*Target="media\/bild-b1\.png"/)
+    expect(beziehung, 'Beziehung zum Bild fehlt').toBeTruthy()
+
+    const xml = new TextDecoder().decode(dateien['word/document.xml']!)
+    expect(xml).toContain(`<a:blip r:embed="${beziehung![1]}"/>`)
+    expect(xml).toContain('noChangeAspect="1"')
+    // 68 % von 17,5 cm, Höhe im Verhältnis 1600:900. Gesucht wird
+    // ausdrücklich im eingebetteten Bild (`wp:inline`) — die Vorlage bringt
+    // eigene Zeichnungen mit, die als `wp:anchor` verankert sind.
+    const masse = xml.match(/<wp:inline[^>]*><wp:extent cx="(\d+)" cy="(\d+)"\/>/)
+    expect(Number(masse![1]) / (914400 / 2.54)).toBeCloseTo(11.9, 1)
+    expect(Number(masse![2]) / Number(masse![1])).toBeCloseTo(900 / 1600, 3)
+  })
+
+  it('überschreibt keine Beziehung der Vorlage', async () => {
+    const roh = await baueDocx({
+      kopf: KOPF,
+      absaetze: BILDABSAETZE,
+      bilder: new Map([['b1', { daten: MINI_PNG, endung: 'png' as const }]]),
+    })
+    const rels = new TextDecoder().decode(unzipSync(roh)['word/_rels/document.xml.rels']!)
+
+    // Kopf- und Fusszeile der Vorlage müssen ihre Beziehungen behalten,
+    // sonst ist das Geschäftspapier weg.
+    expect(rels).toContain('Target="header1.xml"')
+    expect(rels).toContain('Target="footer1.xml"')
+
+    const ids = [...rels.matchAll(/Id="(rId\d+)"/g)].map((t) => t[1])
+    expect(new Set(ids).size, 'doppelte Beziehungskennung').toBe(ids.length)
+  })
+
+  it('setzt die Beschriftung als eigenen, zentrierten Absatz', async () => {
+    const roh = await baueDocx({
+      kopf: KOPF,
+      absaetze: BILDABSAETZE,
+      bilder: new Map([['b1', { daten: MINI_PNG, endung: 'png' as const }]]),
+    })
+    const xml = new TextDecoder().decode(unzipSync(roh)['word/document.xml']!)
+    expect(xml).toContain('Auszug aus der Kalkulation')
+    expect(xml).toMatch(/<w:jc w:val="center"\/>.*Auszug aus der Kalkulation/s)
+  })
+
+  it('lässt den Marker stehen, wenn die Bytes fehlen', async () => {
+    // Besser ein sichtbarer Hinweis im Schreiben als eine stille Lücke.
+    const roh = await baueDocx({ kopf: KOPF, absaetze: BILDABSAETZE, bilder: new Map() })
+    const dateien = unzipSync(roh)
+    const xml = new TextDecoder().decode(dateien['word/document.xml']!)
+    expect(xml).toContain('siehe Word-Dokument')
+    // Kein eingebettetes Bild — die Zeichnungen der Vorlage bleiben davon
+    // unberührt, deshalb wird auf die Einbettung selbst geprüft.
+    expect(xml).not.toContain('<wp:inline')
+    expect(Object.keys(dateien).filter((n) => n.startsWith('word/media/bild-'))).toEqual([])
+  })
+
+  it('lässt ein Dokument ohne Bilder unverändert', async () => {
+    const roh = await baueDocx({ kopf: KOPF, absaetze: ABSAETZE })
+    const dateien = unzipSync(roh)
+    expect(Object.keys(dateien).filter((n) => n.startsWith('word/media/bild-'))).toEqual([])
+  })
+})

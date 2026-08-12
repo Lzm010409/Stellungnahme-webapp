@@ -88,9 +88,41 @@ export interface DokumentAufbau {
   ergebnisAbsatz: string | null
 }
 
+export interface Bildabsatz {
+  bildId: string
+  /** Anteil der Satzspiegelbreite. */
+  breite: number
+  breitePx: number
+  hoehePx: number
+  dateiname: string
+  /** Laufende Nummer im Schreiben — sie steht so auch im Klartextmarker. */
+  nummer: number
+}
+
 export interface Absatz {
-  art: 'betreff' | 'anrede' | 'fliesstext' | 'ueberschrift' | 'leer' | 'signatur'
+  art:
+    | 'betreff'
+    | 'anrede'
+    | 'fliesstext'
+    | 'ueberschrift'
+    | 'leer'
+    | 'signatur'
+    | 'bild'
+    | 'bildunterschrift'
   text: string
+  /** Nur bei `art: 'bild'` gesetzt. */
+  bild?: Bildabsatz
+}
+
+/**
+ * Der Marker, der im Klartext an der Stelle des Bildes steht.
+ *
+ * Wortlaut aus dem Hausstil: „[Bild N: dateiname – siehe Word-Dokument]".
+ * Die Klartextfassung dient der Weiterverarbeitung; sie soll sagen, dass
+ * hier etwas fehlt, statt es stillschweigend zu verschweigen.
+ */
+export function bildmarker(b: Bildabsatz): string {
+  return `[Bild ${b.nummer}: ${b.dateiname} – siehe Word-Dokument]`
 }
 
 /**

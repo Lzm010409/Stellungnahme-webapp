@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { unzipSync, zipSync } from 'fflate'
 import type { Absatz, Kopfdaten } from './hausstil'
 import { deutschesDatum } from './hausstil'
+import { bildmasseInEmu } from '@/bilder/lesen'
 
 /**
  * Erzeugt das Word-Dokument aus der Geschäftspapier-Vorlage des Büros.
@@ -74,9 +75,70 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/**
+ * Die Zeichnung eines eingebetteten Bildes.
+ *
+ * `noChangeAspect` hält das Seitenverhältnis fest, wenn jemand das Bild in
+ * Word anfasst — der Hausstil verlangt ausdrücklich, nicht zu verzerren.
+ * Die Namensräume `a` und `pic` werden hier erklärt; `wp` und `r` bringt die
+ * Vorlage bereits im Wurzelelement mit.
+ */
+function zeichnungXml(nummer: number, rId: string, cx: number, cy: number, name: string): string {
+  const sicher = maskiere(name)
+  return (
+    '<w:drawing>' +
+    '<wp:inline distT="0" distB="0" distL="0" distR="0">' +
+    `<wp:extent cx="${cx}" cy="${cy}"/>` +
+    '<wp:effectExtent l="0" t="0" r="0" b="0"/>' +
+    `<wp:docPr id="${1000 + nummer}" name="Bild ${nummer}" descr="${sicher}"/>` +
+    '<wp:cNvGraphicFramePr>' +
+    '<a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/>' +
+    '</wp:cNvGraphicFramePr>' +
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">' +
+    '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+    `<pic:nvPicPr><pic:cNvPr id="${1000 + nummer}" name="${sicher}"/><pic:cNvPicPr/></pic:nvPicPr>` +
+    `<pic:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+    '<pic:spPr>' +
+    `<a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>' +
+    '</pic:spPr>' +
+    '</pic:pic>' +
+    '</a:graphicData>' +
+    '</a:graphic>' +
+    '</wp:inline>' +
+    '</w:drawing>'
+  )
+}
+
 /** Baut einen Word-Absatz. */
-function absatzXml(a: Absatz): string {
+function absatzXml(a: Absatz, rIds: Map<string, string>): string {
   if (a.art === 'leer') return '<w:p/>'
+
+  if (a.art === 'bild') {
+    const b = a.bild
+    const rId = b ? rIds.get(b.bildId) : undefined
+    // Fehlt das Bild, bleibt der Marker stehen — lieber ein sichtbarer
+    // Hinweis als eine stille Lücke im versandten Schreiben.
+    if (!b || !rId) {
+      return `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve">${maskiere(a.text)}</w:t></w:r></w:p>`
+    }
+    const { cx, cy } = bildmasseInEmu(b.breite, b.breitePx, b.hoehePx)
+    return (
+      '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>' +
+      zeichnungXml(b.nummer, rId, cx, cy, b.dateiname) +
+      '</w:r></w:p>'
+    )
+  }
+
+  if (a.art === 'bildunterschrift') {
+    return (
+      '<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r>' +
+      '<w:rPr><w:i/><w:sz w:val="18"/></w:rPr>' +
+      `<w:t xml:space="preserve">${maskiere(a.text)}</w:t>` +
+      '</w:r></w:p>'
+    )
+  }
 
   const fett = a.art === 'ueberschrift' || a.art === 'betreff'
   const eigenschaften = fett ? '<w:rPr><w:b/></w:rPr>' : ''
@@ -105,7 +167,11 @@ function findeAbsatzBeginn(xml: string, stelle: number): number {
  * Ersetzt den Absatz, der den Textplatzhalter enthält, durch die
  * Absatzfolge der Stellungnahme.
  */
-export function setzeFliesstext(xml: string, absaetze: Absatz[]): string {
+export function setzeFliesstext(
+  xml: string,
+  absaetze: Absatz[],
+  rIds: Map<string, string> = new Map(),
+): string {
   const stelle = xml.indexOf(maskiere(VORLAGE.text))
   if (stelle === -1) {
     throw new DocxFehler(
@@ -122,16 +188,86 @@ export function setzeFliesstext(xml: string, absaetze: Absatz[]): string {
   // Der Betreff steht bereits als eigener Absatz in der Vorlage; er wird
   // dort ersetzt und darf hier nicht ein zweites Mal erscheinen.
   const ohneBetreff = absaetze.filter((a) => a.art !== 'betreff')
-  const neuerInhalt = ohneBetreff.map(absatzXml).join('')
+  const neuerInhalt = ohneBetreff.map((a) => absatzXml(a, rIds)).join('')
 
   return xml.slice(0, absatzStart) + neuerInhalt + xml.slice(absatzEnde)
+}
+
+export interface DocxBild {
+  daten: Uint8Array
+  /** `png` oder `jpg` — die Vorlage erklärt beide Endungen bereits. */
+  endung: 'png' | 'jpg'
 }
 
 export interface DocxEingabe {
   kopf: Kopfdaten
   absaetze: Absatz[]
+  /** Die Bytes zu den Bildern, nach Kennung. */
+  bilder?: Map<string, DocxBild>
   /** Abweichender Vorlagenpfad, vor allem für Tests. */
   vorlagePfad?: string
+}
+
+/**
+ * Die nächste freie Beziehungsnummer.
+ *
+ * Die Vorlage bringt eigene Beziehungen mit (Kopfzeile, Fusszeile, Schriften
+ * und mehr). Eine neue Nummer einfach zu raten hiesse, eine davon zu
+ * überschreiben — und die Kopfzeile mit dem Logo wäre weg.
+ */
+export function naechsteBeziehungsnummer(rels: string): number {
+  let hoechste = 0
+  for (const treffer of rels.matchAll(/Id="rId(\d+)"/g)) {
+    hoechste = Math.max(hoechste, Number(treffer[1]))
+  }
+  return hoechste + 1
+}
+
+/** Hängt die Bildbeziehungen an und liefert die vergebenen Kennungen. */
+export function ergaenzeBeziehungen(
+  rels: string,
+  bilder: { bildId: string; ziel: string }[],
+): { rels: string; rIds: Map<string, string> } {
+  const rIds = new Map<string, string>()
+  if (bilder.length === 0) return { rels, rIds }
+
+  let nummer = naechsteBeziehungsnummer(rels)
+  const neu = bilder
+    .map((b) => {
+      const id = `rId${nummer++}`
+      rIds.set(b.bildId, id)
+      return (
+        `<Relationship Id="${id}" ` +
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" ' +
+        `Target="${b.ziel}"/>`
+      )
+    })
+    .join('')
+
+  const ende = rels.lastIndexOf('</Relationships>')
+  if (ende === -1) throw new DocxFehler('Die Beziehungsdatei der Vorlage ist unbrauchbar.')
+
+  return { rels: rels.slice(0, ende) + neu + rels.slice(ende), rIds }
+}
+
+/**
+ * Stellt sicher, dass die Endung in `[Content_Types].xml` erklärt ist.
+ *
+ * Die Vorlage führt png und jpg bereits — sie enthält selbst Bilder. Fehlt
+ * die Erklärung trotzdem, öffnet Word die Datei mit einer Fehlermeldung
+ * statt mit dem Schreiben.
+ */
+export function ergaenzeInhaltstypen(xml: string, endungen: Set<string>): string {
+  let ergebnis = xml
+  for (const endung of endungen) {
+    if (new RegExp(`Extension="${endung}"`, 'i').test(ergebnis)) continue
+    const typ = endung === 'png' ? 'image/png' : 'image/jpeg'
+    ergebnis = ergebnis.replace(
+      /(<Types[^>]*>)/,
+      `$1<Default Extension="${endung}" ContentType="${typ}"/>`,
+    )
+  }
+  return ergebnis
 }
 
 export async function baueDocx(eingabe: DocxEingabe): Promise<Uint8Array> {
@@ -153,14 +289,66 @@ export async function baueDocx(eingabe: DocxEingabe): Promise<Uint8Array> {
 
   let xml = new TextDecoder().decode(dokument)
 
+  // Bilder ablegen, bevor der Fliesstext gesetzt wird — die Absätze brauchen
+  // die Beziehungskennungen.
+  const rIds = legeBilderAb(dateien, eingabe)
+
   const { kopf } = eingabe
   xml = ersetzeTextknoten(xml, VORLAGE.datum, `${kopf.ort}, ${deutschesDatum(kopf.datum)}`)
   xml = ersetzeTextknoten(xml, VORLAGE.name, kopf.empfaengerName)
   xml = ersetzeTextknoten(xml, VORLAGE.strasse, kopf.empfaengerStrasse ?? '')
   xml = ersetzeTextknoten(xml, VORLAGE.plzOrt, kopf.empfaengerPlzOrt ?? '')
   xml = ersetzeTextknoten(xml, VORLAGE.betreff, kopf.betreff)
-  xml = setzeFliesstext(xml, eingabe.absaetze)
+  xml = setzeFliesstext(xml, eingabe.absaetze, rIds)
 
   dateien['word/document.xml'] = new TextEncoder().encode(xml)
   return zipSync(dateien, { level: 6 })
+}
+
+/**
+ * Legt die Bilder als Medien in die Datei und verknüpft sie.
+ *
+ * Verwendet werden nur Bilder, die im Text tatsächlich vorkommen — ein
+ * mitgeschlepptes, nirgends eingebundenes Bild bläht das Dokument auf und
+ * sagt dem Empfänger nichts.
+ */
+function legeBilderAb(
+  dateien: Record<string, Uint8Array>,
+  eingabe: DocxEingabe,
+): Map<string, string> {
+  const verwendet = eingabe.absaetze
+    .filter((a) => a.art === 'bild' && a.bild)
+    .map((a) => a.bild!)
+  if (verwendet.length === 0 || !eingabe.bilder) return new Map()
+
+  const relsPfad = 'word/_rels/document.xml.rels'
+  const rohRels = dateien[relsPfad]
+  if (!rohRels) throw new DocxFehler('Die Vorlage enthält keine Beziehungsdatei.')
+
+  const endungen = new Set<string>()
+  const anzulegen: { bildId: string; ziel: string }[] = []
+
+  for (const b of verwendet) {
+    if (anzulegen.some((x) => x.bildId === b.bildId)) continue
+    const inhalt = eingabe.bilder.get(b.bildId)
+    if (!inhalt) continue
+
+    const name = `bild-${b.bildId}.${inhalt.endung}`
+    dateien[`word/media/${name}`] = inhalt.daten
+    anzulegen.push({ bildId: b.bildId, ziel: `media/${name}` })
+    endungen.add(inhalt.endung)
+  }
+
+  const { rels, rIds } = ergaenzeBeziehungen(new TextDecoder().decode(rohRels), anzulegen)
+  dateien[relsPfad] = new TextEncoder().encode(rels)
+
+  const typenPfad = '[Content_Types].xml'
+  const rohTypen = dateien[typenPfad]
+  if (rohTypen) {
+    dateien[typenPfad] = new TextEncoder().encode(
+      ergaenzeInhaltstypen(new TextDecoder().decode(rohTypen), endungen),
+    )
+  }
+
+  return rIds
 }

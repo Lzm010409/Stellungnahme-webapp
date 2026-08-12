@@ -13,12 +13,19 @@ import {
   ersteHerkunft,
   fuegeAbschnittEin,
   fuegeAnStelleEin,
+  fuegeBlockEin,
   fuegeInAbschnittEin,
   setzeAusgelassen,
   springeInAbschnitt,
   zeigeFundstelle,
 } from '@/dokument/editor-hilfen'
-import { absaetzeAusText, herkunftsmarke, type Herkunftsmarke } from '@/dokument/typen'
+import {
+  BILD_BREITE_STANDARD,
+  absaetzeAusText,
+  bildknoten,
+  herkunftsmarke,
+  type Herkunftsmarke,
+} from '@/dokument/typen'
 import { MIME_BAUSTEIN, leseZiehgut } from '@/dokument/ziehen'
 import { Fortschritt, Kreisel, type Fortschrittsstand } from '@/app/teile/anzeigen'
 import { leseEreignisse } from '@/app/teile/strom'
@@ -89,6 +96,7 @@ export function Schreibtisch({
   const [ausgabe, setzeAusgabe] = useState<FertigeAusgabe | null>(null)
   const [ausgabestand, setzeAusgabestand] = useState<Fortschrittsstand | null>(null)
   const [meldung, setzeMeldung] = useState<string | null>(null)
+  const [bildLaeuft, setzeBildLaeuft] = useState(0)
   const [laeuft, starte] = useTransition()
 
   const standRef = useRef(anfangsStand)
@@ -96,8 +104,16 @@ export function Schreibtisch({
   const briefRef = useRef<HTMLDivElement | null>(null)
   const randRef = useRef<HTMLDivElement | null>(null)
   const blasenRef = useRef(new Map<string, HTMLDivElement | null>())
+  const dateiwahl = useRef<HTMLInputElement | null>(null)
 
   const editorRef = useRef<ReturnType<typeof useEditor> | null>(null)
+
+  // Die Editor-Einstellungen entstehen einmal; das Ablegen der Bilder
+  // braucht aber den jeweils aktuellen Stand. Deshalb der Umweg über eine
+  // Verweiszelle statt der Funktion selbst.
+  const bilderRef = useRef<
+    (dateien: FileList | File[], koordinaten?: { left: number; top: number }) => void
+  >(() => {})
 
   const editor = useEditor({
     extensions: briefErweiterungen(),
@@ -113,7 +129,23 @@ export function Schreibtisch({
        * den mitgereichten Klartext einzusetzen.
        */
       handleDrop: (_sicht, ereignis) => {
-        const daten = (ereignis as DragEvent).dataTransfer?.getData(MIME_BAUSTEIN)
+        const uebergabe = (ereignis as DragEvent).dataTransfer
+
+        // Bilddateien zuerst: sie dürfen überall hin, auch ausserhalb der
+        // Positionsabschnitte.
+        const bilddateien = Array.from(uebergabe?.files ?? []).filter((d) =>
+          d.type.startsWith('image/'),
+        )
+        if (bilddateien.length > 0) {
+          ereignis.preventDefault()
+          bilderRef.current(bilddateien, {
+            left: (ereignis as DragEvent).clientX,
+            top: (ereignis as DragEvent).clientY,
+          })
+          return true
+        }
+
+        const daten = uebergabe?.getData(MIME_BAUSTEIN)
         if (!daten) return false
         ereignis.preventDefault()
 
@@ -131,6 +163,23 @@ export function Schreibtisch({
             'Ein Baustein gehört in einen Positionsabschnitt — nicht in Betreff, Ergebnis oder Signatur.',
           )
         }
+        return true
+      },
+
+      /**
+       * Eingefügte Bilder aus der Zwischenablage.
+       *
+       * Der Regelfall: ein Ausschnitt aus dem Kalkulationsprogramm liegt in
+       * der Zwischenablage und soll an die Stelle, an der die Schreibmarke
+       * steht. Dafür soll niemand erst eine Datei speichern müssen.
+       */
+      handlePaste: (_sicht, ereignis) => {
+        const dateien = Array.from(ereignis.clipboardData?.files ?? []).filter((d) =>
+          d.type.startsWith('image/'),
+        )
+        if (dateien.length === 0) return false
+        ereignis.preventDefault()
+        bilderRef.current(dateien)
         return true
       },
     },
@@ -217,6 +266,73 @@ export function Schreibtisch({
     beobachter.observe(brief)
     return () => beobachter.disconnect()
   }, [])
+
+  /* ---------------- Bilder ---------------- */
+
+  /**
+   * Lädt eine Bilddatei hoch und setzt sie an die gewünschte Stelle.
+   *
+   * Die Bytes gehen sofort auf den Server; im Dokument steht danach nur die
+   * Kennung. Ein Bild als Datenstrom im Baum würde jede der Speicherungen im
+   * Sekundentakt um Megabytes aufblähen.
+   */
+  const legeBildAb = useCallback(
+    async (datei: File, koordinaten?: { left: number; top: number }) => {
+      const griff = editorRef.current
+      if (!griff) return
+
+      setzeBildLaeuft((n) => n + 1)
+      try {
+        const formular = new FormData()
+        formular.append('bild', datei)
+        const antwort = await fetch(`/api/stellungnahmen/${stellungnahmeId}/bilder`, {
+          method: 'POST',
+          body: formular,
+        })
+        const ergebnis = (await antwort.json()) as {
+          id?: string
+          dateiname?: string
+          breitePx?: number
+          hoehePx?: number
+          fehler?: string
+        }
+
+        if (!antwort.ok || !ergebnis.id) {
+          setzeMeldung(ergebnis.fehler ?? 'Das Bild liess sich nicht hochladen.')
+          return
+        }
+
+        fuegeBlockEin(
+          griff,
+          bildknoten({
+            bildId: ergebnis.id,
+            breite: BILD_BREITE_STANDARD,
+            breitePx: ergebnis.breitePx ?? 1000,
+            hoehePx: ergebnis.hoehePx ?? 750,
+            dateiname: ergebnis.dateiname ?? datei.name,
+          }),
+          koordinaten,
+        )
+      } catch {
+        setzeMeldung('Das Bild liess sich nicht hochladen — die Verbindung ist abgerissen.')
+      } finally {
+        setzeBildLaeuft((n) => n - 1)
+      }
+    },
+    [stellungnahmeId],
+  )
+
+  const legeBilderAb = useCallback(
+    (dateien: FileList | File[], koordinaten?: { left: number; top: number }) => {
+      for (const datei of Array.from(dateien)) {
+        if (!datei.type.startsWith('image/')) continue
+        void legeBildAb(datei, koordinaten)
+      }
+    },
+    [legeBildAb],
+  )
+
+  bilderRef.current = legeBilderAb
 
   /* ---------------- Griffe am Brief ---------------- */
 
@@ -433,6 +549,25 @@ export function Schreibtisch({
           >
             ▪ Liste
           </button>
+          <button
+            type="button"
+            title="Bild an der Schreibmarke einfügen — geht auch mit Einfügen aus der Zwischenablage oder durch Ziehen"
+            onClick={() => dateiwahl.current?.click()}
+          >
+            {bildLaeuft > 0 ? <Kreisel text="Bild …" /> : '▣ Bild'}
+          </button>
+          <input
+            ref={dateiwahl}
+            type="file"
+            accept="image/png,image/jpeg"
+            multiple
+            hidden
+            onChange={(e) => {
+              if (e.target.files) legeBilderAb(e.target.files)
+              e.target.value = ''
+            }}
+          />
+
           <button type="button" title="Rückgängig" onClick={() => editor?.chain().focus().undo().run()}>
             ↶
           </button>

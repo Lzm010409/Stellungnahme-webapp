@@ -14,8 +14,9 @@
 
 Bei jedem Start läuft `starten.mjs`, bevor der Server hochkommt:
 
-Zum Stand mit dem Brief-Editor gehört die Migration `0002`: sie legt die
-Spalten `dokument`, `dokument_stand` und `dokument_geaendert_am` an. Ältere
+Zum Stand mit dem Brief-Editor gehören die Migrationen `0002` (Spalten
+`dokument`, `dokument_stand`, `dokument_geaendert_am`) und `0003` (Tabelle
+`bild`). Ältere
 Stellungnahmen bekommen ihr Schreiben beim ersten Öffnen aus ihren
 bisherigen Bausteinen — ein eigenes Migrationsskript gibt es dafür nicht.
 
@@ -85,6 +86,24 @@ Damit die Skills im Chat mit dem aktuellen Stand arbeiten:
 pnpm bibliothek:export
 ```
 
+## Bilder
+
+Die Bytes liegen in der Tabelle `bild`, base64-kodiert, mit
+Fremdschlüssel auf die Stellungnahme — eine gelöschte Stellungnahme nimmt
+ihre Bilder mit. Ausgeliefert werden sie über `/api/bilder/<id>`, nur
+angemeldet: in Kalkulationsauszügen stehen Kennzeichen und Schadennummern.
+
+Angenommen werden **PNG und JPEG** bis 8 MB. Format und Masse liest die
+Anwendung aus den Bytes selbst, nicht aus dem Dateinamen — im Word-Dokument
+entscheidet das echte Seitenverhältnis darüber, ob ein Bild verzerrt
+erscheint.
+
+Das Datenverzeichnis wächst damit mit den Bildern. Ein Kalkulationsauszug
+liegt bei 100 bis 500 KB; bei einigen hundert Stellungnahmen im Jahr sind
+das wenige hundert Megabyte. Sollte das je stören, ist der Weg ein
+Objektspeicher hinter derselben Schnittstelle — die Anwendung kennt nur
+`speichereBild` und `ladeBild`.
+
 ## Erscheinungsbild und Aufbau der Oberfläche
 
 Farben, Masse und Formen folgen der Vorlage „Judia" (Bootstrap 5.3): Blau
@@ -152,6 +171,8 @@ aus, statt zu scheitern.
 | Sonderfall-Prüfliste B.1–B.8 | läuft |
 | Brief-Editor mit Anmerkungen am Rand | läuft |
 | Bausteine per Klick oder Ziehen einfügen | läuft |
+| Bilder einfügen, stufenlos ziehen, beschriften | läuft |
+| Bilder im Word-Dokument, Marker im Klartext | läuft |
 | Fortschrittsanzeige beim Auswerten und Erzeugen | läuft |
 | Hell, dunkel oder wie das System | läuft |
 | Vorschläge, Bibliothekssuche und eigener Text je Position | läuft |

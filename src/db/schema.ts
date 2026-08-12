@@ -445,6 +445,36 @@ export const positionBild = pgTable(
   (t) => [index('bild_position_idx').on(t.positionId)],
 )
 
+/**
+ * Bilder im Schreiben.
+ *
+ * Die Bytes stehen in der Datenbank, nicht im Dateisystem: der Container
+ * ist flüchtig, ein Neustart nähme sonst jedes Bild mit. Im Dokument steht
+ * nur die Kennung — ein Bild als Datenstrom im Dokumentbaum würde jede
+ * Zwischenspeicherung um Megabytes aufblähen, und gespeichert wird beim
+ * Schreiben im Sekundentakt.
+ */
+export const bild = pgTable(
+  'bild',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    stellungnahmeId: uuid()
+      .notNull()
+      .references(() => stellungnahme.id, { onDelete: 'cascade' }),
+    dateiname: text().notNull(),
+    /** `image/png` oder `image/jpeg` — mehr nimmt Word nicht verlässlich an. */
+    mimetyp: text().notNull(),
+    /** Base64, damit die Bytes ohne Sonderbehandlung durch Postgres gehen. */
+    daten: text().notNull(),
+    breitePx: integer().notNull(),
+    hoehePx: integer().notNull(),
+    bytes: integer().notNull(),
+    erstelltVon: uuid().references(() => benutzer.id),
+    erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('bild_stellungnahme_idx').on(t.stellungnahmeId)],
+)
+
 /* ------------------------------------------------------------------ *
  * Beziehungen
  * ------------------------------------------------------------------ */

@@ -3,9 +3,11 @@ import { erzeugeDokument } from './erzeugen'
 import { dokumentNachAbsaetzen, leseStruktur } from './nach-absaetzen'
 import { eintraegeJePosition, leseSpur, selbstGeschriebeneAbschnitte } from './spur'
 import {
+  BILD_BREITE_STANDARD,
   KNOTEN,
   abschnitte,
   abschnitteVollstaendig,
+  bildknoten,
   herkunftsmarke,
   absatz,
   text,
@@ -260,5 +262,76 @@ describe('nicht bestrittene Abschnitte', () => {
     const d = erzeugeDokument(quelle)
     abschnitte(d)[0]!.attrs!.ausgelassen = true
     expect(JSON.stringify(d)).toContain('Die Verbringung ist erforderlich.')
+  })
+})
+
+describe('Bilder im Schreiben', () => {
+  function mitBild(breite = BILD_BREITE_STANDARD, beschriftung = 'Auszug aus der Kalkulation') {
+    const d = erzeugeDokument(quelle)
+    const erster = abschnitte(d)[0]!
+    erster.content!.push(
+      bildknoten(
+        {
+          bildId: 'b1',
+          breite,
+          breitePx: 1600,
+          hoehePx: 900,
+          dateiname: 'kalkulation.png',
+        },
+        beschriftung,
+      ),
+    )
+    return d
+  }
+
+  it('erscheint als eigener Block an seiner Stelle im Abschnitt', () => {
+    const s = leseStruktur(mitBild())
+    const arten = s.abschnitte[0]!.bloecke.map((b) => b.art)
+    expect(arten).toEqual(['text', 'text', 'bild'])
+  })
+
+  it('nummeriert fortlaufend und schreibt den Marker in die Klartextfassung', () => {
+    const klartext = alsKlartext(dokumentNachAbsaetzen(mitBild()))
+    expect(klartext).toContain('[Bild 1: kalkulation.png – siehe Word-Dokument]')
+    expect(klartext).toContain('Auszug aus der Kalkulation')
+  })
+
+  it('trägt Breite und Originalmasse in die Absatzfolge', () => {
+    const absatz = dokumentNachAbsaetzen(mitBild(0.5)).find((a) => a.art === 'bild')
+    expect(absatz?.bild).toMatchObject({
+      bildId: 'b1',
+      breite: 0.5,
+      breitePx: 1600,
+      hoehePx: 900,
+      nummer: 1,
+    })
+  })
+
+  it('zählt für den Wächter nur den Text, nicht den Bildmarker', () => {
+    const bausteine = pruefBausteineAusDokument(mitBild())
+    expect(bausteine[0]!.text).not.toContain('kalkulation.png')
+    // Die Beschriftung ist Text des Schreibens und wird deshalb mitgeprüft.
+    expect(gesamttext(mitBild())).toContain('Auszug aus der Kalkulation')
+  })
+
+  it('hält einen Abschnitt am Leben, der nur aus einem Bild besteht', () => {
+    const d = erzeugeDokument({
+      ...quelle,
+      positionen: [{ id: 'p1', bezeichnung: 'Nur ein Bild', behandlung: 'bestritten', bausteine: [] }],
+    })
+    const erster = abschnitte(d)[0]!
+    erster.content = [
+      erster.content![0]!,
+      bildknoten({
+        bildId: 'b9',
+        breite: 0.68,
+        breitePx: 800,
+        hoehePx: 600,
+        dateiname: 'foto.jpg',
+      }),
+    ]
+    const s = leseStruktur(d)
+    expect(s.abschnitte).toHaveLength(1)
+    expect(s.abschnitte[0]!.bloecke).toHaveLength(1)
   })
 })
