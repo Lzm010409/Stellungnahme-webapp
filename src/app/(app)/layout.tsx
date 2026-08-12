@@ -21,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Werkbank
           </Link>
           <nav className="kopf-nav">
+            <Link href="/stellungnahmen">Stellungnahmen</Link>
             <Link href="/faelle">Fälle</Link>
             <Link href="/bibliothek">Argumentbibliothek</Link>
           </nav>

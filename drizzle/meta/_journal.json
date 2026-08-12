@@ -8,6 +8,13 @@
       "when": 1786538449181,
       "tag": "0000_silent_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786540768056,
+      "tag": "0001_funny_pyro",
+      "breakpoints": true
     }
   ]
 }

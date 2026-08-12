@@ -337,6 +337,13 @@ export const stellungnahme = pgTable(
     fallId: uuid().references(() => fall.id, { onDelete: 'set null' }),
     modus: modusEnum().notNull().default('standard'),
 
+    /** Ergebnis der Prüfbericht-Auswertung, unverändert aufbewahrt. */
+    extraktion: jsonb(),
+    /** Befunde der Sonderfall-Prüfliste B.1-B.8 (Konzept F4). */
+    sonderfaelle: jsonb(),
+    pruefberichtDateiname: text(),
+    pruefberichtSeiten: integer(),
+
     empfaengerName: text(),
     empfaengerStrasse: text(),
     empfaengerPlzOrt: text(),
