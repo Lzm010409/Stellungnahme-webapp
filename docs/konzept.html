@@ -1,0 +1,976 @@
+<title>Kürzungsabwehr Werkbank</title>
+
+<style>
+:root {
+  --ground:      #F7F8F7;
+  --surface:     #FFFFFF;
+  --surface-alt: #EFF2F1;
+  --line:        #D6DCDA;
+  --line-soft:   #E5EAE8;
+  --ink:         #1B1F1D;
+  --ink-mid:     #4A524F;
+  --ink-soft:    #6E7773;
+  --accent:      #0F4C4A;
+  --accent-soft: #E2EDEB;
+  --warn:        #9C6414;
+  --warn-soft:   #F6EDDF;
+  --crit:        #7E2C2C;
+  --crit-soft:   #F5E6E4;
+  --good:        #2F6B45;
+  --good-soft:   #E4EFE7;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #0F1312;
+    --surface:     #161B1A;
+    --surface-alt: #1C2322;
+    --line:        #2C3634;
+    --line-soft:   #232B2A;
+    --ink:         #E3E8E6;
+    --ink-mid:     #AEB8B5;
+    --ink-soft:    #848E8B;
+    --accent:      #57ADA6;
+    --accent-soft: #16302E;
+    --warn:        #D5A05A;
+    --warn-soft:   #2E2517;
+    --crit:        #D98C86;
+    --crit-soft:   #33201F;
+    --good:        #7CB894;
+    --good-soft:   #17291E;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #0F1312;
+  --surface:     #161B1A;
+  --surface-alt: #1C2322;
+  --line:        #2C3634;
+  --line-soft:   #232B2A;
+  --ink:         #E3E8E6;
+  --ink-mid:     #AEB8B5;
+  --ink-soft:    #848E8B;
+  --accent:      #57ADA6;
+  --accent-soft: #16302E;
+  --warn:        #D5A05A;
+  --warn-soft:   #2E2517;
+  --crit:        #D98C86;
+  --crit-soft:   #33201F;
+  --good:        #7CB894;
+  --good-soft:   #17291E;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.65;
+  margin: 0;
+  padding: 0 24px 96px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* ---- masthead ---- */
+
+.masthead {
+  padding: 72px 0 40px;
+  border-bottom: 2px solid var(--ink);
+}
+.kicker {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 20px;
+}
+.masthead h1 {
+  font-family: var(--sans);
+  font-weight: 660;
+  letter-spacing: -0.028em;
+  font-size: clamp(2.1rem, 5.2vw, 3.4rem);
+  line-height: 1.04;
+  text-wrap: balance;
+  margin: 0 0 18px;
+  max-width: 20ch;
+}
+.standfirst {
+  font-size: 1.14rem;
+  line-height: 1.55;
+  color: var(--ink-mid);
+  max-width: 62ch;
+  margin: 0;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin-top: 32px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+/* ---- section scaffolding ---- */
+
+section {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 0 32px;
+  padding: 56px 0 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+section:last-of-type { border-bottom: 0; }
+
+.rail {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-top: 9px;
+  line-height: 1.5;
+}
+.body { min-width: 0; }
+
+h2 {
+  font-family: var(--sans);
+  font-weight: 640;
+  letter-spacing: -0.021em;
+  font-size: clamp(1.5rem, 3vw, 1.95rem);
+  line-height: 1.15;
+  text-wrap: balance;
+  margin: 0 0 20px;
+}
+h3 {
+  font-family: var(--sans);
+  font-weight: 620;
+  letter-spacing: -0.012em;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  margin: 34px 0 12px;
+  text-wrap: balance;
+}
+h4 {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 26px 0 10px;
+}
+
+p { margin: 0 0 16px; max-width: 70ch; }
+.body > ul, .body > ol { max-width: 70ch; }
+ul, ol { margin: 0 0 16px; padding-left: 22px; }
+li { margin-bottom: 7px; }
+li::marker { color: var(--accent); }
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.845em;
+  background: var(--surface-alt);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  padding: 0.08em 0.34em;
+}
+
+/* ---- decision cards ---- */
+
+.decision {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 22px 24px;
+  margin: 0 0 18px;
+}
+.decision-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: 6px;
+}
+.decision-id {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.09em;
+  color: var(--surface);
+  background: var(--accent);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.decision-title {
+  font-family: var(--sans);
+  font-weight: 630;
+  font-size: 1.06rem;
+  letter-spacing: -0.012em;
+}
+.decision > p:last-child { margin-bottom: 0; }
+
+.opts { list-style: none; padding: 0; margin: 14px 0 0; }
+.opts li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid var(--line-soft);
+  margin: 0;
+  font-size: 0.965rem;
+  line-height: 1.55;
+}
+.mark {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.opt-yes .mark { color: var(--good); }
+.opt-no  .mark { color: var(--ink-soft); }
+.opt-yes { color: var(--ink); }
+.opt-no  { color: var(--ink-mid); }
+.opt-name { font-family: var(--sans); font-weight: 620; font-size: 0.94rem; letter-spacing: -0.006em; }
+.verdict {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 2px solid var(--accent);
+  font-size: 0.965rem;
+  line-height: 1.55;
+}
+.verdict b {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ---- callouts ---- */
+
+.note {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 15px 18px;
+  margin: 22px 0;
+  font-size: 0.965rem;
+  line-height: 1.58;
+  border-radius: 0 3px 3px 0;
+}
+.note.risk  { border-left-color: var(--warn); background: var(--warn-soft); }
+.note.stop  { border-left-color: var(--crit); background: var(--crit-soft); }
+.note > :last-child { margin-bottom: 0; }
+.note-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent);
+}
+.note.risk .note-label { color: var(--warn); }
+.note.stop .note-label { color: var(--crit); }
+
+/* ---- tables ---- */
+
+.tscroll { overflow-x: auto; margin: 22px 0; border: 1px solid var(--line); border-radius: 4px; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  font-family: var(--sans);
+  font-size: 0.885rem;
+  background: var(--surface);
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+  line-height: 1.45;
+}
+thead th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface-alt);
+  font-weight: 600;
+  white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 0.82rem; white-space: nowrap; }
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.t-hi  { background: var(--good-soft);  color: var(--good); }
+.t-mid { background: var(--accent-soft); color: var(--accent); }
+.t-lo  { background: var(--surface-alt); color: var(--ink-soft); }
+
+/* ---- schema block ---- */
+
+pre {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+.c-key  { color: var(--accent); }
+.c-note { color: var(--ink-soft); font-style: italic; }
+.c-warn { color: var(--warn); }
+
+/* ---- diagram ---- */
+
+figure { margin: 26px 0; }
+.diagram {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  padding: 8px;
+  overflow-x: auto;
+}
+.diagram svg { display: block; min-width: 660px; width: 100%; height: auto; }
+figcaption {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin-top: 9px;
+  line-height: 1.5;
+}
+
+/* ---- phases ---- */
+
+.phase {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 20px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.phase:first-of-type { border-top: 2px solid var(--ink); }
+.phase-id {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  padding-top: 2px;
+}
+.phase h3 { margin: 0 0 6px; font-size: 1.02rem; }
+.phase p { font-size: 0.95rem; margin: 0 0 8px; }
+.phase p:last-child { margin-bottom: 0; }
+.ship {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+/* ---- open questions ---- */
+
+.ask {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  border-radius: 0 4px 4px 0;
+  background: var(--surface);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+.ask h3 { margin: 0 0 6px; font-size: 1rem; }
+.ask p { margin: 0; font-size: 0.95rem; color: var(--ink-mid); }
+
+@media (max-width: 720px) {
+  body { padding: 0 18px 72px; font-size: 16.5px; }
+  section { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 40px 0 8px; }
+  .rail { padding: 0 0 14px; }
+  .masthead { padding: 48px 0 32px; }
+  .phase { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="kicker">Konzeptvorlage zur Freigabe</p>
+  <h1>Kürzungsabwehr&nbsp;Werkbank</h1>
+  <p class="standfirst">Wie aus den beiden Skills <code>stellungnahme-erstellen</code> und <code>argumentbibliothek-erweitern</code> eine Webapp wird, die Falldaten aus autoiXpert zieht, Argumente per Drag&nbsp;&amp;&nbsp;Drop zusammensetzt und die drei Risiken einfängt, die dieses Projekt sonst kippen: erfundene Fundstellen, RDG-Grenze, Falldaten im LLM.</p>
+  <div class="meta-row">
+    <span>Gollenstede Sachverstand</span>
+    <span>5 Entscheidungen &middot; 6 Phasen</span>
+    <span>Stand 12.08.2026</span>
+  </div>
+</header>
+
+<section>
+  <div class="rail">Kurz&shy;fassung</div>
+  <div class="body">
+    <h2>Die Empfehlung in einem Absatz</h2>
+    <p>Bau die App als <strong>eine Next.js-Anwendung mit Postgres</strong>, und übersetze die beiden Skills nicht 1:1 in Prompts, sondern <strong>zerlege sie</strong>: die Ablauflogik wird Code, die Formulierungs- und Prüfregeln bleiben versionierte Playbook-Dateien im Repo, die als Prompt-Fragmente geladen werden. Das Herzstück ist nicht der Editor, sondern das <strong>Datenmodell der Argumentbibliothek</strong> — ein Argument ist dort kein Textblock, sondern ein Objekt aus These, Begründung, Belegen, Platzhaltern und Anwendungsbedingungen. Erst dieses Modell macht Drag&nbsp;&amp;&nbsp;Drop, automatisches Befüllen aus autoiXpert und späteres Erfolgs-Tracking überhaupt möglich. KI kommt an vier klar begrenzten Stellen zum Einsatz, nie als ein großer Rundum-Aufruf.</p>
+    <p>Der erste ausliefernde Meilenstein ist die Bibliothek — inklusive eines Schritts, den du wahrscheinlich noch nicht auf dem Zettel hast: <strong>die Bibliothek aus deinen bereits geschriebenen Stellungnahmen destillieren</strong>, statt sie von Hand zu füllen. Details in P1 und F1.</p>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Ausgangs&shy;lage</div>
+  <div class="body">
+    <h2>Was ich vorgefunden habe</h2>
+    <p>Das Repository <code>Lzm010409/Stellungnahme-webapp</code> ist leer — kein Commit, kein Code. Das ist gut: keine Altlast, freie Stackwahl.</p>
+    <p>Das Plugin <code>kuerzung-stellungnahme</code> ist in deinem Konto aktiv, seine Dateien liegen aber nicht in dieser Remote-Umgebung. Ich konnte die beiden <code>SKILL.md</code> also <strong>nicht lesen</strong>. Das Konzept unten baut auf der Plugin-Beschreibung, dem Fachgebiet und deinem Auftrag auf — die Architektur steht davon unabhängig, aber die konkreten Argumentkategorien, Formulierungsregeln und Prüfschritte muss ich aus den Skills übernehmen, statt sie neu zu erfinden.</p>
+    <div class="note stop">
+      <span class="note-label">Voraussetzung für die Umsetzung</span>
+      <p>Bevor ich Code schreibe, brauche ich die beiden Skill-Ordner. Am einfachsten: du legst sie unter <code>skills/</code> ins Repo und pushst, oder du fügst das Plugin-Repo dieser Session als Quelle hinzu. Sie werden im Konzept unten zu <code>packages/playbook/</code> — der versionierten Wahrheit über Tonfall, Aufbau und Prüfregeln.</p>
+    </div>
+    <h4>autoiXpert-Schnittstelle</h4>
+    <p>Die externe API ist REST/JSON über HTTPS mit Bearer-Token, Basis <code>https://app.autoixpert.de/externalApi/</code>, Gutachten unter <code>/reports</code>. Deine Annahme trifft zu: das Aktenzeichen ist ein Fremdschlüsselfeld, die technische ID die native Ressourcen-ID — die App muss also beide Eingaben akzeptieren und intern auflösen. Die Entwicklerdoku unter <code>dev.autoixpert.de</code> ist aus dieser Umgebung heraus netzwerkseitig gesperrt, den <em>exakten</em> Filterparameter und die vollständige Feldliste verifiziere ich deshalb beim ersten echten API-Call gegen deinen Account — nicht aus dem Gedächtnis.</p>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Kern&shy;frage<br>E1</div>
+  <div class="body">
+    <h2>Wie wird aus einem Skill eine Webapp?</h2>
+    <p>Das ist die Entscheidung, an der alles andere hängt. Ein Skill ist eine Anleitung für einen Agenten mit Werkzeugen und Zeit. Eine Webapp ist ein Formular, das in zwei Sekunden antworten soll. Drei Wege:</p>
+
+    <div class="decision">
+      <div class="decision-head">
+        <span class="decision-id">E1</span>
+        <span class="decision-title">Übersetzungsstrategie der Skills</span>
+      </div>
+      <ul class="opts">
+        <li class="opt-no">
+          <span class="mark">A</span>
+          <span><span class="opt-name">Skill-Text als System-Prompt einbetten.</span> Schnell gebaut. Aber: großer Prompt bei jedem Aufruf, das Ergebnis ist nicht reproduzierbar, Zwischenschritte sind nicht prüfbar, und jede Regeländerung ist ein Blindflug. Die Belegpflicht lässt sich so nicht erzwingen — genau das, was hier zählt.</span>
+        </li>
+        <li class="opt-no">
+          <span class="mark">B</span>
+          <span><span class="opt-name">Agent SDK im Backend laufen lassen.</span> Maximale Treue zum Skill-Verhalten, weil der Skill unverändert bleibt. Aber: Sekunden bis Minuten pro Anfrage, Container-Betrieb, schwer zu cachen, und das UI kann nicht mitreden — Drag&nbsp;&amp;&nbsp;Drop setzt voraus, dass die App die Bausteine <em>kennt</em>, nicht nur den Fließtext bekommt.</span>
+        </li>
+        <li class="opt-yes">
+          <span class="mark">C</span>
+          <span><span class="opt-name">Zerlegen: Ablauf wird Code, Fachwissen bleibt Text.</span> Der Skill wird einmalig aufgeteilt in (1) ein Datenmodell, (2) eine Pipeline aus deterministischen Schritten und (3) mehrere eng begrenzte KI-Aufrufe mit erzwungenem JSON-Schema. Die reinen Fachtexte — Tonfall, Aufbau, RDG-Grenzen, Belegpflicht — bleiben als Markdown im Repo unter <code>packages/playbook/</code> und werden als Prompt-Fragmente geladen.</span>
+        </li>
+      </ul>
+      <div class="verdict">
+        <b>Empfehlung — Variante C</b>
+        Sie ist die einzige, die gleichzeitig schnell (kleine, parallele Aufrufe mit Prompt-Caching), prüfbar (jeder Schritt hat eine Ein- und Ausgabe, die man ansehen kann) und pflegbar ist (Regeln ändern heißt: eine Markdown-Datei ändern, nicht Code). Wichtig dabei: die Playbook-Dateien sind wörtlich aus deinen Skills übernommen, nicht von mir umformuliert. Der Skill bleibt die Wahrheit, die App wird sein Vollzugsapparat.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Architektur<br>E2&ndash;E3</div>
+  <div class="body">
+    <h2>Aufbau und Datenfluss</h2>
+
+    <figure>
+      <div class="diagram">
+        <svg viewBox="0 0 700 340" role="img" aria-labelledby="diagtitle">
+          <title id="diagtitle">Datenfluss: autoiXpert und Kürzungsschreiben laufen über eine Extraktions- und Matching-Schicht in den Editor, von dort über Prüf-Wächter in den Export</title>
+          <defs>
+            <marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+              <path d="M0,0 L7,3.5 L0,7 z" fill="var(--ink-soft)"/>
+            </marker>
+          </defs>
+          <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="10.5">
+
+            <!-- column labels -->
+            <g fill="var(--ink-soft)" font-size="9" letter-spacing="1">
+              <text x="14" y="24">QUELLEN</text>
+              <text x="196" y="24">VERSTEHEN</text>
+              <text x="378" y="24">KURATIEREN</text>
+              <text x="556" y="24">ABSICHERN</text>
+            </g>
+
+            <!-- sources -->
+            <rect x="14" y="42" width="140" height="46" rx="3" fill="var(--surface-alt)" stroke="var(--line)"/>
+            <text x="27" y="63" fill="var(--ink)">autoiXpert API</text>
+            <text x="27" y="78" fill="var(--ink-soft)" font-size="9">Aktenzeichen / ID</text>
+
+            <rect x="14" y="102" width="140" height="46" rx="3" fill="var(--surface-alt)" stroke="var(--line)"/>
+            <text x="27" y="123" fill="var(--ink)">Kürzungsbrief</text>
+            <text x="27" y="138" fill="var(--ink-soft)" font-size="9">PDF-Upload</text>
+
+            <rect x="14" y="200" width="140" height="60" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="27" y="221" fill="var(--accent)" font-weight="600">Argument-</text>
+            <text x="27" y="235" fill="var(--accent)" font-weight="600">bibliothek</text>
+            <text x="27" y="250" fill="var(--ink-soft)" font-size="9">Postgres + pgvector</text>
+
+            <!-- understand -->
+            <rect x="196" y="42" width="140" height="46" rx="3" fill="var(--surface-alt)" stroke="var(--line)"/>
+            <text x="209" y="63" fill="var(--ink)">Fall-Normali-</text>
+            <text x="209" y="77" fill="var(--ink)">sierung</text>
+
+            <rect x="196" y="102" width="140" height="46" rx="3" fill="var(--surface-alt)" stroke="var(--line)"/>
+            <text x="209" y="119" fill="var(--ink)">Positions-</text>
+            <text x="209" y="133" fill="var(--ink)">extraktion</text>
+            <text x="308" y="126" fill="var(--warn)" font-size="9">KI</text>
+
+            <rect x="196" y="200" width="140" height="60" rx="3" fill="var(--surface-alt)" stroke="var(--line)"/>
+            <text x="209" y="222" fill="var(--ink)">Matching</text>
+            <text x="209" y="238" fill="var(--ink-soft)" font-size="9">Volltext + Vektor</text>
+            <text x="209" y="251" fill="var(--ink-soft)" font-size="9">+ Re-Ranking</text>
+            <text x="308" y="238" fill="var(--warn)" font-size="9">KI</text>
+
+            <!-- curate -->
+            <rect x="378" y="42" width="140" height="218" rx="3" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/>
+            <text x="391" y="66" fill="var(--ink)" font-weight="600">Editor</text>
+            <line x1="391" y1="76" x2="505" y2="76" stroke="var(--line)"/>
+            <text x="391" y="96" fill="var(--ink-mid)" font-size="9.5">Palette rechts</text>
+            <text x="391" y="112" fill="var(--ink-mid)" font-size="9.5">Dokument links</text>
+            <text x="391" y="128" fill="var(--ink-mid)" font-size="9.5">Drag &amp; Drop</text>
+            <line x1="391" y1="144" x2="505" y2="144" stroke="var(--line)"/>
+            <text x="391" y="164" fill="var(--ink)" font-size="9.5">Baustein bleibt</text>
+            <text x="391" y="178" fill="var(--ink)" font-size="9.5">als Knoten mit</text>
+            <text x="391" y="192" fill="var(--ink)" font-size="9.5">argumentId</text>
+            <line x1="391" y1="208" x2="505" y2="208" stroke="var(--line)"/>
+            <text x="391" y="228" fill="var(--ink-mid)" font-size="9.5">Komposition</text>
+            <text x="391" y="242" fill="var(--ink-mid)" font-size="9.5">je Position</text>
+            <text x="493" y="235" fill="var(--warn)" font-size="9">KI</text>
+
+            <!-- guards -->
+            <rect x="556" y="42" width="130" height="40" rx="3" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="568" y="60" fill="var(--warn)" font-weight="600">Beleg-Wächter</text>
+            <text x="568" y="74" fill="var(--ink-soft)" font-size="9">keine Fundstelle</text>
+
+            <rect x="556" y="94" width="130" height="40" rx="3" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="568" y="112" fill="var(--warn)" font-weight="600">RDG-Wächter</text>
+            <text x="568" y="126" fill="var(--ink-soft)" font-size="9">kein Rechtsrat</text>
+
+            <rect x="556" y="146" width="130" height="40" rx="3" fill="var(--warn-soft)" stroke="var(--warn)"/>
+            <text x="568" y="164" fill="var(--warn)" font-weight="600">Zahlen-Wächter</text>
+            <text x="568" y="178" fill="var(--ink-soft)" font-size="9">jede Zahl belegt</text>
+
+            <rect x="556" y="212" width="130" height="48" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="568" y="232" fill="var(--accent)" font-weight="600">Export</text>
+            <text x="568" y="247" fill="var(--ink-soft)" font-size="9">DOCX / PDF</text>
+
+            <!-- arrows -->
+            <g stroke="var(--ink-soft)" fill="none" marker-end="url(#ar)">
+              <path d="M154,65 L190,65"/>
+              <path d="M154,125 L190,125"/>
+              <path d="M154,230 L190,230"/>
+              <path d="M336,65 C356,65 356,120 372,120"/>
+              <path d="M336,125 C352,125 352,150 372,150"/>
+              <path d="M336,230 L372,230"/>
+              <path d="M518,62 L550,62"/>
+              <path d="M518,114 L550,114"/>
+              <path d="M518,166 L550,166"/>
+            </g>
+            <path d="M621,186 L621,206" stroke="var(--ink-soft)" fill="none" marker-end="url(#ar)"/>
+
+            <!-- feedback loop -->
+            <path d="M600,260 C600,300 300,310 84,300 L84,266" stroke="var(--accent)" stroke-dasharray="3 3" fill="none" marker-end="url(#ar)"/>
+            <text x="300" y="322" fill="var(--accent)" font-size="9.5">Rückfluss: Ergebnis der Stellungnahme → Erfolgsquote je Argument (F2)</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>Vier Stufen. KI wirkt nur an den drei markierten Stellen — Extraktion, Re-Ranking, Komposition. Alles andere ist deterministisch und damit schnell, testbar und nachvollziehbar.</figcaption>
+    </figure>
+
+    <div class="decision">
+      <div class="decision-head">
+        <span class="decision-id">E2</span>
+        <span class="decision-title">Technischer Stack</span>
+      </div>
+      <ul class="opts">
+        <li class="opt-yes">
+          <span class="mark">A</span>
+          <span><span class="opt-name">Next.js 15 + TypeScript + Postgres/pgvector + Drizzle, Anthropic SDK.</span> Ein Repo, ein Deployment. Server-seitige Geheimnisse (autoiXpert-Token, API-Key) verlassen den Server nie. Streaming direkt ins UI. Der Editor ist ohnehin TypeScript-lastig — ein Stack statt zwei spart dauerhaft Reibung.</span>
+        </li>
+        <li class="opt-no">
+          <span class="mark">B</span>
+          <span><span class="opt-name">React-SPA + separates Python/FastAPI-Backend.</span> Sinnvoll bei schwerer Datenanalyse. Die gibt es hier nicht — die Rechenarbeit liegt beim Modellanbieter. Zwei Sprachen, zwei Deployments, doppelte Typdefinitionen ohne Gegenwert.</span>
+        </li>
+        <li class="opt-no">
+          <span class="mark">C</span>
+          <span><span class="opt-name">Low-Code / n8n-Workflows.</span> Für einen Prototyp verlockend. Aber Drag&nbsp;&amp;&nbsp;Drop-Editor, Versionierung der Bibliothek und die Wächter-Logik sind echte Software — das wächst dir dort in drei Monaten über den Kopf.</span>
+        </li>
+      </ul>
+      <div class="verdict">
+        <b>Empfehlung — Variante A</b>
+        Konkret: Next.js 15 (App Router), Drizzle ORM, Postgres 16 mit <code>pgvector</code> und <code>pg_trgm</code>, Tiptap als Editor, Auth.js für Anmeldung, Vitest + Playwright für Tests. Modellrouting nach Aufgabe statt ein Modell für alles: Haiku 4.5 für Extraktion und Klassifikation, Sonnet 5 für Komposition, Opus 5 für Bibliothekserweiterung und Review.
+      </div>
+    </div>
+
+    <div class="decision">
+      <div class="decision-head">
+        <span class="decision-id">E3</span>
+        <span class="decision-title">Betrieb und Datenhaltung</span>
+      </div>
+      <ul class="opts">
+        <li class="opt-yes">
+          <span class="mark">A</span>
+          <span><span class="opt-name">Docker auf Hetzner (Nürnberg/Falkenstein), Postgres daneben.</span> Alle Falldaten bleiben in Deutschland, ein Auftragsverarbeiter weniger, volle Kontrolle über Aufbewahrung und Löschung. Rund 15–25&nbsp;€ im Monat. Aufwand: ein Compose-File und ein Deploy-Skript.</span>
+        </li>
+        <li class="opt-no">
+          <span class="mark">B</span>
+          <span><span class="opt-name">Vercel + Neon (EU-Frankfurt).</span> Bequemer, schneller live. Dafür zwei zusätzliche US-Anbieter in der Verarbeitungskette — bei Kennzeichen, Fahrgestellnummern und Geschädigtennamen eine Diskussion, die du nicht brauchst.</span>
+        </li>
+      </ul>
+      <div class="verdict">
+        <b>Empfehlung — Variante A</b>
+        Die App ist als reiner Docker-Container gebaut und läuft auf beidem; die Entscheidung ist später umkehrbar. Für den Start empfehle ich Hetzner, weil das Datenschutz-Kapitel damit in zwei Sätzen erledigt ist statt in einem Gutachten. <em>Falls dir „schnell live“ wichtiger ist als das: sag Variante B, das kostet nur eine Konfigurationsdatei.</em>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Herzstück<br>E4</div>
+  <div class="body">
+    <h2>Das Datenmodell der Argumentbibliothek</h2>
+    <p>Hier entscheidet sich, ob die App in zwei Jahren noch trägt. Die naheliegende Modellierung — ein Argument ist ein Titel plus ein Textblock — macht Drag&nbsp;&amp;&nbsp;Drop sinnlos, automatisches Befüllen unmöglich und Erfolgsmessung wertlos. Der Vorschlag geht bewusst feiner:</p>
+
+<pre><code><span class="c-key">Argument</span>
+  id, slug, version, status        <span class="c-note">// entwurf | pruefung | freigegeben | zurueckgezogen</span>
+  titel, kurzbeschreibung
+  kategorie                        <span class="c-note">// Kalkulation | Wertminderung | WBW | Restwert |</span>
+                                   <span class="c-note">// Nebenkosten | Verbringung | UPE | Stundensatz | ...</span>
+
+  <span class="c-key">ausloeser[]</span>                     <span class="c-note">// auf WELCHE Kürzungsbehauptung antwortet es</span>
+    muster, beispielformulierung, pruefdienstleister?
+
+  <span class="c-key">bausteine</span>                       <span class="c-note">// die Drag-&-Drop-Einheiten</span>
+    these                          <span class="c-note">// ein Satz</span>
+    begruendung_technisch
+    begruendung_rechtlich          <span class="c-warn">// RDG-kritisch: Hinweis, nicht Rat</span>
+    schlussfolgerung
+
+  <span class="c-key">belege[]</span>
+    typ                            <span class="c-note">// Urteil | Norm | Literatur | Regelwerk</span>
+    gericht, aktenzeichen, datum, fundstelle, kernaussage
+    quelle_url
+    <span class="c-warn">verifiziert_am, verifiziert_von</span>   <span class="c-note">// leer = darf nicht exportiert werden</span>
+
+  <span class="c-key">platzhalter[]</span>                   <span class="c-note">// was aus dem Fall eingesetzt wird</span>
+    key, quelle                    <span class="c-note">// autoixpert-Feldpfad | manuell | berechnet</span>
+    beispiel, pflicht
+
+  <span class="c-key">anwendungsbedingungen</span>           <span class="c-note">// wann passt es, wann nicht</span>
+    fahrzeugalter, schadenhoehe, haftungsquote,
+    versicherer[], pruefdienstleister[]
+  einschraenkungen                 <span class="c-note">// „nicht verwenden, wenn ...“</span>
+
+  embedding                        <span class="c-note">// pgvector, für semantisches Matching</span>
+  <span class="c-key">audit</span>                           <span class="c-note">// erstellt_von, herkunft (ki|manuell|destilliert),</span>
+                                   <span class="c-note">// freigegeben_von, freigegeben_am</span>
+</code></pre>
+
+    <p>Vier Dinge werden dadurch erst möglich, die sonst nachträglich nicht mehr einzubauen sind:</p>
+    <ul>
+      <li>Die <strong>Auslöser</strong> erlauben es, aus einem hochgeladenen Kürzungsschreiben automatisch die passenden Argumente vorzuschlagen, statt sie zu suchen.</li>
+      <li>Die <strong>Platzhalter</strong> verbinden Bibliothek und Falldaten — ein Argument zieht sich Fahrzeugalter, Kilometerstand oder Reparaturkosten selbst aus dem autoiXpert-Fall.</li>
+      <li><strong><code>verifiziert_am</code> als Pflichtfeld</strong> ist die technische Antwort auf erfundene Urteile — siehe R1.</li>
+      <li><strong>Version + Status</strong> machen die KI-Erweiterung ungefährlich: sie darf nur Entwürfe erzeugen, freigeben darfst nur du.</li>
+    </ul>
+
+    <div class="decision">
+      <div class="decision-head">
+        <span class="decision-id">E4</span>
+        <span class="decision-title">Granularität der Bibliothek</span>
+      </div>
+      <ul class="opts">
+        <li class="opt-no">
+          <span class="mark">A</span>
+          <span><span class="opt-name">Textbausteine.</span> Ein Argument = ein Absatz. In einer Woche gebaut, in einem Jahr unbrauchbar: nicht filterbar, nicht messbar, nicht befüllbar.</span>
+        </li>
+        <li class="opt-yes">
+          <span class="mark">B</span>
+          <span><span class="opt-name">Strukturierte Argumente wie oben.</span> Zwei bis drei Wochen mehr Aufwand in Phase 1, dafür trägt es alle späteren Features ohne Umbau.</span>
+        </li>
+        <li class="opt-no">
+          <span class="mark">C</span>
+          <span><span class="opt-name">Vollständiger Wissensgraph mit Beziehungen zwischen Argumenten.</span> Fachlich reizvoll, praktisch überzogen. Die Abhängigkeiten, die du brauchst, decken Kategorie und Auslöser bereits ab.</span>
+        </li>
+      </ul>
+      <div class="verdict">
+        <b>Empfehlung — Variante B</b>
+        Mit einer Einschränkung, die ich offen benenne: Die endgültige Feldliste kann ich erst festziehen, wenn ich die Skills gelesen habe. Wenn <code>argumentbibliothek-erweitern</code> bereits ein Schema vorgibt, gilt <em>dieses</em> — ich übernehme es und ergänze nur die vier oben markierten Felder.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Ablauf&nbsp;1<br>E5</div>
+  <div class="body">
+    <h2>Argumentbibliothek erweitern — deine Priorität</h2>
+    <p>Der Ablauf ist bewusst als <strong>Review-Strecke</strong> gebaut, nicht als Generator. Die KI schlägt vor, du entscheidest — mit so wenig Klicks wie möglich.</p>
+
+    <h4>Vier Wege hinein</h4>
+    <ol>
+      <li><strong>Aus einem Kürzungsschreiben.</strong> PDF hoch, die App extrahiert die Kürzungspositionen, prüft gegen die Bibliothek und meldet: „Für <em>diese</em> Behauptung habe ich nichts.“ Genau dort entsteht der Bedarf.</li>
+      <li><strong>Aus deinen Altbeständen.</strong> Bestehende Stellungnahmen als PDF/DOCX hochladen, die KI destilliert daraus Argumentkandidaten. Der schnellste Weg zu einer gefüllten Bibliothek — siehe F1.</li>
+      <li><strong>Aus einem Urteil oder Fachartikel.</strong> Quelle rein, Argumentstruktur raus.</li>
+      <li><strong>Freihand.</strong> Du diktierst den Kern, die KI baut die Struktur drumherum.</li>
+    </ol>
+
+    <h4>Was danach automatisch passiert</h4>
+    <ul>
+      <li><strong>Dublettenprüfung</strong> per Vektorähnlichkeit gegen die bestehende Bibliothek. Bei Treffer nicht „neu anlegen“, sondern „bestehendes Argument ergänzen“ — als Diff-Ansicht wie bei einem Pull&nbsp;Request. Das ist der Unterschied zwischen einer Bibliothek und einer Halde.</li>
+      <li><strong>Belegtrennung.</strong> Jede Fundstelle, die die KI nennt, landet als <em>unverifiziert</em> mit direkten Suchlinks (dejure, openJur, Google&nbsp;Scholar) daneben. Ein Klick bestätigt, ein Klick verwirft.</li>
+      <li><strong>RDG-Vorprüfung</strong> der Formulierung.</li>
+      <li><strong>Qualitätsanzeige:</strong> Belegdichte, Länge, offene Platzhalter, RDG-Risiko — als Ampel, nicht als Score-Zahl.</li>
+    </ul>
+
+    <div class="note">
+      <span class="note-label">Warum das schnell ist</span>
+      <p>Die Playbook-Fragmente sind bei jedem Aufruf identisch und liegen als zwischengespeicherter Prompt-Präfix vor. Extraktion, Dublettenprüfung und RDG-Check laufen parallel. Die Antwort strömt ins UI, während noch geprüft wird. Erwartete Zeit bis zur ersten sichtbaren Zeile: unter zwei Sekunden.</p>
+    </div>
+
+    <div class="decision">
+      <div class="decision-head">
+        <span class="decision-id">E5</span>
+        <span class="decision-title">Darf die KI direkt in die Bibliothek schreiben?</span>
+      </div>
+      <ul class="opts">
+        <li class="opt-no"><span class="mark">A</span><span><span class="opt-name">Ja, direkt freigegeben.</span> Bequem — bis das erste erfundene Aktenzeichen in einer Stellungnahme an einen Versicherer geht.</span></li>
+        <li class="opt-yes"><span class="mark">B</span><span><span class="opt-name">Nur als Entwurf, Freigabe durch Menschen.</span> Ein zusätzlicher Klick pro Argument. Dafür kann kein unbelegter Satz je in ein Dokument geraten, das deinen Briefkopf trägt.</span></li>
+      </ul>
+      <div class="verdict">
+        <b>Empfehlung — Variante B, ohne Ausnahme</b>
+        Der Statuswechsel auf <code>freigegeben</code> ist technisch nur über die Oberfläche möglich, nie durch einen KI-Aufruf. Diese eine Regel ist der Grund, warum du der App später vertrauen kannst.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Ablauf&nbsp;2</div>
+  <div class="body">
+    <h2>Stellungnahme erstellen</h2>
+
+    <h3>Schritt 1 — Fall holen</h3>
+    <p>Ein Eingabefeld, zwei akzeptierte Eingaben: Aktenzeichen oder technische ID. Die App erkennt selbst, welche der beiden vorliegt, und löst auf. Der Fall wird lokal zwischengespeichert (mit Ablauf und „neu laden“-Knopf), damit du beim Formulieren nicht bei jedem Tastendruck an der Schnittstelle hängst. Übernommen werden Fahrzeug, Schadenhergang, Kalkulationssummen, Wertminderung, WBW/Restwert, Beteiligte und Versicherer.</p>
+
+    <h3>Schritt 2 — Kürzung erfassen</h3>
+    <p>Kürzungsschreiben oder Prüfbericht als PDF hoch. Ein eng begrenzter KI-Aufruf mit erzwungenem Schema liefert je Position: <code>bezeichnung</code>, <code>betrag_gutachten</code>, <code>betrag_gekuerzt</code>, <code>differenz</code>, <code>begruendung_versicherer</code>, <code>seite</code>. Das Ergebnis ist eine editierbare Tabelle — die KI liest vor, du korrigierst. Die Summe der Differenzen ist ab hier eine geprüfte Zahl, keine geschätzte.</p>
+
+    <h3>Schritt 3 — Argumente zuordnen</h3>
+    <p>Je Kürzungsposition schlägt die App Argumente vor. Das Suchen selbst ist deterministisch — Volltextsuche und Vektorähnlichkeit in Postgres, gefiltert nach Kategorie, Versicherer und Anwendungsbedingungen. Erst die letzten fünf Kandidaten gehen durch ein KI-Re-Ranking mit kurzer Begründung („passt, weil der Prüfbericht auf UPE-Aufschläge abstellt“). Kein Modellaufruf im heißen Pfad, deshalb ist die Liste sofort da.</p>
+
+    <h3>Schritt 4 — Der Editor</h3>
+    <p>Zweigeteilt: links das Dokument, rechts die Palette mit den vorgeschlagenen Argumenten, aufklappbar bis auf die einzelnen Bausteine. Ziehen fügt ein. Entscheidend ist, was <em>nach</em> dem Einfügen passiert:</p>
+    <ul>
+      <li>Der Baustein bleibt als eigener Knoten mit <code>argumentId</code> und <code>version</code> erhalten — auch nachdem die KI ihn sprachlich eingebettet hat. Die App weiß dauerhaft, welches Argument an welcher Stelle steht. Ohne das gibt es kein Erfolgs-Tracking (F2).</li>
+      <li>Platzhalter füllen sich beim Einfügen aus den Falldaten. Fehlt einer, wird er sichtbar markiert statt still leer zu bleiben.</li>
+      <li>Ein Argument, das noch <code>entwurf</code> ist, lässt sich einfügen, blockiert aber den Export.</li>
+    </ul>
+
+    <h3>Schritt 5 — Ausformulieren</h3>
+    <p>Ein Aufruf <strong>pro Kürzungsposition</strong>, nicht einer für das ganze Dokument. Das ist der wichtigste Performance-Hebel: die Aufrufe laufen parallel, jeder Abschnitt strömt einzeln ins UI, und ein misslungener Absatz lässt sich einzeln neu erzeugen, ohne alles zu verlieren. Anrede, Einleitung und Schluss kommen aus Vorlagen, nicht aus dem Modell.</p>
+
+    <h3>Schritt 6 — Wächter und Export</h3>
+    <p>Drei Prüfungen laufen, bevor der Export freigeschaltet wird — im Detail unten bei R1 bis R3. Ausgabe als DOCX mit deinem Briefkopf und als PDF; optional Rückschreiben nach autoiXpert als Falldokument.</p>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Risiken<br>R1–R3</div>
+  <div class="body">
+    <h2>Die drei Dinge, die das Projekt kippen können</h2>
+    <p>Diese Risiken sind nicht der Nachtrag zum Konzept, sie sind der Grund für mehrere seiner Bauentscheidungen. Ich benenne sie deshalb einzeln.</p>
+
+    <div class="note risk">
+      <span class="note-label">R1 — Erfundene Fundstellen</span>
+      <p>Sprachmodelle erzeugen plausible Aktenzeichen, die es nicht gibt. Ein erfundenes BGH-Urteil in einer Stellungnahme an einen Versicherer ist kein Softwarefehler, sondern ein Reputationsschaden. <strong>Antwort:</strong> Belege sind ein eigener Datensatztyp, nicht Fließtext. <code>verifiziert_am</code> ist Pflicht. Der Export blockiert bei unverifizierten Belegen — hart, nicht als Warnhinweis. Beim Prüfen liefert die App Direktlinks in die Rechtsprechungsdatenbanken, damit die Bestätigung Sekunden dauert und nicht Minuten. Optional kann eine Web-Recherche einen <em>Vorschlag</em> zur Bestätigung liefern; die Entscheidung bleibt beim Menschen.</p>
+    </div>
+
+    <div class="note risk">
+      <span class="note-label">R2 — Die RDG-Grenze</span>
+      <p>Als Sachverständiger darfst du technisch begründen, aber nicht rechtlich beraten. Ein Sprachmodell, das auf Schadensersatzliteratur trainiert ist, rutscht ohne Gegensteuerung permanent in „Sie haben Anspruch auf …“. <strong>Antwort:</strong> ein eigener Prüfschritt vor dem Export — Regelwerk aus Signalformulierungen plus ein Klassifikator, der markierte Stellen mit einem technischen Alternativvorschlag anbietet („aus technischer Sicht ist … erforderlich“). Die Regeln kommen aus deinem Skill, nicht aus meiner Einschätzung. Deine bestehende SEO-Prüfung arbeitet bereits mit einer RDG-Prüfung — dieselbe Regelbasis lässt sich hier wiederverwenden.</p>
+    </div>
+
+    <div class="note risk">
+      <span class="note-label">R3 — Falldaten im Modell</span>
+      <p>Fälle enthalten Namen, Kennzeichen und Fahrgestellnummern. <strong>Antwort:</strong> Pseudonymisierung an der Grenze — vor jedem Modellaufruf werden Personendaten durch stabile Platzhalter ersetzt und nach der Antwort zurückgetauscht. Das Modell sieht „Geschädigter&nbsp;A“ und „Fahrzeug&nbsp;1“. Fachlich ändert das nichts, denn für die Argumentation zählen Alter, Laufleistung und Beträge — nicht der Nachname. Dazu: Auftragsverarbeitungsvertrag mit dem Modellanbieter, Betrieb in Deutschland (E3), Löschkonzept und Änderungsprotokoll.</p>
+    </div>
+
+    <p>Ein <strong>Zahlen-Wächter</strong> kommt als vierte Prüfung hinzu, weil er billig ist und viel Ärger spart: jede Zahl im erzeugten Text wird gegen Falldaten und Kürzungstabelle abgeglichen. Was dort nicht vorkommt, wird markiert. Sprachmodelle runden und verrechnen sich gern beiläufig — hier fällt das auf, bevor es der Versicherer findet.</p>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Ideen<br>F1–F8</div>
+  <div class="body">
+    <h2>Weitere Features — und was davon sich wirklich lohnt</h2>
+    <p>Ich habe rund fünfzehn Ideen durchgespielt und die acht behalten, die entweder viel Zeit sparen oder die App von einem Schreibwerkzeug zu einem System machen, das besser wird, je länger du es benutzt. Die ersten drei sind die eigentliche Empfehlung, der Rest ist Ausbaustufe.</p>
+
+    <h3>F1 — Bibliothek aus dem Altbestand destillieren</h3>
+    <p>Deine bisherigen Stellungnahmen enthalten die Argumente bereits. Statt die Bibliothek von Hand zu füllen, lädst du sie stapelweise hoch, und die KI zieht Argumentkandidaten heraus, gruppiert semantisch Ähnliches und legt Entwürfe an. Aus einem Nachmittag Freigabe-Arbeit wird eine Bibliothek, die deine tatsächliche Argumentationspraxis abbildet — statt einer generischen. <em>Das ist der Grund, warum ich es in Phase&nbsp;1 sehen will und nicht später.</em></p>
+
+    <h3>F2 — Wirkungsstatistik je Argument</h3>
+    <p>Nach dem Versand erfasst du in einem Klick das Ergebnis: Kürzung zurückgenommen, teilweise, abgelehnt. Weil jeder Baustein im Dokument seine <code>argumentId</code> behält, entsteht daraus eine Erfolgsquote — aufgeschlüsselt nach Versicherer und Prüfdienstleister. Nach etwa fünfzig Fällen weißt du belastbar, welches Argument bei welchem Gegner zieht, und die Vorschlagsliste sortiert sich danach. Das ist das Feature, das diese App von jeder Textbausteinverwaltung unterscheidet — und es kostet fast nichts, <em>sofern</em> E4 so gebaut wird wie beschrieben.</p>
+
+    <h3>F3 — Gegner-Bausteine erkennen</h3>
+    <p>Die Prüfdienstleister arbeiten selbst mit Textbausteinen. Erfasst man diese als Fingerabdrücke, erkennt die App beim Upload nicht nur „hier wurde bei den Verbringungskosten gekürzt“, sondern „das ist der bekannte Baustein aus dem Prüfbericht dieses Dienstleisters — dagegen hast du diese drei Argumente, davon eines mit 80&nbsp;% Erfolgsquote“. Zusammen mit F2 wird daraus in vielen Fällen eine Stellungnahme, die du nur noch prüfst statt zusammenzustellen.</p>
+
+    <div class="tscroll">
+      <table>
+        <thead>
+          <tr><th>Nr.</th><th>Feature</th><th>Nutzen</th><th>Aufwand</th><th>Phase</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">F1</td><td>Bibliothek aus Altbestand destillieren</td><td><span class="tag t-hi">Hoch</span></td><td class="num">klein</td><td class="num">P1</td></tr>
+          <tr><td class="num">F2</td><td>Wirkungsstatistik je Argument &times; Versicherer</td><td><span class="tag t-hi">Hoch</span></td><td class="num">mittel</td><td class="num">P5</td></tr>
+          <tr><td class="num">F3</td><td>Erkennung gegnerischer Textbausteine</td><td><span class="tag t-hi">Hoch</span></td><td class="num">mittel</td><td class="num">P5</td></tr>
+          <tr><td class="num">F4</td><td>Zahlen-Wächter (jede Zahl belegt)</td><td><span class="tag t-hi">Hoch</span></td><td class="num">klein</td><td class="num">P4</td></tr>
+          <tr><td class="num">F5</td><td>Posteingang: Kürzungsbrief per Mail → Fall zuordnen → Entwurf</td><td><span class="tag t-mid">Mittel</span></td><td class="num">mittel</td><td class="num">P5+</td></tr>
+          <tr><td class="num">F6</td><td>Serienmodus für gleiches Kürzungsmuster über mehrere Fälle</td><td><span class="tag t-mid">Mittel</span></td><td class="num">klein</td><td class="num">P5+</td></tr>
+          <tr><td class="num">F7</td><td>Fristen und Wiedervorlage je Kürzung</td><td><span class="tag t-mid">Mittel</span></td><td class="num">klein</td><td class="num">P5+</td></tr>
+          <tr><td class="num">F8</td><td>Rückschreiben der Stellungnahme nach autoiXpert</td><td><span class="tag t-lo">Komfort</span></td><td class="num">klein</td><td class="num">P4</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Bewusst <strong>nicht</strong> aufgenommen: ein Wissensgraph über Argumentbeziehungen, ein eigenes Feinjustieren von Modellen, eine Mobil-App und ein Mandantenportal. Alle vier kosten viel und lösen kein Problem, das du heute hast.</p>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Fahrplan<br>P0–P5</div>
+  <div class="body">
+    <h2>Umsetzung in sechs Phasen</h2>
+    <p>Jede Phase endet mit etwas, das du benutzen kannst. Keine Phase ist eine reine Vorarbeit ohne sichtbares Ergebnis.</p>
+
+    <div class="phase">
+      <div class="phase-id">P0</div>
+      <div>
+        <h3>Fundament</h3>
+        <p>Repo-Struktur, Next.js, Datenbankschema, Migrationen, Anmeldung, Docker-Setup, Test- und Lint-Kette, <code>packages/playbook/</code> aus deinen Skills befüllt.</p>
+        <p class="ship">Ergebnis: lauffähige, leere App mit Anmeldung</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-id">P1</div>
+      <div>
+        <h3>Argumentbibliothek — deine Priorität</h3>
+        <p>Vollständige Verwaltung nach E4, Suche und Filter, KI-gestützte Erweiterung über alle vier Wege, Dublettenprüfung, Freigabe-Strecke nach E5, Belegprüfung mit Direktlinks. Enthält F1.</p>
+        <p class="ship">Ergebnis: gefüllte, benutzbare Bibliothek — auch ohne den Rest der App wertvoll</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-id">P2</div>
+      <div>
+        <h3>autoiXpert-Anbindung</h3>
+        <p>Auflösung über Aktenzeichen und technische ID, Feldabbildung, Zwischenspeicher, Fallansicht. Hier wird die reale Feldstruktur der Schnittstelle gegen deinen Account verifiziert.</p>
+        <p class="ship">Ergebnis: Fall per Aktenzeichen in der App sichtbar</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-id">P3</div>
+      <div>
+        <h3>Editor und Zusammenstellung</h3>
+        <p>Kürzungsbrief-Upload mit Positionsextraktion, Argument-Matching, Tiptap-Editor mit Drag&nbsp;&amp;&nbsp;Drop und Argumentknoten, Platzhalter-Befüllung, Ausformulierung je Position mit Streaming.</p>
+        <p class="ship">Ergebnis: erste vollständige Stellungnahme aus der App</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-id">P4</div>
+      <div>
+        <h3>Wächter und Ausgabe</h3>
+        <p>Beleg-, RDG- und Zahlen-Wächter, DOCX-Export mit Briefkopf, PDF, Rückschreiben nach autoiXpert (F8), Änderungsprotokoll.</p>
+        <p class="ship">Ergebnis: versandfertiges Dokument — ab hier produktiv nutzbar</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-id">P5</div>
+      <div>
+        <h3>Lernschleife</h3>
+        <p>Ergebniserfassung und Wirkungsstatistik (F2), Erkennung gegnerischer Bausteine (F3), Sortierung der Vorschläge nach Erfolgsquote.</p>
+        <p class="ship">Ergebnis: die App wird mit jedem Fall besser</p>
+      </div>
+    </div>
+
+    <p style="margin-top:26px">Nach P4 ist die App im Alltag einsetzbar. P5 baut darauf auf und lässt sich beliebig verschieben, ohne dass etwas fehlt.</p>
+  </div>
+</section>
+
+<section>
+  <div class="rail">Offen</div>
+  <div class="body">
+    <h2>Was ich von dir brauche</h2>
+
+    <div class="ask">
+      <h3>1. Die Skill-Dateien</h3>
+      <p>Blockierend. Ohne sie erfinde ich Argumentkategorien und Formulierungsregeln neu, statt deine zu übernehmen. Ins Repo unter <code>skills/</code> legen und pushen genügt.</p>
+    </div>
+
+    <div class="ask">
+      <h3>2. autoiXpert-API-Zugang</h3>
+      <p>Existiert bereits ein Token, oder muss der erst angelegt werden? Für P2 brauche ich außerdem ein bis zwei echte Aktenzeichen als Testfälle.</p>
+    </div>
+
+    <div class="ask">
+      <h3>3. Nutzerkreis</h3>
+      <p>Nur du, oder auch Mitarbeiter? Bei mehreren Personen kommen Rollen und ein Vier-Augen-Prinzip bei der Freigabe dazu — das ändert P0, später nachzurüsten ist teurer.</p>
+    </div>
+
+    <div class="ask">
+      <h3>4. Beispielmaterial</h3>
+      <p>Zwei bis drei anonymisierte Kürzungsschreiben und Prüfberichte sowie einige deiner bisherigen Stellungnahmen. Erstere kalibrieren die Positionsextraktion, letztere sind der Rohstoff für F1.</p>
+    </div>
+
+    <div class="ask">
+      <h3>5. Deine Freigabe zu E1 bis E5</h3>
+      <p>Widersprich gezielt per Kennung — „E3 lieber Variante B“ genügt. Alles, dem du nicht widersprichst, setze ich wie empfohlen um.</p>
+    </div>
+  </div>
+</section>
+
+</div>
