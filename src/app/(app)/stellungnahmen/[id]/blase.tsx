@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { durchsucheBibliothek } from '@/stellungnahme/aktionen'
+import { durchsucheBildbibliothek } from '@/bilder/aktionen'
+import type { Bibliotheksbild } from '@/bilder/bibliothek'
 import { setzeWerteEin } from '@/dokument/platzhalter'
-import { MIME_BAUSTEIN, type Ziehgut } from '@/dokument/ziehen'
+import { MIME_BAUSTEIN, MIME_BILD, type Bildziehgut, type Ziehgut } from '@/dokument/ziehen'
 import type { Herkunftsmarke } from '@/dokument/typen'
 import type { Befund } from '@/export/waechter'
 import { Kreisel } from '@/app/teile/anzeigen'
@@ -115,6 +117,7 @@ export function Blase({
   aufAufnehmen,
   aufFundstelle,
   aufInBibliothek,
+  aufBildEinfuegen,
 }: {
   position: PositionAnzeige
   vorschlag?: Vorschlag
@@ -133,11 +136,15 @@ export function Blase({
   aufAufnehmen: () => void
   aufFundstelle: (befund: Befund) => void
   aufInBibliothek: () => void
+  aufBildEinfuegen: (gut: Bildziehgut) => void
 }) {
   const [offenerKandidat, setzeOffenenKandidaten] = useState<string | null>(null)
   const [entwurf, setzeEntwurf] = useState('')
   const [eigenerText, setzeEigenenText] = useState('')
   const [begriff, setzeBegriff] = useState('')
+  const [bildbegriff, setzeBildbegriff] = useState('')
+  const [bildtreffer, setzeBildtreffer] = useState<Bibliotheksbild[]>([])
+  const [suchtBilder, starteBildsuche] = useTransition()
   const [treffer, setzeTreffer] = useState<
     { id: string; nummer: string; titel: string; abschnitt: string; gegenargument: string | null }[]
   >([])
@@ -161,6 +168,11 @@ export function Blase({
       return
     }
     starteSuche(async () => setzeTreffer(await durchsucheBibliothek(wert)))
+  }
+
+  const sucheBilder = (wert: string) => {
+    setzeBildbegriff(wert)
+    starteBildsuche(async () => setzeBildtreffer(await durchsucheBildbibliothek(wert)))
   }
 
   if (!aktiv) {
@@ -446,6 +458,74 @@ export function Blase({
                 ) : null}
               </div>
             ))}
+          </div>
+
+          <div className="blase-abschnitt">
+            <div className="blase-label">
+              Bildbibliothek
+              <a href="/bilder" target="_blank" style={{ fontSize: 11 }}>
+                pflegen
+              </a>
+            </div>
+            <input
+              type="search"
+              value={bildbegriff}
+              placeholder="Thema, Titel, Beschreibung …"
+              aria-label="Bildbibliothek durchsuchen"
+              onFocus={() => {
+                if (bildtreffer.length === 0) sucheBilder('')
+              }}
+              onChange={(e) => sucheBilder(e.target.value)}
+            />
+            {suchtBilder ? (
+              <p className="unterzeile" style={{ margin: '6px 0 0' }}>
+                <Kreisel text="sucht …" />
+              </p>
+            ) : null}
+
+            {bildtreffer.length > 0 ? (
+              <div className="blase-bilder">
+                {bildtreffer.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    className="blase-bild"
+                    title={`${b.titel ?? b.dateiname}${b.beschreibung ? ` — ${b.beschreibung}` : ''}\nAnklicken zum Einfügen oder in den Brief ziehen`}
+                    draggable
+                    onDragStart={(e) => {
+                      const gut: Bildziehgut = {
+                        bildId: b.id,
+                        breitePx: b.breitePx,
+                        hoehePx: b.hoehePx,
+                        dateiname: b.dateiname,
+                        beschriftung: b.titel ?? '',
+                      }
+                      e.dataTransfer.setData(MIME_BILD, JSON.stringify(gut))
+                      e.dataTransfer.effectAllowed = 'copy'
+                      document.body.classList.add('zieht-baustein')
+                    }}
+                    onDragEnd={() => document.body.classList.remove('zieht-baustein')}
+                    onClick={() =>
+                      aufBildEinfuegen({
+                        bildId: b.id,
+                        breitePx: b.breitePx,
+                        hoehePx: b.hoehePx,
+                        dateiname: b.dateiname,
+                        beschriftung: b.titel ?? '',
+                      })
+                    }
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/api/bilder/${b.id}`} alt={b.titel ?? b.dateiname} loading="lazy" />
+                    <span>{b.titel || b.dateiname}</span>
+                  </button>
+                ))}
+              </div>
+            ) : bildbegriff && !suchtBilder ? (
+              <p className="unterzeile" style={{ margin: '6px 0 0' }}>
+                Kein Bild passt dazu.
+              </p>
+            ) : null}
           </div>
 
           <div className="blase-abschnitt">

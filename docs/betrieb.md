@@ -16,7 +16,8 @@ Bei jedem Start läuft `starten.mjs`, bevor der Server hochkommt:
 
 Zum Stand mit dem Brief-Editor gehören die Migrationen `0002` (Spalten
 `dokument`, `dokument_stand`, `dokument_geaendert_am`) und `0003` (Tabelle
-`bild`). Ältere
+`bild`) und `0004` (Titel, Beschreibung, Themen und Bibliotheksmerkmal am
+Bild). Ältere
 Stellungnahmen bekommen ihr Schreiben beim ersten Öffnen aus ihren
 bisherigen Bausteinen — ein eigenes Migrationsskript gibt es dafür nicht.
 
@@ -98,6 +99,11 @@ Anwendung aus den Bytes selbst, nicht aus dem Dateinamen — im Word-Dokument
 entscheidet das echte Seitenverhältnis darüber, ob ein Bild verzerrt
 erscheint.
 
+Ein Bild trägt zwei Rollen in einer Zeile: `stellungnahme_id` sagt, wo es
+hereinkam, `in_bibliothek` sagt, ob es wiederverwendbar ist. Beim Einfügen
+aus der Bibliothek wird **nicht kopiert** — deshalb prüft das Löschen, ob
+das Bild noch in einem Dokumentbaum vorkommt, und verweigert sich dann.
+
 Das Datenverzeichnis wächst damit mit den Bildern. Ein Kalkulationsauszug
 liegt bei 100 bis 500 KB; bei einigen hundert Stellungnahmen im Jahr sind
 das wenige hundert Megabyte. Sollte das je stören, ist der Weg ein
@@ -172,6 +178,7 @@ aus, statt zu scheitern.
 | Brief-Editor mit Anmerkungen am Rand | läuft |
 | Bausteine per Klick oder Ziehen einfügen | läuft |
 | Bilder einfügen, stufenlos ziehen, beschriften | läuft |
+| Bildbibliothek mit Themen, Beschreibung und Suche | läuft |
 | Bilder im Word-Dokument, Marker im Klartext | läuft |
 | Fortschrittsanzeige beim Auswerten und Erzeugen | läuft |
 | Hell, dunkel oder wie das System | läuft |

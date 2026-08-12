@@ -26,7 +26,13 @@ import {
   herkunftsmarke,
   type Herkunftsmarke,
 } from '@/dokument/typen'
-import { MIME_BAUSTEIN, leseZiehgut } from '@/dokument/ziehen'
+import {
+  MIME_BAUSTEIN,
+  MIME_BILD,
+  leseBildziehgut,
+  leseZiehgut,
+  type Bildziehgut,
+} from '@/dokument/ziehen'
 import { Fortschritt, Kreisel, type Fortschrittsstand } from '@/app/teile/anzeigen'
 import { leseEreignisse } from '@/app/teile/strom'
 import type { Ausgabeereignis } from '@/stellungnahme/ausgabe'
@@ -114,6 +120,9 @@ export function Schreibtisch({
   const bilderRef = useRef<
     (dateien: FileList | File[], koordinaten?: { left: number; top: number }) => void
   >(() => {})
+  const bibliotheksbildRef = useRef<
+    (gut: Bildziehgut, koordinaten?: { left: number; top: number }) => void
+  >(() => {})
 
   const editor = useEditor({
     extensions: briefErweiterungen(),
@@ -142,6 +151,19 @@ export function Schreibtisch({
             left: (ereignis as DragEvent).clientX,
             top: (ereignis as DragEvent).clientY,
           })
+          return true
+        }
+
+        const bibliotheksbild = uebergabe?.getData(MIME_BILD)
+        if (bibliotheksbild) {
+          ereignis.preventDefault()
+          const gut = leseBildziehgut(bibliotheksbild)
+          if (gut) {
+            bibliotheksbildRef.current(gut, {
+              left: (ereignis as DragEvent).clientX,
+              top: (ereignis as DragEvent).clientY,
+            })
+          }
           return true
         }
 
@@ -322,6 +344,29 @@ export function Schreibtisch({
     [stellungnahmeId],
   )
 
+  /** Ein Bild aus der Bildbibliothek an die gewünschte Stelle setzen. */
+  const setzeBibliotheksbild = useCallback(
+    (gut: Bildziehgut, koordinaten?: { left: number; top: number }) => {
+      const griff = editorRef.current
+      if (!griff) return
+      fuegeBlockEin(
+        griff,
+        bildknoten(
+          {
+            bildId: gut.bildId,
+            breite: BILD_BREITE_STANDARD,
+            breitePx: gut.breitePx,
+            hoehePx: gut.hoehePx,
+            dateiname: gut.dateiname,
+          },
+          gut.beschriftung,
+        ),
+        koordinaten,
+      )
+    },
+    [],
+  )
+
   const legeBilderAb = useCallback(
     (dateien: FileList | File[], koordinaten?: { left: number; top: number }) => {
       for (const datei of Array.from(dateien)) {
@@ -333,6 +378,7 @@ export function Schreibtisch({
   )
 
   bilderRef.current = legeBilderAb
+  bibliotheksbildRef.current = setzeBibliotheksbild
 
   /* ---------------- Griffe am Brief ---------------- */
 
@@ -701,6 +747,7 @@ export function Schreibtisch({
                 aufAufnehmen={() => aufnehmen(p.id, p.bezeichnung)}
                 aufFundstelle={springeZu}
                 aufInBibliothek={() => inBibliothek(p.id)}
+                aufBildEinfuegen={(gut) => setzeBibliotheksbild(gut)}
               />
             </div>
           ))}

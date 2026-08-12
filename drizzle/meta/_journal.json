@@ -29,6 +29,13 @@
       "when": 1786559105307,
       "tag": "0003_first_stellaris",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786559823819,
+      "tag": "0004_complete_ogun",
+      "breakpoints": true
     }
   ]
 }

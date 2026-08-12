@@ -446,21 +446,33 @@ export const positionBild = pgTable(
 )
 
 /**
- * Bilder im Schreiben.
+ * Bilder — im Schreiben und in der Bildbibliothek.
  *
  * Die Bytes stehen in der Datenbank, nicht im Dateisystem: der Container
  * ist flüchtig, ein Neustart nähme sonst jedes Bild mit. Im Dokument steht
  * nur die Kennung — ein Bild als Datenstrom im Dokumentbaum würde jede
  * Zwischenspeicherung um Megabytes aufblähen, und gespeichert wird beim
  * Schreiben im Sekundentakt.
+ *
+ * Eine Zeile, zwei Rollen. `stellungnahmeId` sagt, wo das Bild
+ * hereingekommen ist; `inBibliothek` sagt, ob es darüber hinaus wieder
+ * verwendbar ist. Ein Bibliotheksbild in mehrere Schreiben zu kopieren wäre
+ * die einfachere Tabelle und die schlechtere Sache: dieselbe Aufnahme läge
+ * dann vielfach in der Datenbank, und eine berichtigte Beschreibung
+ * erreichte nur eine der Kopien.
  */
 export const bild = pgTable(
   'bild',
   {
     id: uuid().primaryKey().defaultRandom(),
-    stellungnahmeId: uuid()
-      .notNull()
-      .references(() => stellungnahme.id, { onDelete: 'cascade' }),
+    /** Wo das Bild hereinkam. Leer bei einem Bild, das direkt in die Bibliothek ging. */
+    stellungnahmeId: uuid().references(() => stellungnahme.id, { onDelete: 'cascade' }),
+    /** Kurzer Name in der Bibliothek — der Dateiname taugt selten dafür. */
+    titel: text(),
+    beschreibung: text(),
+    /** Freie Schlagworte: „Beilackierung", „DAT-Auszug", „Halterung". */
+    themen: text().array().notNull().default([]),
+    inBibliothek: boolean().notNull().default(false),
     dateiname: text().notNull(),
     /** `image/png` oder `image/jpeg` — mehr nimmt Word nicht verlässlich an. */
     mimetyp: text().notNull(),
@@ -472,7 +484,10 @@ export const bild = pgTable(
     erstelltVon: uuid().references(() => benutzer.id),
     erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('bild_stellungnahme_idx').on(t.stellungnahmeId)],
+  (t) => [
+    index('bild_stellungnahme_idx').on(t.stellungnahmeId),
+    index('bild_bibliothek_idx').on(t.inBibliothek),
+  ],
 )
 
 /* ------------------------------------------------------------------ *

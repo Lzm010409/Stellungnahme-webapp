@@ -22,6 +22,7 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 | P4c | Ziehen und Fallenlassen, Fortschritt, Erscheinungsbild | **fertig** |
 | P4d | Oberfläche nach der Vorlage „Judia" | **fertig** |
 | P4e | Bilder: einfügen, stufenlos ziehen, beschriften | **fertig** |
+| P4f | Bildbibliothek mit Themen und Beschreibungen | **fertig** |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
 ## Dokumente
@@ -85,6 +86,8 @@ src/dokument/
 src/bilder/
   lesen.ts                   Format und Masse aus den Bytes, Masse in EMU
   ablage.ts                  Bilder in der Datenbank
+  bibliothek.ts              Suche, Themen, Verwendungsnachweis
+  themen.ts                  Schlagworte aus der Eingabe
 src/export/
   waechter.ts                Die vier Prüfungen vor dem Export
   hausstil.ts                Aufbau des Schreibens
@@ -140,6 +143,26 @@ darunter. In der Klartextfassung steht an gleicher Stelle der Marker
 Die Bytes liegen in der Datenbank, nicht im Dateisystem: der Container ist
 flüchtig. Im Dokumentbaum steht nur die Kennung — ein Bild als Datenstrom
 im Baum würde jedes Speichern im Sekundentakt um Megabytes aufblähen.
+
+## Bildbibliothek
+
+Derselbe Gedanke wie bei den Argumenten: was einmal aufbereitet wurde,
+bekommt **Titel, Beschreibung und Themen** und ist beim nächsten Fall
+wieder da. Gesucht wird über alle vier Felder samt Dateiname; die Themen
+sind freie Schlagworte und stehen zusätzlich als Filter bereit.
+
+Gefüllt wird sie auf zwei Wegen: direkt hochladen, oder — der übliche Weg —
+ein Bild aus einem Schreiben übernehmen. Was noch nicht übernommen ist,
+steht auf der Seite unten und wartet auf einen Klick.
+
+Im Brief steht die Bildbibliothek in der Randspalte: suchen, anklicken oder
+in den Brief ziehen. Der Titel des Bildes wird dabei zur Beschriftung
+vorgeschlagen.
+
+Ein Bibliotheksbild wird beim Einfügen **nicht kopiert** — dieselbe Aufnahme
+läge sonst vielfach in der Datenbank, und eine berichtigte Beschreibung
+erreichte nur eine der Kopien. Deshalb lässt sich ein Bild auch nicht
+löschen, solange es in einem Schreiben steht.
 
 ## Warten mit Auskunft
 

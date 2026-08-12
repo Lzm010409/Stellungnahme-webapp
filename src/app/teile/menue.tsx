@@ -26,6 +26,11 @@ const PUNKTE = [
     name: 'Argumentbibliothek',
     pfadDaten: 'M4 4h5a2 2 0 0 1 2 2v10a2 2 0 0 0-2-2H4V4zm12 0h-5a2 2 0 0 0-2 2v10a2 2 0 0 1 2-2h5V4z',
   },
+  {
+    pfad: '/bilder',
+    name: 'Bildbibliothek',
+    pfadDaten: 'M3 5h14v10H3V5zm0 8 3.5-3.5 3 3L13 9l4 4M12.5 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+  },
 ]
 
 export function Menuepunkte() {

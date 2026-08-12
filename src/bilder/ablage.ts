@@ -1,5 +1,5 @@
 import 'server-only'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { bild } from '@/db/schema'
 import { Bildfehler, MAX_BILD_BYTES, leseBildmasse, type Bildmasse } from './lesen'
@@ -23,10 +23,12 @@ export interface GespeichertesBild {
 }
 
 export async function speichereBild(auftrag: {
-  stellungnahmeId: string
+  /** Leer, wenn das Bild direkt in die Bibliothek geht. */
+  stellungnahmeId: string | null
   dateiname: string
   daten: Uint8Array
   benutzerId: string
+  inBibliothek?: boolean
 }): Promise<GespeichertesBild> {
   if (auftrag.daten.byteLength === 0) throw new Bildfehler('Die Datei ist leer.')
   if (auftrag.daten.byteLength > MAX_BILD_BYTES) {
@@ -45,6 +47,7 @@ export async function speichereBild(auftrag: {
       breitePx: masse.breite,
       hoehePx: masse.hoehe,
       bytes: auftrag.daten.byteLength,
+      inBibliothek: auftrag.inBibliothek === true,
       erstelltVon: auftrag.benutzerId,
     })
     .returning({ id: bild.id, dateiname: bild.dateiname })
@@ -78,11 +81,12 @@ export async function ladeBild(id: string): Promise<Bildinhalt | null> {
 }
 
 /**
- * Lädt mehrere Bilder einer Stellungnahme.
+ * Lädt mehrere Bilder für ein Schreiben.
  *
- * Ausdrücklich auf die Stellungnahme eingegrenzt: ein Dokument darf nur die
- * Bilder ausgeben, die zu ihm gehören — auch wenn in seinem Baum eine
- * fremde Kennung stünde.
+ * Ausgegeben wird, was zu diesem Schreiben gehört **oder** in der
+ * Bildbibliothek steht. Die Eingrenzung bleibt damit bestehen: eine fremde
+ * Kennung aus einem anderen Schreiben liefert nichts, auch wenn sie im Baum
+ * stünde.
  */
 export async function ladeBilder(
   stellungnahmeId: string,
@@ -94,7 +98,12 @@ export async function ladeBilder(
   const zeilen = await db
     .select()
     .from(bild)
-    .where(and(eq(bild.stellungnahmeId, stellungnahmeId), inArray(bild.id, ids)))
+    .where(
+      and(
+        inArray(bild.id, ids),
+        or(eq(bild.stellungnahmeId, stellungnahmeId), eq(bild.inBibliothek, true)),
+      ),
+    )
 
   for (const z of zeilen) {
     gefunden.set(z.id, {

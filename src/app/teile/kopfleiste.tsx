@@ -16,6 +16,7 @@ const BEREICHE: { pfad: string; name: string }[] = [
   { pfad: '/stellungnahmen', name: 'Stellungnahmen' },
   { pfad: '/faelle', name: 'Fälle' },
   { pfad: '/bibliothek', name: 'Argumentbibliothek' },
+  { pfad: '/bilder', name: 'Bildbibliothek' },
 ]
 
 const SPEICHERSCHLUESSEL = 'werkbank-menue'
