@@ -30,7 +30,7 @@ doppelt angelegt, nichts überschrieben.
 | --- | --- | --- |
 | `DATABASE_URL` | ja | Verbindungs-URL der Postgres-Ressource |
 | `APP_BASIS_URL` | ja | Öffentliche Adresse, z.B. `https://werkbank.gollenstede.app` |
-| `ANTHROPIC_API_KEY` | für KI-Funktionen | Bibliothekserweiterung und Ausformulierung |
+| `ANTHROPIC_API_KEY` | **fehlt noch** | Ohne diesen Wert lassen sich Prüfberichte nicht auswerten und Positionen nicht ausformulieren. Alles Übrige — Bibliothek, Fallimport, Auswahlmaske, Wächter, Ausgabe — läuft ohne ihn. |
 | `AUTOIXPERT_API_TOKEN` | für P2 | Bearer-Token der externen Schnittstelle |
 | `ENTRA_TENANT_ID` | für Microsoft-Anmeldung | Verzeichnis-ID des Tenants |
 | `ENTRA_CLIENT_ID` | für Microsoft-Anmeldung | Anwendungs-ID der App-Registrierung |
@@ -110,6 +110,21 @@ Ein Sichtprüfungslauf durch einen echten Browser inklusive Bildschirmfotos:
 ```bash
 pnpm exec tsx scripts/rundgang.ts http://localhost:3000 /tmp/rundgang
 ```
+
+## Was die Anwendung kann
+
+| Bereich | Zustand |
+| --- | --- |
+| Argumentbibliothek pflegen und freigeben | läuft |
+| Fall aus autoiXpert laden | läuft, Schnittstelle noch nicht gegen echte Daten geprüft |
+| Prüfbericht einlesen (Text und Scan) | läuft |
+| Kürzungspositionen auslesen | braucht `ANTHROPIC_API_KEY` |
+| Sonderfall-Prüfliste B.1–B.8 | läuft |
+| Auswahlmaske mit Vorschlägen, Suche, eigenem Text | läuft |
+| Ausformulieren im Hausstil | braucht `ANTHROPIC_API_KEY` |
+| Vier Wächter vor dem Export | läuft |
+| Word- und Klartext-Ausgabe | läuft |
+| Eigenen Text in die Bibliothek übernehmen | läuft |
 
 ## Bekannte Einschränkungen
 
