@@ -15,6 +15,7 @@ import {
   fuegeAnStelleEin,
   fuegeBlockEin,
   fuegeInAbschnittEin,
+  markiereAktivenAbschnitt,
   setzeAusgelassen,
   springeInAbschnitt,
   zeigeFundstelle,
@@ -103,6 +104,7 @@ export function Schreibtisch({
   const [ausgabestand, setzeAusgabestand] = useState<Fortschrittsstand | null>(null)
   const [meldung, setzeMeldung] = useState<string | null>(null)
   const [bildLaeuft, setzeBildLaeuft] = useState(0)
+  const [fokus, setzeFokus] = useState(false)
   const [laeuft, starte] = useTransition()
 
   const standRef = useRef(anfangsStand)
@@ -177,7 +179,10 @@ export function Schreibtisch({
 
         const treffer = fuegeAnStelleEin(
           griff,
-          { left: (ereignis as DragEvent).clientX, top: (ereignis as DragEvent).clientY },
+          {
+            left: (ereignis as DragEvent).clientX,
+            top: (ereignis as DragEvent).clientY,
+          },
           absaetzeAusText(gut.text, [herkunftsmarke(gut.marke)]) as never,
         )
         if (!treffer) {
@@ -255,6 +260,18 @@ export function Schreibtisch({
   useEffect(() => () => void (uhr.current && clearTimeout(uhr.current)), [])
 
   /* ---------------- Randspalte ausrichten ---------------- */
+
+  /**
+   * Den Abschnitt zur offenen Anmerkung hervorheben.
+   *
+   * Bei zwölf Positionen ist sonst nicht zu sehen, welche Anmerkung zu
+   * welchem Abschnitt gehört. Die Marke geht in den Editor hinein statt als
+   * Klasse an sein Element: ProseMirror soll nichts an seinem Baum finden,
+   * was es nicht selbst geschrieben hat.
+   */
+  useEffect(() => {
+    if (editor) markiereAktivenAbschnitt(editor, aktiv)
+  }, [editor, aktiv])
 
   /**
    * Rückt jede Blase auf die Höhe ihres Abschnitts.
@@ -384,11 +401,7 @@ export function Schreibtisch({
 
   const einfuegen = (positionId: string, text: string, marke: Herkunftsmarke) => {
     if (!editor || !text.trim()) return
-    fuegeInAbschnittEin(
-      editor,
-      positionId,
-      absaetzeAusText(text, [herkunftsmarke(marke)]) as never,
-    )
+    fuegeInAbschnittEin(editor, positionId, absaetzeAusText(text, [herkunftsmarke(marke)]) as never)
   }
 
   const ausformulieren = (positionId: string) =>
@@ -472,7 +485,11 @@ export function Schreibtisch({
     setzeAusgabe(null)
     setzeMeldung(null)
     const verlauf: string[] = []
-    setzeAusgabestand({ anteil: 0.03, text: 'Das Schreiben wird übergeben …', verlauf })
+    setzeAusgabestand({
+      anteil: 0.03,
+      text: 'Das Schreiben wird übergeben …',
+      verlauf,
+    })
 
     let antwort: Response
     try {
@@ -490,7 +507,11 @@ export function Schreibtisch({
     for await (const ereignis of leseEreignisse<Ausgabeereignis>(antwort)) {
       if (ereignis.art === 'fortschritt') {
         verlauf.push(ereignis.text)
-        setzeAusgabestand({ anteil: ereignis.anteil, text: ereignis.text, verlauf: verlauf.slice(-3) })
+        setzeAusgabestand({
+          anteil: ereignis.anteil,
+          text: ereignis.text,
+          verlauf: verlauf.slice(-3),
+        })
         continue
       }
 
@@ -614,7 +635,11 @@ export function Schreibtisch({
             }}
           />
 
-          <button type="button" title="Rückgängig" onClick={() => editor?.chain().focus().undo().run()}>
+          <button
+            type="button"
+            title="Rückgängig"
+            onClick={() => editor?.chain().focus().undo().run()}
+          >
             ↶
           </button>
           <button
@@ -624,10 +649,59 @@ export function Schreibtisch({
           >
             ↷
           </button>
+          <button
+            type="button"
+            className={fokus ? 'an' : ''}
+            title={fokus ? 'Anmerkungen wieder einblenden' : 'Nur den Brief zeigen'}
+            aria-pressed={fokus}
+            onClick={() => setzeFokus((f) => !f)}
+          >
+            {fokus ? '◨ Anmerkungen' : '▭ Fokus'}
+          </button>
+
           <span className={`speicherstand ${zustand}`}>
-            {zustand === 'speichert' ? <Kreisel text={ZUSTANDSTEXT[zustand]} /> : ZUSTANDSTEXT[zustand]}
+            {zustand === 'speichert' ? (
+              <Kreisel text={ZUSTANDSTEXT[zustand]} />
+            ) : (
+              ZUSTANDSTEXT[zustand]
+            )}
           </span>
         </div>
+
+        {/*
+        Die Positionsleiste: eine Marke je Kürzungsposition mit ihrem Stand.
+        Bei zwölf Positionen ist sie der schnellste Weg an die Stelle, an der
+        noch etwas fehlt — und sie zeigt auf einen Blick, wie weit das
+        Schreiben ist.
+      */}
+        {positionen.length > 0 ? (
+          <div className="positionsleiste" role="group" aria-label="Positionen">
+            {positionen.map((p) => {
+              const nummer = nummerJePosition.get(p.id)
+              const zahl = befundeJePosition.get(p.id)?.length ?? 0
+              const zustandsname = !imBrief.has(p.id)
+                ? 'draussen'
+                : mitText.has(p.id)
+                  ? 'fertig'
+                  : 'leer'
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`positionsmarke ${zustandsname} ${aktiv === p.id ? 'aktiv' : ''}`}
+                  title={`${p.bezeichnung}${p.differenz ? ` · −${p.differenz} €` : ''}`}
+                  onClick={() => {
+                    setzeAktiv(p.id)
+                    if (editor && imBrief.has(p.id)) springeInAbschnitt(editor, p.id)
+                  }}
+                >
+                  <span>{nummer ?? '—'}</span>
+                  {zahl > 0 ? <em>{zahl}</em> : null}
+                </button>
+              )
+            })}
+          </div>
+        ) : null}
 
         <div className="werkzeuge">
           {pruefung ? (
@@ -713,7 +787,7 @@ export function Schreibtisch({
         </div>
       ) : null}
 
-      <div className="werkbank-raster">
+      <div className={`werkbank-raster ${fokus ? 'fokus' : ''}`}>
         <div className="brief" ref={briefRef}>
           <EditorContent editor={editor} />
         </div>

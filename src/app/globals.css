@@ -824,6 +824,114 @@ code {
 .sonderfall-handlung { font-size: 13px; color: var(--ink-mid); margin-top: 5px; }
 
 
+/* ---------- Kopfzeile über dem Brief ---------- */
+
+/**
+ * Eine Zeile für alles, was nicht der Brief ist. Vorher standen Rückweg,
+ * Überschrift, Kennzahlen, Prüfliste und Empfänger untereinander und
+ * schoben den Brief aus dem Bild — bei zwölf Positionen sah man von der
+ * eigentlichen Arbeit noch drei Absätze.
+ */
+.brief-kopfzeile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.brief-kopfzeile .zurueck {
+  font-size: 16px;
+  line-height: 1;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink-mid);
+  text-decoration: none;
+}
+
+.brief-kopfzeile .zurueck:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.brief-aktenzeichen {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--radius-klein);
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.brief-kopfzeile h1 {
+  font-size: 1.05rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 44ch;
+}
+
+.brief-kennzahlen {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.brief-kennzahlen strong {
+  font-family: var(--mono);
+  color: var(--crit);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Die aufklappbaren Kästen rücken gemeinsam nach rechts und öffnen über
+   dem Brief, statt ihn nach unten zu schieben. */
+.brief-kopf-klappen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.brief-kopfzeile .klappe.schmal {
+  margin: 0;
+  position: relative;
+  padding: 0 12px;
+}
+
+.klappe.schmal > summary {
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.klappe.schmal[open] > summary {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.klappe.schmal .klappe-inhalt {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  width: min(560px, 80vw);
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(20, 18, 30, 0.16);
+  padding: 14px 16px;
+}
+
 /* ---------- Klappe ---------- */
 
 .klappe {
@@ -938,9 +1046,73 @@ code {
 
 .werkbank-raster {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 350px;
-  gap: 22px;
+  /* Der Brief bekommt so viel Breite, wie der Satzspiegel braucht, und der
+     Rest geht an die Anmerkungen — nicht umgekehrt. */
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 16px;
   align-items: start;
+}
+
+/**
+ * Fokus: nur der Brief. Die Anmerkungen bleiben im Baum stehen und werden
+ * ausgeblendet — beim Zurückschalten steht alles wieder da, wo es war.
+ */
+.werkbank-raster.fokus {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 940px;
+  margin: 0 auto;
+}
+
+.werkbank-raster.fokus .rand {
+  display: none;
+}
+
+/* ---------- Positionsleiste ---------- */
+
+.positionsleiste {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px 4px;
+}
+
+.positionsmarke {
+  padding: 3px 8px;
+  min-width: 30px;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  gap: 5px;
+  border-radius: var(--radius-klein);
+}
+
+.positionsmarke.fertig {
+  border-color: var(--good);
+  color: var(--good);
+  background: var(--good-soft);
+}
+
+.positionsmarke.leer {
+  border-style: dashed;
+}
+
+.positionsmarke.draussen {
+  opacity: 0.55;
+}
+
+.positionsmarke.aktiv {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.positionsmarke em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--warn);
 }
 
 /* ---------- Der Brief ---------- */
@@ -950,17 +1122,20 @@ code {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--schatten);
-  padding: 40px 52px 48px;
+  padding: 34px 40px 44px;
   min-height: 60vh;
 }
 
 .brief-flaeche {
   font-family: var(--serif);
-  font-size: 15.5px;
-  line-height: 1.68;
+  font-size: 16px;
+  line-height: 1.62;
   outline: none;
   counter-reset: abschnitt;
-  max-width: 46em;
+  /* Rund 70 Zeichen je Zeile — die Breite, bei der sich am ruhigsten liest.
+     Zentriert, damit der Brief in einer breiten Spalte nicht links klebt. */
+  max-width: 34em;
+  margin: 0 auto;
 }
 
 .brief-flaeche p {
@@ -1003,16 +1178,51 @@ code {
  * bekommt deshalb keine Nummer. Sonst zeigte der Editor eine andere
  * Zählung als das versandte Dokument.
  */
+:root {
+  --leer-hoehe: 1.9em;
+}
+
+/**
+ * Ein Abschnitt ohne Text schrumpft auf eine Zeile.
+ *
+ * Vorher nahm jede noch unbearbeitete Position so viel Platz ein wie eine
+ * geschriebene — bei zwölf Positionen las sich der Brief als Liste von
+ * Stümpfen. Jetzt steht der Rumpf schmal da und macht dem Platz, was
+ * geschrieben ist.
+ */
 .brief-flaeche .d-abschnitt.abschnitt-leer {
   counter-increment: none;
+  margin: 0 0 0.35em;
+  border-left: 2px dashed var(--line);
+  padding-left: 10px;
 }
 
 .brief-flaeche .d-abschnitt.abschnitt-leer .d-ueberschrift {
   color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 13.5px;
+  margin: 0;
+  line-height: var(--leer-hoehe);
 }
 
 .brief-flaeche .d-abschnitt.abschnitt-leer .d-ueberschrift::before {
-  content: '— ';
+  content: '';
+}
+
+/* Der leere Absatz darunter bleibt anklickbar, nimmt aber kaum Raum. */
+.brief-flaeche .d-abschnitt.abschnitt-leer p {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 13.5px;
+}
+
+.brief-flaeche .d-abschnitt.abschnitt-leer p.is-empty::before {
+  font-size: 12px;
+}
+
+/* Der Abschnitt zur offenen Anmerkung. */
+.brief-flaeche .d-abschnitt.aktiv {
+  box-shadow: -14px 0 0 -12px var(--accent);
 }
 
 .brief-flaeche .d-ergebnis {
@@ -1106,6 +1316,17 @@ code {
   border-color: var(--accent);
   border-left-width: 3px;
   padding: 12px 14px 14px;
+  position: relative;
+}
+
+/* Eine kurze Linie zum Brief hin — sie macht sichtbar, was zusammengehört. */
+.blase.auf::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 18px;
+  width: 16px;
+  border-top: 1px solid var(--accent);
 }
 
 .blase.draussen {

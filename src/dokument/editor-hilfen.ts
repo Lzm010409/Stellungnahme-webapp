@@ -13,6 +13,7 @@
 import type { Editor } from '@tiptap/react'
 import type { Node as PmNode } from '@tiptap/pm/model'
 import { KNOTEN, type Knoten } from './typen'
+import { SCHLUESSEL_AKTIV } from './editor-schema'
 
 /**
  * Der Dokumentbaum als schlichtes JSON.
@@ -132,6 +133,20 @@ export function aktiverAbschnitt(editor: Editor): string | null {
     }
   }
   return null
+}
+
+/**
+ * Sagt dem Editor, welcher Abschnitt hervorgehoben werden soll.
+ *
+ * Die Meldung geht als Beigabe an einer Änderung mit, die den Text nicht
+ * anrührt: kein Eintrag in der Rückgängig-Kette, kein Speichervorgang, nur
+ * eine andere Klasse am Abschnitt. Steht die Marke schon richtig, geschieht
+ * gar nichts — sonst liefe bei jedem Neuzeichnen eine Änderung mehr.
+ */
+export function markiereAktivenAbschnitt(editor: Editor, id: string | null): void {
+  if (SCHLUESSEL_AKTIV.getState(editor.state) === id) return
+  const tr = editor.state.tr.setMeta(SCHLUESSEL_AKTIV, id).setMeta('addToHistory', false)
+  editor.view.dispatch(tr)
 }
 
 /** Enthält der Abschnitt nur einen leeren Absatz? */

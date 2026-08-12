@@ -41,78 +41,78 @@ export default async function StellungnahmeSeite({
 
   return (
     <>
-      <p style={{ margin: '0 0 14px', fontSize: 13 }}>
-        <Link href="/stellungnahmen">← Stellungnahmen</Link>
-      </p>
+      {/*
+        Eine Zeile für alles, was nicht der Brief ist: Rückweg, Aktenzeichen,
+        Betreff, Kennzahlen. Die aufklappbaren Kästen stehen daneben, nicht
+        untereinander — jede Zeile darüber ist eine Zeile weniger Brief.
+      */}
+      <div className="brief-kopfzeile">
+        <Link href="/stellungnahmen" className="zurueck" aria-label="Zurück zur Übersicht">
+          ←
+        </Link>
+        <span className="brief-aktenzeichen">
+          {s.fall?.aktenzeichen ?? extraktion?.aktenzeichen ?? 'ohne Aktenzeichen'}
+        </span>
+        <h1 title={s.betreff ?? undefined}>{s.betreff ?? 'Stellungnahme'}</h1>
+        <span className="brief-kennzahlen">
+          {[
+            extraktion?.pruefdienstleister,
+            extraktion?.versicherer,
+            s.pruefberichtSeiten ? `${s.pruefberichtSeiten} S.` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          <strong>{euro(summe)}</strong>
+        </span>
 
-      <div className="seiten-kopf">
-        <div>
-          <p
-            style={{
-              fontFamily: 'var(--mono)',
-              fontSize: 12,
-              color: 'var(--accent)',
-              margin: '0 0 4px',
-              fontWeight: 600,
-            }}
-          >
-            {s.fall?.aktenzeichen ?? extraktion?.aktenzeichen ?? 'ohne Aktenzeichen'}
-          </p>
-          <h1>{s.betreff ?? 'Stellungnahme'}</h1>
-          <p className="unterzeile">
-            {[
-              extraktion?.pruefdienstleister ? `Prüfbericht ${extraktion.pruefdienstleister}` : null,
-              extraktion?.versicherer,
-              s.pruefberichtSeiten ? `${s.pruefberichtSeiten} Seiten` : null,
-              `Gesamtkürzung ${euro(summe)}`,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
+        <div className="brief-kopf-klappen">
+        {befunde.length > 0 ? (
+          <details className="klappe schmal">
+            <summary>
+              Prüfliste
+              <span className="marke-pille m-warn">{befunde.length}</span>
+            </summary>
+            <div className="klappe-inhalt">
+              {befunde.map((b) => (
+                <div key={b.kennung} className={`sonderfall ${b.dringlichkeit}`}>
+                  <div className="sonderfall-titel">
+                    <span className="marke-pille m-akzent">{b.kennung}</span>
+                    {b.titel}
+                  </div>
+                  <div className="sonderfall-text">{b.befund}</div>
+                  <div className="sonderfall-handlung">{b.handlung}</div>
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
+
+        {extraktion?.unklarheiten && extraktion.unklarheiten.length > 0 ? (
+          <details className="klappe schmal">
+            <summary>
+              Unklar
+              <span className="marke-pille m-warn">{extraktion.unklarheiten.length}</span>
+            </summary>
+            <div className="klappe-inhalt">
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {extraktion.unklarheiten.map((u, i) => (
+                  <li key={i}>{u}</li>
+                ))}
+              </ul>
+            </div>
+          </details>
+        ) : null}
+
+        <Kopfbereich
+          stellungnahmeId={s.id}
+          empfaengerName={s.empfaengerName}
+          empfaengerStrasse={s.empfaengerStrasse}
+          empfaengerPlzOrt={s.empfaengerPlzOrt}
+          einleitungDatum={s.einleitungDatum}
+          einleitungMedium={s.einleitungMedium}
+        />
         </div>
       </div>
-
-      {befunde.length > 0 ? (
-        <details className="klappe">
-          <summary>
-            Prüfliste
-            <span className="marke-pille m-warn">{befunde.length}</span>
-          </summary>
-          {befunde.map((b) => (
-            <div key={b.kennung} className={`sonderfall ${b.dringlichkeit}`}>
-              <div className="sonderfall-titel">
-                <span className="marke-pille m-akzent">{b.kennung}</span>
-                {b.titel}
-              </div>
-              <div className="sonderfall-text">{b.befund}</div>
-              <div className="sonderfall-handlung">{b.handlung}</div>
-            </div>
-          ))}
-        </details>
-      ) : null}
-
-      {extraktion?.unklarheiten && extraktion.unklarheiten.length > 0 ? (
-        <details className="klappe">
-          <summary>
-            Beim Auslesen unklar geblieben
-            <span className="marke-pille m-warn">{extraktion.unklarheiten.length}</span>
-          </summary>
-          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-            {extraktion.unklarheiten.map((u, i) => (
-              <li key={i}>{u}</li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-
-      <Kopfbereich
-        stellungnahmeId={s.id}
-        empfaengerName={s.empfaengerName}
-        empfaengerStrasse={s.empfaengerStrasse}
-        empfaengerPlzOrt={s.empfaengerPlzOrt}
-        einleitungDatum={s.einleitungDatum}
-        einleitungMedium={s.einleitungMedium}
-      />
 
       {s.positionen.length === 0 ? (
         <div className="leer">

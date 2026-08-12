@@ -125,6 +125,9 @@ async function main() {
   const seite = await kontext.newPage()
 
   const fehler: string[] = []
+  // Was der Rundgang selbst beanstandet. Ohne diese Liste stünde eine
+  // Rückentwicklung nur als Zahl in der Ausgabe und liefe niemandem auf.
+  const maengel: string[] = []
   seite.on('console', (m) => {
     if (m.type() === 'error') fehler.push(m.text())
   })
@@ -246,6 +249,10 @@ async function main() {
   await seite.waitForTimeout(300)
 
   const rahmen = seite.locator('.d-bild-rahmen').first()
+  // Ins Sichtfeld holen: rohe Mausbewegungen scrollen nicht von selbst, und
+  // ein Griff ausserhalb des Fensters bekommt den Zeiger nie zu sehen.
+  await rahmen.scrollIntoViewIfNeeded()
+  await seite.waitForTimeout(300)
   const vorherBreite = (await rahmen.boundingBox())?.width ?? 0
   const bildgriff = seite.locator('.d-bild-griff').first()
   const kasten = await bildgriff.boundingBox()
@@ -253,7 +260,8 @@ async function main() {
     await seite.mouse.move(kasten.x + kasten.width / 2, kasten.y + kasten.height / 2)
     await seite.mouse.down()
     await seite.mouse.move(kasten.x - 120, kasten.y + kasten.height / 2, { steps: 12 })
-    await schritt('6b-bild-zieht')
+    // Kein Bildschirmfoto mitten im Zug: eine Ganzseitenaufnahme ändert
+    // vorübergehend die Fenstergrösse und verschiebt damit den Zeiger.
     await seite.mouse.up()
     await seite.waitForTimeout(1400)
   }
@@ -261,6 +269,11 @@ async function main() {
   console.log(
     `  Bildbreite vor dem Ziehen ${Math.round(vorherBreite)} px, danach ${Math.round(nachherBreite)} px`,
   )
+  if (Math.abs(nachherBreite - vorherBreite) < 20) {
+    maengel.push(
+      'Das Bild liess sich nach dem Klick in die Beschriftung nicht mehr in der Breite ziehen.',
+    )
+  }
   await schritt('6c-bild')
 
   // Erscheinungsbild umschalten.
@@ -291,6 +304,9 @@ async function main() {
   const wieder = await ueberschriften()
   console.log(`  Nach dem Wiederaufnehmen ${wieder.length}`)
   console.log(`  Reihenfolge gleich wie zuvor: ${JSON.stringify(wieder) === JSON.stringify(vorher)}`)
+  if (JSON.stringify(wieder) !== JSON.stringify(vorher)) {
+    maengel.push('Nach dem Wiederaufnehmen stand der Abschnitt nicht mehr an seiner Stelle.')
+  }
   await schritt('8-wieder-aufgenommen')
 
   // Prüfen und ausgeben.
@@ -327,12 +343,16 @@ async function main() {
 
   await browser.close()
 
+  if (maengel.length > 0) {
+    console.log(`\n  Beanstandungen (${maengel.length}):`)
+    for (const m of maengel) console.log(`    ${m}`)
+  }
   if (fehler.length > 0) {
     console.log(`\n  Konsolenfehler (${fehler.length}):`)
     for (const f of fehler.slice(0, 10)) console.log(`    ${f}`)
-    process.exit(1)
   }
-  console.log('\n  Keine Konsolenfehler.')
+  if (maengel.length > 0 || fehler.length > 0) process.exit(1)
+  console.log('\n  Keine Konsolenfehler, nichts zu beanstanden.')
 }
 
 main().catch((f) => {

@@ -38,16 +38,18 @@ export function Kopfbereich(props: {
   ].filter(Boolean)
 
   return (
-    <details className="klappe" open={fehlend.length > 0}>
+    <details className="klappe schmal" open={fehlend.length > 0}>
       <summary>
         Empfänger
-        <span className="unterzeile" style={{ margin: 0, fontWeight: 400 }}>
-          {werte.empfaengerName || 'noch offen'}
-        </span>
         {fehlend.length > 0 ? (
           <span className="marke-pille m-warn">{fehlend.length} offen</span>
-        ) : null}
+        ) : (
+          <span className="unterzeile" style={{ margin: 0, fontWeight: 400 }}>
+            {werte.empfaengerName}
+          </span>
+        )}
       </summary>
+      <div className="klappe-inhalt">
 
       {fehlend.length > 0 ? (
         <div className="hinweis warn" style={{ marginBottom: 12 }}>
@@ -123,6 +125,7 @@ export function Kopfbereich(props: {
             {meldung}
           </span>
         ) : null}
+      </div>
       </div>
     </details>
   )

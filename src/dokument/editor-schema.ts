@@ -12,7 +12,7 @@
 
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
-import { Plugin } from '@tiptap/pm/state'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
@@ -298,6 +298,53 @@ export const LeereAbschnitte = Extension.create({
   },
 })
 
+/** Schlüssel des Plugins, das den hervorgehobenen Abschnitt hält. */
+export const SCHLUESSEL_AKTIV = new PluginKey<string | null>('aktiverAbschnitt')
+
+/**
+ * Hebt den Abschnitt hervor, zu dem die offene Anmerkung gehört.
+ *
+ * Die Hervorhebung ist eine Auszeichnung und keine Klasse, die von aussen
+ * an das Element geschrieben wird. Der Unterschied ist kein Schönheits-
+ * fehler: ProseMirror beobachtet seinen eigenen Baum. Wer dort von Hand ein
+ * Attribut setzt, sieht seinen Abschnitt neu gezeichnet — und mit ihm alle
+ * Bilder darin, samt laufender Bewegung am Ziehgriff. Als Auszeichnung
+ * weiss ProseMirror Bescheid und tauscht nur die Klasse aus.
+ */
+export const AktiverAbschnitt = Extension.create({
+  name: 'aktiverAbschnitt',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin<string | null>({
+        key: SCHLUESSEL_AKTIV,
+        state: {
+          init: () => null,
+          apply(tr, alt) {
+            const neu = tr.getMeta(SCHLUESSEL_AKTIV) as string | null | undefined
+            return neu === undefined ? alt : neu
+          },
+        },
+        props: {
+          decorations(state) {
+            const id = SCHLUESSEL_AKTIV.getState(state)
+            if (!id) return null
+            const auszeichnungen: Decoration[] = []
+            state.doc.descendants((node, pos) => {
+              if (node.type.name !== KNOTEN.abschnitt) return true
+              if (node.attrs.positionId === id) {
+                auszeichnungen.push(Decoration.node(pos, pos + node.nodeSize, { class: 'aktiv' }))
+              }
+              return false
+            })
+            return DecorationSet.create(state.doc, auszeichnungen)
+          },
+        },
+      }),
+    ]
+  },
+})
+
 /**
  * Alle Erweiterungen des Brief-Editors.
  *
@@ -329,6 +376,7 @@ export function briefErweiterungen() {
     Bild,
     Bibliothekstext,
     LeereAbschnitte,
+    AktiverAbschnitt,
     Placeholder.configure({
       includeChildren: true,
       placeholder: ({ node }: { node: { type: { name: string } } }) => {

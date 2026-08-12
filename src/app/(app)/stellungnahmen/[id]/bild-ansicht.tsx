@@ -39,8 +39,6 @@ export function BildAnsicht({ node, updateAttributes, selected, editor }: NodeVi
       const volleBreite = flaeche?.clientWidth ?? 700
       const anfangsBreite = (rahmen.current?.offsetWidth ?? volleBreite * gespeichert) / volleBreite
       const anfangsX = start.clientX
-      const ziel = start.currentTarget as HTMLElement
-      ziel.setPointerCapture(start.pointerId)
 
       let letzter = anfangsBreite
       setzeBreite(anfangsBreite)
@@ -52,16 +50,25 @@ export function BildAnsicht({ node, updateAttributes, selected, editor }: NodeVi
       }
 
       const beende = () => {
-        ziel.removeEventListener('pointermove', bewege)
-        ziel.removeEventListener('pointerup', beende)
-        ziel.removeEventListener('pointercancel', beende)
+        window.removeEventListener('pointermove', bewege)
+        window.removeEventListener('pointerup', beende)
+        window.removeEventListener('pointercancel', beende)
         setzeZieht(false)
         updateAttributes({ breite: Number(letzter.toFixed(4)) })
       }
 
-      ziel.addEventListener('pointermove', bewege)
-      ziel.addEventListener('pointerup', beende)
-      ziel.addEventListener('pointercancel', beende)
+      /**
+       * Die Zuhörer hängen am Fenster, nicht am Griff.
+       *
+       * Der Griff ist ein React-Element: sobald der Editor aus anderem
+       * Grund neu zeichnet — etwa weil die Schreibmarke vorher in der
+       * Beschriftung stand —, wird er ersetzt und nähme die an ihm
+       * hängenden Zuhörer mit. Der Zug bräche mitten in der Bewegung ab,
+       * ohne dass etwas passiert. Am Fenster überlebt er jedes Neuzeichnen.
+       */
+      window.addEventListener('pointermove', bewege)
+      window.addEventListener('pointerup', beende)
+      window.addEventListener('pointercancel', beende)
     },
     [editor.isEditable, gespeichert, updateAttributes],
   )

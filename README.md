@@ -118,6 +118,34 @@ die Abschnitte des Briefes umrandet; fallen gelassen wird hinter dem Absatz
 unter dem Zeiger, nie mitten in einen Satz. Der Knopf bleibt gleichwertig —
 Ziehen ist die Abkürzung, nicht der Weg.
 
+### Die Bühne gehört dem Brief
+
+Bei zwölf Positionen war vom Schreiben zuletzt kaum noch etwas zu sehen:
+Kästen mit Fallangaben, Prüfliste und Empfängerformular standen
+untereinander über dem Brief. Deshalb steht darüber jetzt **eine Zeile** —
+Rückweg, Aktenzeichen, Betreff, Prüfdienstleister und Kürzungssumme. Was
+selten gebraucht wird, klappt daneben auf: Prüfliste, Unklarheiten,
+Empfänger.
+
+Darunter liegt die Werkzeugleiste am Kopf fest, und in ihr die
+**Positionsleiste**: eine Marke je Kürzungsposition, mit ihrer Nummer, ihrem
+Stand (im Brief, noch leer, herausgenommen) und der Zahl offener
+Beanstandungen. Ein Klick springt in den Abschnitt — bei zwölf Positionen
+der kürzeste Weg an die Stelle, an der noch etwas fehlt.
+
+Der Brief selbst hat eine **Zeilenbreite wie auf Papier** und steht mittig;
+die Anmerkungen stehen rechts daneben, die offene mit einer Linie zu ihrem
+Abschnitt. Der Abschnitt zur offenen Anmerkung wird hervorgehoben — als
+Auszeichnung im Editor, nicht als Klasse von aussen an sein Element:
+ProseMirror beobachtet seinen eigenen Baum und zeichnet alles neu, was es
+dort nicht selbst geschrieben hat, samt der Bilder darin und einer gerade
+laufenden Bewegung am Ziehgriff.
+
+Abschnitte ohne Text schrumpfen auf eine gestrichelte Zeile zusammen — sie
+bleiben sichtbar, nehmen aber keinen Platz mehr weg. Und wer nur lesen
+will, schaltet auf **Fokus**: dann verschwindet die Randspalte und der Brief
+bekommt die ganze Breite.
+
 ## Bilder
 
 Ein Bild kommt an **jede** Stelle des Briefes: aus der Zwischenablage
