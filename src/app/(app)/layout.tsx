@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { aktuellerBenutzer } from '@/auth/sitzung'
 import { meldeAb } from '@/auth/aktionen'
+import { Erscheinungsschalter } from '@/app/teile/erscheinung'
 
 const ROLLENNAMEN: Record<string, string> = {
   ersteller: 'Ersteller',
@@ -29,6 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span>
               {benutzer.name} · {ROLLENNAMEN[benutzer.rolle] ?? benutzer.rolle}
             </span>
+            <Erscheinungsschalter />
             <form action={meldeAb}>
               <button type="submit" style={{ padding: '4px 10px', fontSize: 13 }}>
                 Abmelden

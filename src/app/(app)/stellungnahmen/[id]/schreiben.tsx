@@ -12,12 +12,17 @@ import {
   ersetzeAbschnittsInhalt,
   ersteHerkunft,
   fuegeAbschnittEin,
+  fuegeAnStelleEin,
   fuegeInAbschnittEin,
   setzeAusgelassen,
   springeInAbschnitt,
   zeigeFundstelle,
 } from '@/dokument/editor-hilfen'
 import { absaetzeAusText, herkunftsmarke, type Herkunftsmarke } from '@/dokument/typen'
+import { MIME_BAUSTEIN, leseZiehgut } from '@/dokument/ziehen'
+import { Fortschritt, Kreisel, type Fortschrittsstand } from '@/app/teile/anzeigen'
+import { leseEreignisse } from '@/app/teile/strom'
+import type { Ausgabeereignis } from '@/stellungnahme/ausgabe'
 import {
   formuliereAbschnitt,
   pruefeDokument,
@@ -25,7 +30,7 @@ import {
   speichereDokument,
   uebernehmeAbschnittInBibliothek,
 } from '@/stellungnahme/editor-aktionen'
-import { erzeugeAusgabe, markiereVersendet, type Ausgabe } from '@/stellungnahme/export-aktionen'
+import { markiereVersendet } from '@/stellungnahme/export-aktionen'
 import type { Pruefergebnis } from '@/export/waechter'
 import type { Befund } from '@/export/waechter'
 import { Blase, type PositionAnzeige, type Vorschlag } from './blase'
@@ -41,6 +46,13 @@ import { Blase, type PositionAnzeige, type Vorschlag } from './blase'
 const SPEICHERRUHE = 900
 
 type Speicherzustand = 'ruht' | 'geaendert' | 'speichert' | 'konflikt' | 'fehler'
+
+interface FertigeAusgabe {
+  klartext: string
+  docxBase64: string
+  docxName: string
+  txtName: string
+}
 
 const ZUSTANDSTEXT: Record<Speicherzustand, string> = {
   ruht: 'gespeichert',
@@ -74,7 +86,8 @@ export function Schreibtisch({
   const [takt, setzeTakt] = useState(0)
   const [befunde, setzeBefunde] = useState<Befund[]>([])
   const [pruefung, setzePruefung] = useState<Pruefergebnis | null>(null)
-  const [ausgabe, setzeAusgabe] = useState<Ausgabe | null>(null)
+  const [ausgabe, setzeAusgabe] = useState<FertigeAusgabe | null>(null)
+  const [ausgabestand, setzeAusgabestand] = useState<Fortschrittsstand | null>(null)
   const [meldung, setzeMeldung] = useState<string | null>(null)
   const [laeuft, starte] = useTransition()
 
@@ -84,11 +97,43 @@ export function Schreibtisch({
   const randRef = useRef<HTMLDivElement | null>(null)
   const blasenRef = useRef(new Map<string, HTMLDivElement | null>())
 
+  const editorRef = useRef<ReturnType<typeof useEditor> | null>(null)
+
   const editor = useEditor({
     extensions: briefErweiterungen(),
     content: dokument as never,
     immediatelyRender: false,
-    editorProps: { attributes: { class: 'brief-flaeche', spellcheck: 'true' } },
+    editorProps: {
+      attributes: { class: 'brief-flaeche', spellcheck: 'true' },
+
+      /**
+       * Ein fallen gelassener Baustein landet hinter dem Absatz, über dem
+       * losgelassen wurde — und nur innerhalb eines Positionsabschnitts.
+       * Der Rückgabewert `true` hält ProseMirror davon ab, zusätzlich noch
+       * den mitgereichten Klartext einzusetzen.
+       */
+      handleDrop: (_sicht, ereignis) => {
+        const daten = (ereignis as DragEvent).dataTransfer?.getData(MIME_BAUSTEIN)
+        if (!daten) return false
+        ereignis.preventDefault()
+
+        const gut = leseZiehgut(daten)
+        const griff = editorRef.current
+        if (!gut || !griff) return true
+
+        const treffer = fuegeAnStelleEin(
+          griff,
+          { left: (ereignis as DragEvent).clientX, top: (ereignis as DragEvent).clientY },
+          absaetzeAusText(gut.text, [herkunftsmarke(gut.marke)]) as never,
+        )
+        if (!treffer) {
+          setzeMeldung(
+            'Ein Baustein gehört in einen Positionsabschnitt — nicht in Betreff, Ergebnis oder Signatur.',
+          )
+        }
+        return true
+      },
+    },
     onUpdate: () => {
       setzeTakt((t) => t + 1)
       setzeZustand('geaendert')
@@ -96,6 +141,8 @@ export function Schreibtisch({
     },
     onSelectionUpdate: ({ editor }) => setzeAktiv(aktiverAbschnitt(editor)),
   })
+
+  editorRef.current = editor
 
   /* ---------------- Speichern ---------------- */
 
@@ -251,6 +298,72 @@ export function Schreibtisch({
 
   /* ---------------- Ausgabe ---------------- */
 
+  /**
+   * Erzeugt Word- und Klartextfassung und meldet dabei jeden Schritt.
+   *
+   * Geprüft und ausgegeben wird die Fassung, die gerade im Editor steht —
+   * nicht der zuletzt gespeicherte Stand.
+   */
+  const erzeugeDokument = async () => {
+    if (!editor) return
+
+    setzeAusgabe(null)
+    setzeMeldung(null)
+    const verlauf: string[] = []
+    setzeAusgabestand({ anteil: 0.03, text: 'Das Schreiben wird übergeben …', verlauf })
+
+    let antwort: Response
+    try {
+      antwort = await fetch(`/api/stellungnahmen/${stellungnahmeId}/ausgabe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dokument: dokumentJson(editor) }),
+      })
+    } catch {
+      setzeAusgabestand(null)
+      setzeMeldung('Die Verbindung ist abgerissen.')
+      return
+    }
+
+    for await (const ereignis of leseEreignisse<Ausgabeereignis>(antwort)) {
+      if (ereignis.art === 'fortschritt') {
+        verlauf.push(ereignis.text)
+        setzeAusgabestand({ anteil: ereignis.anteil, text: ereignis.text, verlauf: verlauf.slice(-3) })
+        continue
+      }
+
+      if (ereignis.art === 'fehler') {
+        setzeAusgabestand(null)
+        setzeMeldung(ereignis.fehler)
+        if (ereignis.befunde) {
+          setzeBefunde(ereignis.befunde)
+          setzePruefung({
+            befunde: ereignis.befunde,
+            gesperrt: true,
+            zusammenfassung: {
+              sperrt: ereignis.befunde.filter((b) => b.schwere === 'sperrt').length,
+              warnt: ereignis.befunde.filter((b) => b.schwere !== 'sperrt').length,
+            },
+          })
+        }
+        return
+      }
+
+      setzeAusgabestand(null)
+      setzeAusgabe({
+        klartext: ereignis.klartext,
+        docxBase64: ereignis.docxBase64,
+        docxName: ereignis.docxName,
+        txtName: ereignis.txtName,
+      })
+      setzeBefunde(ereignis.befunde)
+      return
+    }
+
+    setzeAusgabestand(null)
+    setzeMeldung('Der Vorgang ist unterwegs abgebrochen.')
+  }
+
   const lade = (name: string, inhalt: BlobPart, typ: string) => {
     const url = URL.createObjectURL(new Blob([inhalt], { type: typ }))
     const a = document.createElement('a')
@@ -330,7 +443,9 @@ export function Schreibtisch({
           >
             ↷
           </button>
-          <span className={`speicherstand ${zustand}`}>{ZUSTANDSTEXT[zustand]}</span>
+          <span className={`speicherstand ${zustand}`}>
+            {zustand === 'speichert' ? <Kreisel text={ZUSTANDSTEXT[zustand]} /> : ZUSTANDSTEXT[zustand]}
+          </span>
         </div>
 
         <div className="werkzeuge">
@@ -355,17 +470,10 @@ export function Schreibtisch({
           <button
             type="button"
             className="haupt"
-            disabled={laeuft || !editor}
-            onClick={() =>
-              starte(async () => {
-                if (!editor) return
-                const e = await erzeugeAusgabe(stellungnahmeId, dokumentJson(editor))
-                setzeAusgabe(e)
-                setzeMeldung(e.fehler ?? null)
-              })
-            }
+            disabled={!editor || ausgabestand !== null}
+            onClick={() => void erzeugeDokument()}
           >
-            Dokument erzeugen
+            {ausgabestand ? <Kreisel text="Dokument erzeugen" /> : 'Dokument erzeugen'}
           </button>
 
           {!versendet ? (
@@ -379,7 +487,7 @@ export function Schreibtisch({
                 })
               }
             >
-              Versendet
+              {laeuft ? <Kreisel text="Versendet" /> : 'Versendet'}
             </button>
           ) : null}
         </div>
@@ -400,6 +508,12 @@ export function Schreibtisch({
               </button>
             </>
           ) : null}
+        </div>
+      ) : null}
+
+      {ausgabestand ? (
+        <div style={{ marginBottom: 14 }}>
+          <Fortschritt stand={ausgabestand} />
         </div>
       ) : null}
 

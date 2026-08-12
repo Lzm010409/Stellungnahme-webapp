@@ -7,8 +7,42 @@
  * öffnen, eine Anmerkung am Rand aufklappen, einen Baustein bearbeiten und
  * einfügen, im Brief weiterschreiben, speichern lassen.
  */
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { chromium, type Page } from 'playwright'
+
+/**
+ * Ein winziges, gültiges PDF mit zwei Textseiten.
+ *
+ * Genug, damit der Weg „hochladen → einlesen → auswerten" wirklich
+ * beschritten wird und der Fortschritt Seite für Seite meldet.
+ */
+function baueMiniPdf(): string {
+  const seite = (nummer: number, inhalt: number) =>
+    `${nummer} 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] ` +
+    `/Resources << /Font << /F1 9 0 R >> >> /Contents ${inhalt} 0 R >>endobj\n`
+
+  const text = (nummer: number, was: string) => {
+    const zeilen = Array.from(
+      { length: 6 },
+      (_, i) => `BT /F1 12 Tf 72 ${760 - i * 20} Td (${was} Zeile ${i + 1}) Tj ET`,
+    )
+    const strom = zeilen.join('\n') + '\n'
+    return `${nummer} 0 obj<< /Length ${strom.length} >>stream\n${strom}endstream\nendobj\n`
+  }
+
+  return (
+    '%PDF-1.4\n' +
+    '1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n' +
+    '2 0 obj<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>endobj\n' +
+    seite(3, 5) +
+    seite(4, 6) +
+    text(5, 'Kuerzungsbericht Musterseite eins mit Fliesstext') +
+    text(6, 'Kuerzungsbericht Musterseite zwei mit Fliesstext') +
+    '9 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n' +
+    'trailer<< /Root 1 0 R /Size 10 >>\n%%EOF\n'
+  )
+}
 
 const BASIS = process.argv[2] ?? 'http://localhost:3000'
 const ZIEL = process.argv[3] ?? '/tmp/rundgang-brief'
@@ -50,6 +84,41 @@ async function main() {
   }
 
   await anmelden(seite)
+  await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
+
+  // Auswertung anstossen und den Fortschritt beobachten. Ohne Zugang zum
+  // Sprachmodell ist der Knopf gesperrt — dann bleibt dieser Schritt aus.
+  const auswerten = seite.locator('button:has-text("Prüfbericht auswerten")')
+  if (await auswerten.isEnabled()) {
+    const pdfPfad = join(ZIEL, 'mini.pdf')
+    writeFileSync(pdfPfad, baueMiniPdf(), 'latin1')
+    await seite.setInputFiles('input[type=file]', pdfPfad)
+    const wartetAufAuswertung = seite
+      .waitForSelector('[role=progressbar]', { timeout: 8000 })
+      .catch(() => null)
+    await auswerten.click()
+    if (await wartetAufAuswertung) {
+      console.log(`  Auswertung meldet: ${await seite.locator('.fortschritt-text').innerText()}`)
+      await schritt('0-auswertung')
+      // Etwas später steht der Verlauf der gelesenen Seiten im Balken.
+      await seite.waitForTimeout(900)
+      if (await seite.locator('[role=progressbar]').count()) {
+        console.log(`  Weiter: ${await seite.locator('.fortschritt-text').innerText()}`)
+        console.log(
+          `  Verlauf: ${(await seite.locator('.fortschritt-verlauf li').allInnerTexts()).join(' | ')}`,
+        )
+        await schritt('0b-auswertung-verlauf')
+      }
+    } else {
+      console.log('  Kein Fortschrittsbalken bei der Auswertung erschienen.')
+    }
+    await seite.waitForTimeout(3000)
+    const ausgang = await seite.locator('.hinweis').first().innerText().catch(() => '—')
+    console.log(`  Ausgang der Auswertung: ${ausgang.slice(0, 90)}`)
+  } else {
+    console.log('  Auswertung gesperrt (kein Zugang zum Sprachmodell) — Schritt ausgelassen.')
+  }
+
   await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
   await seite.locator('.zeile').first().click()
   await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
@@ -99,6 +168,29 @@ async function main() {
   console.log(`  Speicherstand nach dem Tippen: ${stand}`)
   await schritt('5-im-brief-geschrieben')
 
+  // Einen Baustein in den Brief ziehen.
+  const vorher_gezogen = await seite.locator('.brief-flaeche .d-quelle').count()
+  const griff = seite.locator('.blase.auf .blase-vorschlag-kopf.ziehbar').first()
+  const ziel = seite.locator('.brief-flaeche .d-abschnitt').first().locator('p').first()
+  if ((await griff.count()) && (await ziel.count())) {
+    await griff.dragTo(ziel)
+    await seite.waitForTimeout(1600)
+    const nachher = await seite.locator('.brief-flaeche .d-quelle').count()
+    console.log(`  Markierte Stellen vor dem Ziehen ${vorher_gezogen}, danach ${nachher}`)
+    await schritt('6-gezogen')
+  }
+
+  // Erscheinungsbild umschalten.
+  await seite.locator('.erscheinung').click()
+  await seite.waitForTimeout(200)
+  const nachEinmal = await seite.evaluate(() => document.documentElement.dataset.theme ?? 'system')
+  await seite.locator('.erscheinung').click()
+  await seite.waitForTimeout(200)
+  const nachZweimal = await seite.evaluate(() => document.documentElement.dataset.theme ?? 'system')
+  console.log(`  Erscheinungsbild: ${nachEinmal} → ${nachZweimal}`)
+  await schritt('7-erscheinung')
+  await seite.locator('.erscheinung').click()
+
   // Eine Position herausnehmen und wieder aufnehmen — die Nummerierung muss
   // nachrücken und der Abschnitt an seine Stelle zurückkehren.
   const ueberschriften = () =>
@@ -116,12 +208,23 @@ async function main() {
   const wieder = await ueberschriften()
   console.log(`  Nach dem Wiederaufnehmen ${wieder.length}`)
   console.log(`  Reihenfolge gleich wie zuvor: ${JSON.stringify(wieder) === JSON.stringify(vorher)}`)
-  await schritt('6-wieder-aufgenommen')
+  await schritt('8-wieder-aufgenommen')
 
   // Prüfen und ausgeben.
+  // Der Balken kann bei einem kleinen Schreiben schnell wieder weg sein —
+  // deshalb wird auf ihn gewartet, bevor der Knopf gedrückt wird.
+  const wartetAufBalken = seite
+    .waitForSelector('[role=progressbar]', { timeout: 8000 })
+    .catch(() => null)
   await seite.locator('button:has-text("Dokument erzeugen")').click()
-  await seite.waitForTimeout(2500)
-  await schritt('7-ausgabe')
+  const balken = await wartetAufBalken
+  console.log(`  Fortschrittsbalken beim Erzeugen erschienen: ${Boolean(balken)}`)
+  if (balken) {
+    console.log(`  Erste Meldung: ${await seite.locator('.fortschritt-text').innerText()}`)
+    await schritt('9-fortschritt')
+  }
+  await seite.waitForSelector('.ausgabe-leiste', { timeout: 30000 })
+  await schritt('9b-ausgabe')
 
   await kontext.close()
 
@@ -136,8 +239,8 @@ async function main() {
   await seite2.locator('.zeile').first().click()
   await seite2.waitForSelector('.brief-flaeche', { timeout: 20000 })
   await seite2.waitForTimeout(600)
-  await seite2.screenshot({ path: `${ZIEL}/8-schreibtisch-dunkel.png`, fullPage: true })
-  console.log(`  8-schreibtisch-dunkel    ${seite2.url()}`)
+  await seite2.screenshot({ path: `${ZIEL}/10-schreibtisch-dunkel.png`, fullPage: true })
+  console.log(`  10-schreibtisch-dunkel   ${seite2.url()}`)
 
   await browser.close()
 

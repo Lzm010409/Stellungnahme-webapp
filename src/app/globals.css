@@ -1132,3 +1132,184 @@ code {
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+
+/* ---------- Warten: Kreisel und Balken ---------- */
+
+.nur-vorlesen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.kreisel-zeile {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.kreisel {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  opacity: 0.75;
+  animation: kreisel-dreht 0.75s linear infinite;
+}
+
+.kreisel.gross {
+  width: 20px;
+  height: 20px;
+  border-width: 2.5px;
+}
+
+@keyframes kreisel-dreht {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * Wer Bewegung abgestellt hat, bekommt statt der Drehung ein ruhiges
+ * Pulsieren — ganz ohne Anzeige bliebe sonst offen, ob überhaupt etwas
+ * läuft.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .kreisel {
+    animation: kreisel-pulst 1.6s ease-in-out infinite !important;
+    border-right-color: currentColor;
+  }
+  @keyframes kreisel-pulst {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.9; }
+  }
+}
+
+.fortschritt {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 15px;
+}
+
+.fortschritt.fehler {
+  border-left-color: var(--crit);
+}
+
+.fortschritt-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.fortschritt-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 560;
+}
+
+.fortschritt-zahl {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fortschritt-schiene {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-alt);
+  overflow: hidden;
+}
+
+.fortschritt-fuellung {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.35s ease-out;
+}
+
+.fortschritt.fehler .fortschritt-fuellung {
+  background: var(--crit);
+}
+
+.fortschritt-verlauf {
+  list-style: none;
+  margin: 9px 0 0;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
+.fortschritt-verlauf li::before {
+  content: '✓ ';
+  color: var(--good);
+}
+
+.fortschritt-verlauf li:last-child {
+  color: var(--ink-mid);
+}
+
+/* ---------- Erscheinungsbild ---------- */
+
+.erscheinung {
+  padding: 4px 9px;
+  font-size: 14px;
+  line-height: 1;
+  min-width: 32px;
+  justify-content: center;
+}
+
+/* ---------- Bausteine ziehen ---------- */
+
+.blase-vorschlag-kopf.ziehbar {
+  cursor: grab;
+}
+
+.blase-vorschlag-kopf.ziehbar:active {
+  cursor: grabbing;
+}
+
+.ziehgriff {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 3px 9px;
+  cursor: grab;
+  user-select: none;
+  align-self: center;
+}
+
+.ziehgriff:active {
+  cursor: grabbing;
+}
+
+/**
+ * Solange ein Baustein am Zeiger hängt, zeigt der Brief seine Abschnitte —
+ * damit sichtbar ist, wohin er überhaupt fallen darf.
+ */
+body.zieht-baustein .brief-flaeche .d-abschnitt {
+  outline: 1px dashed var(--accent);
+  outline-offset: 6px;
+  border-radius: 2px;
+}
+
+body.zieht-baustein .brief-flaeche .d-abschnitt[data-ausgelassen] {
+  outline-color: var(--line);
+}

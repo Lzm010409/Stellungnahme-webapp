@@ -19,6 +19,7 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 | P3 | Prüfbericht einlesen, Positionen auslesen, Argumentauswahl | **fertig** |
 | P4 | Ausformulieren, vier Wächter, Word- und Klartext-Ausgabe | **fertig** |
 | P4b | Der Schreibtisch: Brief-Editor mit Anmerkungen am Rand | **fertig** |
+| P4c | Ziehen und Fallenlassen, Fortschritt, Erscheinungsbild | **fertig** |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
 ## Dokumente
@@ -72,6 +73,7 @@ src/stellungnahme/
   komposition.ts             Ausformulieren im Hausstil
 src/dokument/
   typen.ts                   Der Dokumentbaum als reines JSON
+  ziehen.ts                  Was beim Ziehen eines Bausteins mitwandert
   erzeugen.ts                Kopfdaten und Positionen → Schreiben
   nach-absaetzen.ts          Dokumentbaum → Absatzfolge der Ausgabe
   spur.ts                    Herkunft des Textes, aus dem Baum gelesen
@@ -82,6 +84,8 @@ src/export/
   waechter.ts                Die vier Prüfungen vor dem Export
   hausstil.ts                Aufbau des Schreibens
   docx.ts                    Word-Ausgabe über die Geschäftspapier-Vorlage
+src/app/api/strom.ts         Ereignisstrom als Antwort (NDJSON)
+src/app/teile/               Kreisel, Fortschrittsbalken, Erscheinungsschalter
 src/auth/                    Sitzungen, Passwort, Microsoft Entra
 src/db/schema.ts             Datenmodell
 scripts/starten.mjs          Migration, Startbefüllung, Serverstart
@@ -100,6 +104,23 @@ ist er gewöhnlicher Fliesstext.
 Die Nummerierung der Abschnitte entsteht aus ihrer Reihenfolge, nicht aus
 dem Text: eine nicht bestrittene Position bleibt ausgegraut stehen, zählt
 aber nicht mit, und die übrigen Nummern rücken nach.
+
+Bausteine lassen sich **anklicken oder ziehen**. Wer zieht, sieht solange
+die Abschnitte des Briefes umrandet; fallen gelassen wird hinter dem Absatz
+unter dem Zeiger, nie mitten in einen Satz. Der Knopf bleibt gleichwertig —
+Ziehen ist die Abkürzung, nicht der Weg.
+
+## Warten mit Auskunft
+
+Die beiden langen Vorgänge — Prüfbericht auswerten und Dokument erzeugen —
+laufen als **Ereignisstrom** und melden, woran sie gerade arbeiten: Seite
+für Seite beim Einlesen, dann Auslesen, Prüfliste, Anlegen. Der Balken zeigt
+den Stand, darunter stehen die erledigten Schritte. Kurze Wege bekommen
+einen Kreisel, keinen Balken.
+
+Das Erscheinungsbild lässt sich im Kopf umschalten: hell, dunkel oder wie
+das System. Die Wahl bleibt im Browser und wird vor dem ersten Zeichnen
+gesetzt, damit nichts aufblitzt.
 
 ## Zwei Grundregeln, die im Code verankert sind
 

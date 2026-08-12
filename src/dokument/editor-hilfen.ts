@@ -176,6 +176,60 @@ export function fuegeInAbschnittEin(
   return true
 }
 
+/**
+ * Fügt Absätze an der Stelle ein, an der etwas fallen gelassen wurde.
+ *
+ * Eingefügt wird **hinter** dem Absatz, über dem die Maus losgelassen wurde,
+ * nicht mitten hinein: ein Baustein, der einen Satz aufspaltet, ist beim
+ * Aufräumen mehr Arbeit als beim Einfügen gespart wurde. Fällt der Baustein
+ * ausserhalb eines Positionsabschnitts — in den Betreff, das Ergebnis, die
+ * Signatur —, passiert nichts; dort gehört er nicht hin.
+ */
+export function fuegeAnStelleEin(
+  editor: Editor,
+  koordinaten: { left: number; top: number },
+  absaetze: Knoten[],
+): { positionId: string | null } | null {
+  if (absaetze.length === 0) return null
+
+  const treffer = editor.view.posAtCoords(koordinaten)
+  if (!treffer) return null
+
+  const $pos = editor.state.doc.resolve(treffer.pos)
+
+  let tiefe = -1
+  for (let t = $pos.depth; t > 0; t--) {
+    if ($pos.node(t).type.name === KNOTEN.abschnitt) {
+      tiefe = t
+      break
+    }
+  }
+  if (tiefe < 0) return null
+
+  const abschnitt = $pos.node(tiefe)
+  const positionId = typeof abschnitt.attrs.positionId === 'string' ? abschnitt.attrs.positionId : null
+
+  if (istLeer(abschnitt)) {
+    const anfang = $pos.before(tiefe)
+    const kopf = abschnitt.firstChild
+    const inhaltAnfang = anfang + 1 + (kopf ? kopf.nodeSize : 0)
+    editor
+      .chain()
+      .focus()
+      .insertContentAt({ from: inhaltAnfang, to: anfang + abschnitt.nodeSize - 1 }, absaetze)
+      .run()
+    return { positionId }
+  }
+
+  // Hinter den Block, in dem die Stelle liegt — oder ans Ende des
+  // Abschnitts, wenn die Stelle zwischen den Blöcken liegt.
+  const ziel =
+    $pos.depth > tiefe ? $pos.after(tiefe + 1) : $pos.before(tiefe) + abschnitt.nodeSize - 1
+
+  editor.chain().focus().insertContentAt(ziel, absaetze).run()
+  return { positionId }
+}
+
 /** Ersetzt den gesamten Inhalt eines Abschnitts, die Überschrift bleibt. */
 export function ersetzeAbschnittsInhalt(
   editor: Editor,

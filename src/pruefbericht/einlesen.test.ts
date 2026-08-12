@@ -81,3 +81,59 @@ describe('Fehlerfälle', () => {
     await expect(leseBericht(Buffer.from('kein pdf'))).rejects.toThrow(/nicht als PDF/)
   })
 })
+
+/**
+ * Ein selbst gebautes PDF mit zwei Textseiten.
+ *
+ * Reicht, um den Fortschrittsrückruf zu prüfen, ohne einen echten
+ * Prüfbericht zu brauchen — der gehört wegen der Namen und Schadennummern
+ * darin nicht ins Repository.
+ */
+function baueZweiseiter(): Buffer {
+  const seite = (nummer: number, inhalt: number) =>
+    `${nummer} 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] ` +
+    `/Resources << /Font << /F1 9 0 R >> >> /Contents ${inhalt} 0 R >>endobj\n`
+  const text = (nummer: number, was: string) => {
+    // Mehrere Zeilen, weil eine einzelne über den Seitenrand hinausliefe und
+    // dabei abgeschnitten würde — die Seite gälte dann als gescannt. Und die
+    // Länge muss stimmen, sonst schneidet der Leser den Strom ab.
+    const zeilen = Array.from(
+      { length: 5 },
+      (_, i) => `BT /F1 12 Tf 72 ${760 - i * 20} Td (${was} Zeile ${i + 1}) Tj ET`,
+    )
+    const strom = zeilen.join('\n') + '\n'
+    return `${nummer} 0 obj<< /Length ${strom.length} >>stream\n${strom}endstream\nendobj\n`
+  }
+
+  return Buffer.from(
+    '%PDF-1.4\n' +
+      '1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n' +
+      '2 0 obj<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>endobj\n' +
+      seite(3, 5) +
+      seite(4, 6) +
+      text(5, 'Kuerzungsbericht Seite eins mit Fliesstext') +
+      text(6, 'Seite zwei mit ebenso viel Fliesstext') +
+      '9 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n' +
+      'trailer<< /Root 1 0 R /Size 10 >>\n%%EOF\n',
+    'latin1',
+  )
+}
+
+describe('Fortschritt beim Einlesen', () => {
+  it('meldet jede gelesene Seite mit ihrer Art', async () => {
+    const meldungen: { seite: number; von: number; art: string }[] = []
+    const bericht = await leseBericht(baueZweiseiter(), {
+      melde: (s) => meldungen.push(s),
+    })
+
+    expect(bericht.seitenzahl).toBe(2)
+    expect(meldungen).toEqual([
+      { seite: 1, von: 2, art: 'text' },
+      { seite: 2, von: 2, art: 'text' },
+    ])
+  })
+
+  it('läuft auch ohne Rückruf', async () => {
+    await expect(leseBericht(baueZweiseiter())).resolves.toMatchObject({ seitenzahl: 2 })
+  })
+})

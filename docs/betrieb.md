@@ -117,10 +117,13 @@ pnpm exec tsx scripts/rundgang.ts http://localhost:3000 /tmp/rundgang
 pnpm exec tsx scripts/rundgang-brief.ts http://localhost:3000 /tmp/brief
 ```
 
-Der zweite geht den Weg am Schreibtisch ab: Brief öffnen, Anmerkung
-aufklappen, Baustein bearbeiten und einfügen, im Brief weiterschreiben,
-Position herausnehmen und wieder aufnehmen, Dokument erzeugen. Er meldet
-jeden Konsolenfehler und bricht dann ab.
+Der zweite geht den Weg am Schreibtisch ab: Prüfbericht hochladen und den
+Fortschritt beobachten, Brief öffnen, Anmerkung aufklappen, Baustein
+bearbeiten und einfügen, einen zweiten hineinziehen, im Brief
+weiterschreiben, Erscheinungsbild umschalten, Position herausnehmen und
+wieder aufnehmen, Dokument erzeugen. Er meldet jeden Konsolenfehler und
+bricht dann ab. Ohne `ANTHROPIC_API_KEY` lässt er den Auswertungsschritt
+aus, statt zu scheitern.
 
 ## Was die Anwendung kann
 
@@ -132,6 +135,9 @@ jeden Konsolenfehler und bricht dann ab.
 | Kürzungspositionen auslesen | braucht `ANTHROPIC_API_KEY` |
 | Sonderfall-Prüfliste B.1–B.8 | läuft |
 | Brief-Editor mit Anmerkungen am Rand | läuft |
+| Bausteine per Klick oder Ziehen einfügen | läuft |
+| Fortschrittsanzeige beim Auswerten und Erzeugen | läuft |
+| Hell, dunkel oder wie das System | läuft |
 | Vorschläge, Bibliothekssuche und eigener Text je Position | läuft |
 | Ausformulieren je Abschnitt | braucht `ANTHROPIC_API_KEY` |
 | Vier Wächter, laufend und als Randnotiz | läuft |

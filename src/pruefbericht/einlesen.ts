@@ -111,7 +111,16 @@ async function seitenBild(pfad: string, seite: number, ordner: string): Promise<
  */
 export async function leseBericht(
   pdf: Buffer,
-  optionen: { nurSeiten?: number[] } = {},
+  optionen: {
+    nurSeiten?: number[]
+    /**
+     * Wird nach jeder gelesenen Seite gerufen. Das Einlesen ist der lange
+     * Teil des Vorgangs — vor allem bei gescannten Berichten, wo jede Seite
+     * gerastert werden muss. Ohne Rückmeldung sieht der Balken dort aus,
+     * als hänge er.
+     */
+    melde?: (stand: { seite: number; von: number; art: Seite['art'] }) => void
+  } = {},
 ): Promise<EingelesenerBericht> {
   const ordner = await mkdtemp(join(tmpdir(), 'pruefbericht-'))
   const pfad = join(ordner, 'bericht.pdf')
@@ -133,7 +142,7 @@ export async function leseBericht(
       : Array.from({ length: anzahl }, (_, i) => i + 1)
 
     const seiten: Seite[] = []
-    for (const nummer of zuLesen) {
+    for (const [i, nummer] of zuLesen.entries()) {
       const text = await seitenText(pfad, nummer)
       if (istTextseite(text)) {
         seiten.push({ nummer, art: 'text', text: text.trimEnd() })
@@ -145,6 +154,7 @@ export async function leseBericht(
           bildBase64: await seitenBild(pfad, nummer, ordner),
         })
       }
+      optionen.melde?.({ seite: i + 1, von: zuLesen.length, art: seiten[i]!.art })
     }
 
     return {

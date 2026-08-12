@@ -3,8 +3,10 @@
 import { useState, useTransition } from 'react'
 import { durchsucheBibliothek } from '@/stellungnahme/aktionen'
 import { setzeWerteEin } from '@/dokument/platzhalter'
+import { MIME_BAUSTEIN, type Ziehgut } from '@/dokument/ziehen'
 import type { Herkunftsmarke } from '@/dokument/typen'
 import type { Befund } from '@/export/waechter'
+import { Kreisel } from '@/app/teile/anzeigen'
 
 /**
  * Eine Anmerkung am Rand des Briefes.
@@ -43,6 +45,43 @@ export interface Vorschlag {
   positionId: string
   besteGuete: string
   kandidaten: Kandidat[]
+}
+
+/**
+ * Macht ein Element ziehbar.
+ *
+ * Der Knopf bleibt der verlässliche Weg — Ziehen ist die Abkürzung für die,
+ * die sie mögen, und für niemanden Pflicht. Als Rückfall wandert der reine
+ * Text mit, damit ein Baustein auch in einem anderen Fenster landen kann.
+ */
+function ziehbar(text: string, marke: Herkunftsmarke) {
+  return {
+    draggable: true,
+    onDragStart: (e: React.DragEvent) => {
+      if (!text.trim()) return
+      const gut: Ziehgut = { text, marke }
+      e.dataTransfer.setData(MIME_BAUSTEIN, JSON.stringify(gut))
+      e.dataTransfer.setData('text/plain', text)
+      e.dataTransfer.effectAllowed = 'copy'
+      document.body.classList.add('zieht-baustein')
+    },
+    onDragEnd: () => document.body.classList.remove('zieht-baustein'),
+  }
+}
+
+/** Der Griff, an dem sich ein bearbeiteter Entwurf in den Brief ziehen lässt. */
+function Ziehgriff({ text, marke }: { text: string; marke: Herkunftsmarke }) {
+  if (!text.trim()) return null
+  return (
+    <span
+      className="ziehgriff"
+      title="In den Brief ziehen und dort fallen lassen"
+      aria-hidden="true"
+      {...ziehbar(text, marke)}
+    >
+      ⠿ ziehen
+    </span>
+  )
 }
 
 const GUETE_TEXT: Record<string, string> = {
@@ -216,7 +255,16 @@ export function Blase({
                 <div key={k.eintragId} className="blase-vorschlag">
                   <button
                     type="button"
-                    className="blase-vorschlag-kopf"
+                    className={`blase-vorschlag-kopf ${k.text ? 'ziehbar' : ''}`}
+                    title={k.text ? 'Anklicken zum Bearbeiten — oder in den Brief ziehen' : undefined}
+                    {...(k.text
+                      ? ziehbar(setzeWerteEin(k.text, werte).text, {
+                          eintragId: k.eintragId,
+                          nummer: k.nummer,
+                          titel: k.titel,
+                          herkunft: 'vorschlag',
+                        })
+                      : {})}
                     onClick={() =>
                       offenerKandidat === k.eintragId
                         ? setzeOffenenKandidaten(null)
@@ -295,6 +343,15 @@ export function Blase({
                         >
                           In den Brief einfügen
                         </button>
+                        <Ziehgriff
+                          text={entwurf}
+                          marke={{
+                            eintragId: k.eintragId,
+                            nummer: k.nummer,
+                            titel: k.titel,
+                            herkunft: 'vorschlag',
+                          }}
+                        />
                         <button type="button" onClick={() => setzeOffenenKandidaten(null)}>
                           Schliessen
                         </button>
@@ -317,15 +374,24 @@ export function Blase({
             />
             {sucht ? (
               <p className="unterzeile" style={{ margin: '6px 0 0' }}>
-                sucht …
+                <Kreisel text="sucht …" />
               </p>
             ) : null}
             {treffer.slice(0, 6).map((t) => (
               <div key={t.id} className="blase-vorschlag">
                 <button
                   type="button"
-                  className="blase-vorschlag-kopf"
+                  className={`blase-vorschlag-kopf ${t.gegenargument ? 'ziehbar' : ''}`}
                   disabled={!t.gegenargument}
+                  title={t.gegenargument ? 'Anklicken zum Bearbeiten — oder in den Brief ziehen' : undefined}
+                  {...(t.gegenargument
+                    ? ziehbar(setzeWerteEin(t.gegenargument, werte).text, {
+                        eintragId: t.id,
+                        nummer: t.nummer,
+                        titel: t.titel,
+                        herkunft: 'bibliothekssuche',
+                      })
+                    : {})}
                   onClick={() =>
                     offenerKandidat === t.id
                       ? setzeOffenenKandidaten(null)
@@ -363,6 +429,15 @@ export function Blase({
                       >
                         In den Brief einfügen
                       </button>
+                      <Ziehgriff
+                        text={entwurf}
+                        marke={{
+                          eintragId: t.id,
+                          nummer: t.nummer,
+                          titel: t.titel,
+                          herkunft: 'bibliothekssuche',
+                        }}
+                      />
                       <button type="button" onClick={() => setzeOffenenKandidaten(null)}>
                         Schliessen
                       </button>
@@ -397,6 +472,10 @@ export function Blase({
               >
                 In den Brief einfügen
               </button>
+              <Ziehgriff
+                text={eigenerText}
+                marke={{ eintragId: null, nummer: null, titel: null, herkunft: 'eigener_text' }}
+              />
             </div>
           </div>
 
@@ -413,7 +492,7 @@ export function Blase({
               }
               onClick={aufAusformulieren}
             >
-              Ausformulieren
+              {laeuft ? <Kreisel text="Ausformulieren" /> : 'Ausformulieren'}
             </button>
             <button type="button" disabled={laeuft} onClick={aufHerausnehmen}>
               Nicht bestreiten
