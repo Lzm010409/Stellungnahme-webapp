@@ -1,36 +1,76 @@
-# Stellungnahme-Webapp
+# Kürzungsabwehr-Werkbank
 
-Webapp für das Kfz-Sachverständigenbüro Gollenstede: Erstellung von Stellungnahmen
-gegen Kürzungsschreiben und Prüfberichte von Kfz-Versicherern, mit KI-gestützter
+Webapp für das Kfz-Sachverständigenbüro Gollenstede: Stellungnahmen gegen
+Kürzungsschreiben und Prüfberichte von Kfz-Versicherern, mit KI-gestützter
 Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 
-## Status
+Überführt die beiden Skills `stellungnahme-erstellen` und
+`argumentbibliothek-erweitern` (unter [`skills/`](skills/)) in eine Anwendung.
 
-Konzeptphase, Fassung 2 (gegen die Skill-Dateien geprüft). Noch kein Anwendungscode.
+## Stand
 
-## Konzept
+| Phase | Inhalt | Status |
+| --- | --- | --- |
+| P0 | Gerüst, Datenbankschema, Anmeldung mit Rollen, Dockerfile | **fertig** |
+| P1 | Argumentbibliothek: Migration, Suche, Detailansicht, Freigabe | **fertig** |
+| P2 | autoiXpert-Anbindung | offen — Netzfreigabe nötig |
+| P3 | Auswahlmaske, Positionsextraktion, Ausformulierung | offen |
+| P4 | Wächter und Ausgabe (Word/Klartext) | offen |
+| P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
-Das vollständige Umsetzungskonzept liegt unter [`docs/konzept.html`](docs/konzept.html):
+## Dokumente
 
-| Kennung | Entscheidung |
+- [Konzept](docs/konzept.html) — Entscheidungen E1–E6, Risiken R1–R4,
+  Features F1–F9, Phasenplan P0–P5
+- [Betrieb](docs/betrieb.md) — Coolify, Microsoft Entra, Einrichtung
+
+## Schnellstart
+
+```bash
+pnpm install
+cp .env.example .env.local          # DATABASE_URL eintragen
+pnpm db:push                        # Schema anlegen
+pnpm bibliothek:import              # 68 Einträge übernehmen
+pnpm benutzer:anlegen --email du@example.org --name "Du" \
+                      --rolle admin --passwort geheim
+pnpm dev
+```
+
+## Befehle
+
+| Befehl | Wirkung |
 | --- | --- |
-| E1 | Übersetzungsstrategie der Skills — Ablauf als Code, Fachwissen als Playbook |
-| E2 | Technischer Stack |
-| E3 | Betrieb als Coolify-Application *(entschieden)* |
-| E4 | Datenmodell und Migration der Argumentbibliothek |
-| E5 | Freigabe-Regel für KI-erzeugte Einträge |
-| E6 | Auswahlmaske als Leitinteraktion, Drag & Drop als Ergänzung |
+| `pnpm dev` | Entwicklungsserver |
+| `pnpm check` | Typprüfung und Tests |
+| `pnpm bibliothek:import --bericht` | Abgleichbericht, ohne zu schreiben |
+| `pnpm bibliothek:import` | Referenzdateien in die Datenbank |
+| `pnpm bibliothek:export` | Datenbank zurück nach Markdown |
+| `pnpm benutzer:anlegen` | Zugang anlegen oder ändern |
 
-Dazu: Risiken R1–R4, Feature-Vorschläge F1–F8, Phasenplan P0–P5.
+## Aufbau
 
-## Offene Punkte
+```
+skills/                      Die Skills — versionierte fachliche Grundlage
+src/bibliothek/
+  parser.ts                  Markdown → strukturierte Einträge
+  markdown-export.ts         Einträge → Markdown (der Rückweg)
+  migration.ts               Abgleichbericht
+  abfragen.ts                Suche und Detailabruf
+  aktionen.ts                Freigabe, Beleg-Prüfung, Speichern
+src/auth/                    Sitzungen, Passwort, Microsoft Entra
+src/db/schema.ts             Datenmodell
+```
 
-- **Netzfreigabe `app.autoixpert.de`** in der Claude-Code-Umgebung — blockiert Phase P2.
-- **Testmaterial**: Aktenzeichen, Prüfberichte (Scan und Text), versandte Stellungnahmen.
+## Zwei Grundregeln, die im Code verankert sind
 
-## Hinweis zur Sichtbarkeit
+**Die Bibliothek bleibt in beide Richtungen lesbar.** Markdown → Datenbank →
+Markdown ist verlustfrei und durch Tests abgesichert. Solange der Rückexport
+läuft, funktionieren die bestehenden Skills im Chat unverändert weiter — die
+Webapp ist keine Einbahnstraße.
 
-Dieses Repository ist derzeit **öffentlich**. Die Argumentbibliothek des Büros,
-der Hausstil und die Geschäftspapier-Vorlage gehören nicht in ein öffentliches
-Repository. Vor dem Einchecken der Skills unter `skills/` ist die Sichtbarkeit
-auf *privat* umzustellen.
+**Freigeben ist Menschensache.** Der Status `freigegeben` wird ausschließlich
+über die Oberfläche gesetzt und verlangt die Rolle `freigeber`. Kein
+KI-Aufruf erreicht diesen Weg. Unbestätigte Fundstellen sperren die Freigabe;
+interne Hinweise sind im Datenmodell vom Exportpfad getrennt und können
+deshalb auch durch einen Modellfehler nicht in ein versandtes Schreiben
+geraten.
