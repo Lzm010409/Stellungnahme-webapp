@@ -4,7 +4,11 @@
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 
-RUN corepack enable
+# pnpm wird direkt über npm installiert statt über corepack: dessen
+# Signaturprüfung scheitert in Containern regelmäßig an neueren
+# pnpm-Versionen, und der Fehler ist im Buildlog schwer zu erkennen.
+ARG PNPM_VERSION=10.33.0
+RUN npm install -g "pnpm@${PNPM_VERSION}" && pnpm --version
 
 COPY package.json pnpm-lock.yaml .npmrc ./
 RUN pnpm install --frozen-lockfile
@@ -15,7 +19,8 @@ RUN pnpm install --frozen-lockfile
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
-RUN corepack enable
+ARG PNPM_VERSION=10.33.0
+RUN npm install -g "pnpm@${PNPM_VERSION}"
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -24,6 +29,8 @@ COPY . .
 # als gesetzt. Der echte Wert kommt zur Laufzeit aus Coolify.
 ENV DATABASE_URL=postgres://build:build@127.0.0.1:5432/build
 ENV NEXT_TELEMETRY_DISABLED=1
+# Ein Next-Build sprengt den Standard-Heap auf kleineren Servern.
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 RUN pnpm build
 
@@ -60,7 +67,7 @@ COPY --from=build --chown=werkbank:werkbank /app/skills ./skills
 USER werkbank
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
     CMD node -e "fetch('http://127.0.0.1:3000/api/gesundheit').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "server.js"]
