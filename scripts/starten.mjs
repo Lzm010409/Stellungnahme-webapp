@@ -16,8 +16,11 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes, scrypt as scryptCb } from 'node:crypto'
+import { promisify } from 'node:util'
 import postgres from 'postgres'
+
+const scrypt = promisify(scryptCb)
 
 const WURZEL = process.cwd()
 const MIGRATIONEN = join(WURZEL, 'drizzle')
@@ -148,6 +151,49 @@ async function befuelleBibliothek(sql) {
   melde(`${eintraege.length} Einträge übernommen — alle im Status „entwurf".`)
 }
 
+/**
+ * Legt beim allerersten Start einen Zugang an, damit die Anwendung nicht
+ * ohne Anmeldemöglichkeit dasteht.
+ *
+ * Greift ausschließlich, solange es überhaupt keinen Benutzer gibt — ein
+ * später gesetzter oder vergessener Umgebungswert kann also weder ein Konto
+ * überschreiben noch heimlich ein zweites anlegen.
+ *
+ * Das Hashverfahren muss zu `src/auth/passwort.ts` passen: gleiche
+ * Parameter, gleiches Format `scrypt$N$r$p$salz$hash`.
+ */
+async function legeErstenZugangAn(sql) {
+  const email = process.env.ERSTER_ADMIN_EMAIL?.trim().toLowerCase()
+  if (!email) return
+
+  const [{ anzahl }] = await sql`select count(*)::int as anzahl from benutzer`
+  if (anzahl > 0) return
+
+  const name = process.env.ERSTER_ADMIN_NAME?.trim() || email.split('@')[0]
+  const passwort = process.env.ERSTER_ADMIN_PASSWORT
+
+  let hash = null
+  if (passwort) {
+    const N = 2 ** 17
+    const salz = randomBytes(16)
+    const abgeleitet = await scrypt(passwort.normalize('NFKC'), salz, 64, {
+      N,
+      r: 8,
+      p: 1,
+      maxmem: 256 * 1024 * 1024,
+    })
+    hash = ['scrypt', N, 8, 1, salz.toString('base64'), abgeleitet.toString('base64')].join('$')
+  }
+
+  await sql`
+    insert into benutzer (email, name, passwort_hash, rolle)
+    values (${email}, ${name}, ${hash}, 'admin')
+  `
+  melde(
+    `Erster Zugang angelegt: ${email} (${hash ? 'mit Passwort' : 'nur über Microsoft Entra'}).`,
+  )
+}
+
 async function main() {
   const url = process.env.DATABASE_URL
   if (!url) {
@@ -159,6 +205,7 @@ async function main() {
   try {
     await wendeMigrationenAn(sql)
     await befuelleBibliothek(sql)
+    await legeErstenZugangAn(sql)
   } catch (fehler) {
     console.error('[start] Einrichtung fehlgeschlagen:', fehler)
     process.exit(1)
