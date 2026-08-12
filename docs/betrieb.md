@@ -1,24 +1,30 @@
 # Betrieb auf Coolify
 
-Die Anwendung läuft als Coolify-Application auf `coolify.gollenstede.app`
-(geprüft: Coolify 4.1.2, API erreichbar).
+**Die Anwendung läuft:** https://werkbank.gollenstede.app
 
-## Einmalig einrichten
+| | |
+| --- | --- |
+| Coolify-Projekt | Kuerzungsabwehr-Werkbank |
+| Anwendung | `werkbank` (`g7oinc0aszdlwsaz7n6tae2u`) |
+| Datenbank | `werkbank-postgres` (`thsbzqyeov34rei7pexf17bu`) |
+| Branch | `claude/stellungnahme-webapp-konzept-kyhxer` |
+| Build | Dockerfile, Port 3000, Healthcheck `/api/gesundheit` |
 
-### 1. Postgres-Ressource
+## Der Startvorgang richtet sich selbst ein
 
-In Coolify im Projekt eine **PostgreSQL 16**-Ressource anlegen. Die von
-Coolify erzeugte interne Verbindungs-URL wird gleich als `DATABASE_URL`
-gebraucht.
+Bei jedem Start läuft `starten.mjs`, bevor der Server hochkommt:
 
-### 2. Application anlegen
+1. **Migrationen anwenden** — versionierte SQL-Dateien aus `drizzle/`, mit
+   Buchführung in `__migrationen`. Bereits angewandte werden übersprungen.
+2. **Bibliothek befüllen**, falls sie leer ist — die Startbefüllung entsteht
+   beim Bauen des Abbilds. Eine gefüllte Bibliothek bleibt unangetastet.
+3. **Ersten Zugang anlegen**, falls `ERSTER_ADMIN_EMAIL` gesetzt ist und noch
+   überhaupt kein Benutzer existiert.
 
-- Quelle: `Lzm010409/Stellungnahme-webapp`, Branch `main`
-- Build Pack: **Dockerfile**
-- Port: `3000`
-- Healthcheck-Pfad: `/api/gesundheit`
+Ein Neustart oder ein neues Deployment ist damit gefahrlos: nichts wird
+doppelt angelegt, nichts überschrieben.
 
-### 3. Umgebungsvariablen
+## Umgebungsvariablen
 
 | Variable | Pflicht | Bedeutung |
 | --- | --- | --- |
@@ -30,11 +36,14 @@ gebraucht.
 | `ENTRA_CLIENT_ID` | für Microsoft-Anmeldung | Anwendungs-ID der App-Registrierung |
 | `ENTRA_CLIENT_SECRET` | für Microsoft-Anmeldung | Geheimnis der App-Registrierung |
 | `ENTRA_AUTO_ANLEGEN` | nein | `true` legt unbekannte Tenant-Konten selbst an. Standard ist `false`: dann kann sich nur anmelden, wer vorher eingetragen wurde. |
+| `ERSTER_ADMIN_EMAIL` | einmalig | Legt beim allerersten Start einen Admin-Zugang an |
+| `ERSTER_ADMIN_NAME` | nein | Anzeigename dazu |
+| `ERSTER_ADMIN_PASSWORT` | nein | Ohne diesen Wert ist der Zugang nur über Entra nutzbar |
 
 Fehlt eine der drei `ENTRA_*`-Variablen, blendet die Anmeldemaske den
 Microsoft-Knopf einfach aus und bietet nur die Passwortanmeldung an.
 
-### 4. App-Registrierung in Microsoft Entra
+## App-Registrierung in Microsoft Entra
 
 Im Azure-Portal unter **Microsoft Entra ID → App-Registrierungen → Neue
 Registrierung**:
@@ -49,30 +58,25 @@ Registrierung**:
 Mehr braucht die Anwendung nicht: sie liest aus dem ID-Token nur
 Objekt-ID, Mailadresse und Anzeigename.
 
-### 5. Erste Einrichtung nach dem ersten Deployment
+## Weitere Zugänge anlegen
 
-Im Container-Terminal der Application:
+Die Coolify-API bietet keinen Endpunkt, um Befehle im laufenden Container
+auszuführen — deshalb die Einrichtung über den Startvorgang. Weitere
+Benutzer legst Du über das Container-Terminal in der Coolify-Oberfläche an:
 
 ```bash
-# Datenbankschema anlegen
-pnpm db:push
-
-# Bibliothek aus den Referenzdateien übernehmen
-pnpm bibliothek:import
-
-# Ersten Zugang anlegen (ohne --passwort: nur über Microsoft anmeldbar)
 pnpm benutzer:anlegen --email vorname@gollenstede-sachverstand.de \
-                      --name "Vorname Nachname" --rolle admin
+                      --name "Vorname Nachname" --rolle ersteller
 ```
 
-## Wiederkehrende Aufgaben
+Ohne `--passwort` entsteht ein Zugang, der sich ausschliesslich über
+Microsoft Entra nutzen lässt — der vorgesehene Normalfall.
+
+## Bibliothek zurück nach Markdown
+
+Damit die Skills im Chat mit dem aktuellen Stand arbeiten:
 
 ```bash
-# Abgleichbericht ansehen, ohne etwas zu schreiben
-pnpm bibliothek:import --bericht
-
-# Bibliothek zurück nach Markdown schreiben, damit die Skills im Chat
-# weiter mit dem aktuellen Stand arbeiten
 pnpm bibliothek:export
 ```
 
@@ -113,7 +117,15 @@ pnpm exec tsx scripts/rundgang.ts http://localhost:3000 /tmp/rundgang
   Egress-Richtlinie gesperrt (403 auf den CONNECT-Tunnel). Der Fall-Import
   (P2) lässt sich deshalb dort nicht gegen die echte Schnittstelle prüfen.
   Auf dem Coolify-Server besteht diese Beschränkung nicht.
-- Das **Container-Abbild** konnte in der Entwicklungsumgebung nicht gebaut
-  werden, weil auch Docker Hub gesperrt ist. Das Dockerfile ist geschrieben
-  und setzt auf der geprüften Standalone-Ausgabe auf; der erste echte Build
-  findet auf Coolify statt.
+- Das **Container-Abbild** lässt sich in der Entwicklungsumgebung nicht bauen,
+  weil auch Docker Hub gesperrt ist. Gebaut wird deshalb auf Coolify — dort
+  läuft es. Geprüft wurde vorab im nachgestellten Container-Layout: Migration,
+  Startbefüllung, Serverstart und ein zweiter Lauf ohne Doppelarbeit.
+- **Kalkulationsbeträge** liefert die autoiXpert-Schnittstelle laut ihrer
+  eigenen Dokumentation noch nicht („werden zukünftig im Gutachten-Objekt
+  enthalten sein"). Die Kürzungspositionen kommen deshalb aus dem
+  Prüfbericht; die Fallansicht weist darauf hin.
+- **Lesezugriffe auf Gutachten sind kostenpflichtig**, je Gutachten einmalig.
+  Der Client greift deshalb zuerst über den Pfad zu (genau ein Zugriff) und
+  sucht nur dann über das Aktenzeichen, wobei die Suche nach zehn Listenseiten
+  abbricht und das auch meldet.

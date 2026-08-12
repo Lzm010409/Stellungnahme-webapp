@@ -7,13 +7,15 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 Überführt die beiden Skills `stellungnahme-erstellen` und
 `argumentbibliothek-erweitern` (unter [`skills/`](skills/)) in eine Anwendung.
 
+**Läuft unter https://werkbank.gollenstede.app**
+
 ## Stand
 
 | Phase | Inhalt | Status |
 | --- | --- | --- |
-| P0 | Gerüst, Datenbankschema, Anmeldung mit Rollen, Dockerfile | **fertig** |
+| P0 | Gerüst, Datenbankschema, Anmeldung mit Rollen, Deployment | **fertig** |
 | P1 | Argumentbibliothek: Migration, Suche, Detailansicht, Freigabe | **fertig** |
-| P2 | autoiXpert-Anbindung | offen — Netzfreigabe nötig |
+| P2 | autoiXpert-Anbindung: Fall über Aktenzeichen oder ID | **fertig** |
 | P3 | Auswahlmaske, Positionsextraktion, Ausformulierung | offen |
 | P4 | Wächter und Ausgabe (Word/Klartext) | offen |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
@@ -57,8 +59,12 @@ src/bibliothek/
   migration.ts               Abgleichbericht
   abfragen.ts                Suche und Detailabruf
   aktionen.ts                Freigabe, Beleg-Prüfung, Speichern
+src/autoixpert/
+  client.ts                  Zugriff auf die externe Schnittstelle
+  felder.ts                  Falldaten → Platzhalter und Empfängervorschlag
 src/auth/                    Sitzungen, Passwort, Microsoft Entra
 src/db/schema.ts             Datenmodell
+scripts/starten.mjs          Migration, Startbefüllung, Serverstart
 ```
 
 ## Zwei Grundregeln, die im Code verankert sind
