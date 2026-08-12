@@ -20,6 +20,7 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 | P4 | Ausformulieren, vier Wächter, Word- und Klartext-Ausgabe | **fertig** |
 | P4b | Der Schreibtisch: Brief-Editor mit Anmerkungen am Rand | **fertig** |
 | P4c | Ziehen und Fallenlassen, Fortschritt, Erscheinungsbild | **fertig** |
+| P4d | Oberfläche nach der Vorlage „Judia" | **fertig** |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
 ## Dokumente
@@ -118,9 +119,19 @@ für Seite beim Einlesen, dann Auslesen, Prüfliste, Anlegen. Der Balken zeigt
 den Stand, darunter stehen die erledigten Schritte. Kurze Wege bekommen
 einen Kreisel, keinen Balken.
 
-Das Erscheinungsbild lässt sich im Kopf umschalten: hell, dunkel oder wie
-das System. Die Wahl bleibt im Browser und wird vor dem ersten Zeichnen
-gesetzt, damit nichts aufblitzt.
+Das Erscheinungsbild lässt sich in der Kopfleiste umschalten: hell, dunkel
+oder wie das System. Die Wahl bleibt im Browser und wird vor dem ersten
+Zeichnen gesetzt, damit nichts aufblitzt.
+
+## Aussehen
+
+Farben, Masse und Formen folgen der Vorlage „Judia" (Bootstrap 5.3): Blau
+als einzige Signalfarbe, kühle Blaugrautöne für Text, helle Flächen mit
+dünnen Rändern statt Schatten. Links eine schmale dunkle Schiene, daneben
+das einklappbare Menü, darüber die Kopfleiste.
+
+Eine Ausnahme ist Absicht: der Brief wird in einer Serifenschrift gesetzt.
+Er soll wie ein Schreiben aussehen, nicht wie eine Bildschirmmaske.
 
 ## Zwei Grundregeln, die im Code verankert sind
 

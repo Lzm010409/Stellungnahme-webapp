@@ -7,7 +7,7 @@ import { meldeAn, type AnmeldeZustand } from '@/auth/aktionen'
 function Absenden() {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" disabled={pending} style={{ justifyContent: 'center' }}>
+    <button type="submit" className="haupt" disabled={pending} style={{ justifyContent: 'center' }}>
       {pending ? 'Wird geprüft …' : 'Anmelden'}
     </button>
   )

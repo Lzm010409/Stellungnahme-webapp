@@ -35,7 +35,7 @@ doppelt angelegt, nichts überschrieben.
 | --- | --- | --- |
 | `DATABASE_URL` | ja | Verbindungs-URL der Postgres-Ressource |
 | `APP_BASIS_URL` | ja | Öffentliche Adresse, z.B. `https://werkbank.gollenstede.app` |
-| `ANTHROPIC_API_KEY` | **fehlt noch** | Ohne diesen Wert lassen sich Prüfberichte nicht auswerten und Positionen nicht ausformulieren. Alles Übrige — Bibliothek, Fallimport, Auswahlmaske, Wächter, Ausgabe — läuft ohne ihn. |
+| `ANTHROPIC_API_KEY` | ja | Gesetzt. Ohne diesen Wert liessen sich Prüfberichte nicht auswerten und Abschnitte nicht ausformulieren; alles Übrige — Bibliothek, Fallimport, Schreibtisch, Wächter, Ausgabe — läuft auch ohne ihn. |
 | `AUTOIXPERT_API_TOKEN` | für P2 | Bearer-Token der externen Schnittstelle |
 | `ENTRA_TENANT_ID` | für Microsoft-Anmeldung | Verzeichnis-ID des Tenants |
 | `ENTRA_CLIENT_ID` | für Microsoft-Anmeldung | Anwendungs-ID der App-Registrierung |
@@ -85,6 +85,22 @@ Damit die Skills im Chat mit dem aktuellen Stand arbeiten:
 pnpm bibliothek:export
 ```
 
+## Erscheinungsbild und Aufbau der Oberfläche
+
+Farben, Masse und Formen folgen der Vorlage „Judia" (Bootstrap 5.3): Blau
+als einzige Signalfarbe, kühle Blaugrautöne für Text, helle Flächen mit
+dünnen Rändern. Links eine schmale dunkle Schiene, daneben das Menü, darüber
+die Kopfleiste; der Inhalt rückt um beides ein. Das Menü lässt sich
+einklappen — auf schmalen Schirmen ist es das von sich aus.
+
+Der Brief selbst bleibt Serifensatz. Er soll wie ein Schreiben aussehen und
+nicht wie eine Bildschirmmaske; das ist der Unterschied zwischen der
+Anwendung und ihrem Erzeugnis.
+
+Alle Farben stehen dreifach: hell, dunkel über die Systemvorgabe, dunkel
+über den Schalter. Ein Test vergleicht die drei Blöcke — fehlt in einem ein
+Wert, fällt sonst stillschweigend die helle Fassung durch.
+
 ## Rollen
 
 | Rolle | Darf |
@@ -132,14 +148,14 @@ aus, statt zu scheitern.
 | Argumentbibliothek pflegen und freigeben | läuft |
 | Fall aus autoiXpert laden | läuft, Schnittstelle noch nicht gegen echte Daten geprüft |
 | Prüfbericht einlesen (Text und Scan) | läuft |
-| Kürzungspositionen auslesen | braucht `ANTHROPIC_API_KEY` |
+| Kürzungspositionen auslesen | läuft |
 | Sonderfall-Prüfliste B.1–B.8 | läuft |
 | Brief-Editor mit Anmerkungen am Rand | läuft |
 | Bausteine per Klick oder Ziehen einfügen | läuft |
 | Fortschrittsanzeige beim Auswerten und Erzeugen | läuft |
 | Hell, dunkel oder wie das System | läuft |
 | Vorschläge, Bibliothekssuche und eigener Text je Position | läuft |
-| Ausformulieren je Abschnitt | braucht `ANTHROPIC_API_KEY` |
+| Ausformulieren je Abschnitt | läuft |
 | Vier Wächter, laufend und als Randnotiz | läuft |
 | Word- und Klartext-Ausgabe | läuft |
 | Selbst geschriebenen Abschnitt in die Bibliothek übernehmen | läuft |
