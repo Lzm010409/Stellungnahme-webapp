@@ -445,6 +445,41 @@ figcaption {
 .b-part   { background: var(--warn-soft); color: var(--warn); }
 .b-none   { background: var(--surface-alt); color: var(--ink-soft); }
 
+.mock-zwei {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: 14px;
+  align-items: start;
+}
+.mock-blatt {
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  padding: 14px 16px;
+  font-family: var(--serif);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+.mock-blatt h4 {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  margin: 14px 0 5px;
+}
+.mock-blatt h4:first-child { margin-top: 0; }
+.mock-quelle { box-shadow: inset 0 -0.5em 0 var(--accent-soft); }
+.mock-blase {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 3px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.mock-blase.still { border-left-color: var(--line); color: var(--ink-soft); }
+@media (max-width: 720px) {
+  .mock-zwei { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 720px) {
   body { padding: 0 18px 72px; font-size: 16.5px; }
   section { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 40px 0 8px; }
@@ -461,7 +496,7 @@ figcaption {
 <div class="wrap">
 
 <header class="masthead">
-  <p class="kicker">Konzeptvorlage zur Freigabe &middot; Fassung 3</p>
+  <p class="kicker">Konzeptvorlage zur Freigabe &middot; Fassung 4</p>
   <h1>Kürzungsabwehr&nbsp;Werkbank</h1>
   <p class="standfirst">Wie aus den beiden Skills <code>stellungnahme-erstellen</code> und <code>argumentbibliothek-erweitern</code> eine Webapp wird. Gegen die tatsächlichen Skill-Dateien geprüft. Leitgedanke der Bedienung: die vorgeschlagenen Treffer sind eine Abkürzung — die volle Bibliothek und ein eigener Text stehen bei jeder Position dauerhaft offen.</p>
   <div class="meta-row">
@@ -779,45 +814,43 @@ figcaption {
 <section>
   <div class="rail">Leit&shy;maske<br>E5&ndash;E6</div>
   <div class="body">
-    <h2>Die Auswahlmaske</h2>
-    <p>Deine Skills lösen die Argumentauswahl in zwei Schritten: erst ein Anzeige-Widget mit allen Optionen zum Lesen, dann eine getrennte Abfrage zum Anklicken. Das ist ein Behelf, weil ein Chat nichts Besseres kann. Die Webapp führt beides zusammen — so sieht eine Position aus:</p>
+    <h2>Der Schreibtisch: der Brief ist die Arbeitsfläche</h2>
+    <p><em>Nachtrag zu Fassung&nbsp;3.</em> Die Auswahlmaske war richtig gedacht und falsch herum gebaut. Sie machte das Formular zum Werkzeug und den Brief zum Ergebnis — man wählte Bausteine und bekam am Ende ein Dokument zu sehen. Umgekehrt stimmt es: <strong>der Brief ist das Werkzeug, die Bausteine sind Zulieferer am Rand</strong>, wie Kommentare in Word.</p>
 
     <div class="mockup">
-      <div class="mock-pos">Position 1 — Oberflächenlackierung Tür vorne links &nbsp;<span style="color:var(--crit)">−179,00&nbsp;€</span></div>
-      <div class="mock-reason">„Beilackierung angrenzender Bauteile technisch nicht erforderlich, da Farbtonangleichung über Musterblech erfolgt."</div>
-      <div class="mock-opt">
-        <span class="mock-radio">[&check;]</span>
-        <span><strong>A — Aus einem Guss</strong><span class="badge b-direct">Direkter Treffer</span><br>
-        <span style="color:var(--ink-mid); font-size:0.87rem">Eintrag 2.1 · in über 10 Fällen verwendet · 1 Platzhalter offen: <code>[Bauteilseite]</code></span></span>
-      </div>
-      <div class="mock-opt">
-        <span class="mock-radio">[&nbsp;]</span>
-        <span><strong>B — Widersprüchliche Doppelargumentation</strong><span class="badge b-part">Teiltreffer</span><br>
-        <span style="color:var(--ink-mid); font-size:0.87rem">Eintrag 2.2 · <span style="color:var(--warn)">⚠ Vorbedingung: Prüfbericht muss beide Aussagen enthalten</span></span></span>
-      </div>
-      <div class="mock-opt" style="border-top:2px solid var(--accent);">
-        <span class="mock-radio">&#9906;</span>
-        <span><strong style="color:var(--accent)">Gesamte Bibliothek durchsuchen</strong><span class="badge b-none">alle 67 Einträge</span><br>
-        <span style="color:var(--ink-mid); font-size:0.87rem">Volltext und Themenfilter über alle Bereiche — auch quer zur erkannten Kategorie. Treffer per Klick oder Ziehen anhängen.</span></span>
-      </div>
-      <div class="mock-opt">
-        <span class="mock-radio">&#9998;</span>
-        <span><strong style="color:var(--accent)">Eigener Text</strong><br>
-        <span style="color:var(--ink-mid); font-size:0.87rem">Frei schreiben oder Stichpunkte in den Hausstil bringen lassen — Substanz bleibt unverändert.</span></span>
-      </div>
-      <div class="mock-opt">
-        <span class="mock-radio">&#8709;</span>
-        <span><strong>Nicht bestreiten</strong><span class="badge b-none">Position wird weggelassen</span></span>
-      </div>
-      <div class="mock-opt">
-        <span class="mock-radio">[+]</span>
-        <span style="color:var(--ink-mid)">Bild zu dieser Position &nbsp;—&nbsp; <span style="font-size:0.87rem">DAT-Screenshot hierher ziehen</span></span>
+      <div class="mock-zwei">
+        <div class="mock-blatt">
+          <strong>Betreff: Stellungnahme Abrechnung Musterfall</strong>
+          <p style="margin:10px 0">Sehr geehrte Damen und Herren,</p>
+          <p style="margin:10px 0">mit dem Schreiben vom 01.02.2026 überliessen Sie uns den Kürzungsbericht des Dienstleisters DEKRA mit der Bitte um Stellungnahme. Hierzu machen wir folgende Feststellungen:</p>
+          <h4><span style="color:var(--accent)">1.</span> Oberflächenlackierung Tür vorne links</h4>
+          <p style="margin:0"><span class="mock-quelle">Die Beilackierung angrenzender Bauteile ist technisch erforderlich, weil …</span> — hier wird frei weitergeschrieben.</p>
+          <h4 style="color:var(--ink-soft)">— Kleinteile</h4>
+          <p style="margin:0; color:var(--ink-soft); font-size:0.8rem">nicht bestritten: bleibt stehen, erscheint aber nicht im Schreiben</p>
+          <h4><span style="color:var(--accent)">2.</span> Verbringungskosten</h4>
+          <p style="margin:0; color:var(--ink-soft); font-size:0.8rem">noch ohne Text</p>
+        </div>
+        <div>
+          <div class="mock-blase">
+            <strong>1 · Oberflächenlackierung</strong><span class="badge b-direct">Direkter Treffer</span>
+            <div style="margin-top:5px">2.1 Aus einem Guss<br>2.2 Doppelargumentation<br><span style="color:var(--accent)">Bibliothek durchsuchen · eigener Text</span></div>
+          </div>
+          <div class="mock-blase" style="border-left-color:var(--crit)">
+            <strong>R1 — offener Platzhalter</strong><br><code>[Bauteilseite]</code> — springt beim Anklicken in den Brief
+          </div>
+          <div class="mock-blase still"><strong>— Kleinteile</strong><span class="badge b-none">nicht im Schreiben</span></div>
+          <div class="mock-blase still"><strong>2 · Verbringungskosten</strong><span class="badge b-part">4 Vorschläge</span></div>
+        </div>
       </div>
     </div>
 
-    <p><strong>Die Vorschläge sind eine Abkürzung, kein Tor.</strong> Die vier unteren Zeilen stehen bei <em>jeder</em> Position dauerhaft offen — auch wenn die Trefferliste einen direkten Treffer meldet. Die Kästchen sind bewusst Mehrfachauswahl: eine Position kann aus Eintrag&nbsp;2.1, einem quer dazu gesuchten Eintrag aus einem ganz anderen Abschnitt und einem eigenen Absatz bestehen, in einer Reihenfolge, die du per Ziehen festlegst.</p>
+    <p><strong>Was am Rand steht, bleibt vollständig.</strong> Je Position eine Blase auf Höhe ihres Abschnitts, aufgeklappt die, in der die Schreibmarke steht: die vorgeschlagenen Treffer mit ihrer Einstufung, die Volltextsuche über die gesamte Bibliothek und eigener Text — die drei gleichrangigen Wege aus E6, unverändert. Neu ist nur, wo sie hinführen: der gewählte Text wird <em>in der Blase</em> bearbeitet, mit bereits eingesetzten Fallwerten, und landet dann als gewöhnlicher Fliesstext im Brief. Ab dem Moment wird er dort weiterbearbeitet, nicht mehr in einem Feld daneben.</p>
 
-    <p>Der vollständige Argumenttext steht aufklappbar unter jeder Option, mit bereits eingesetzten Fallwerten und farblich markiert, was aus der Bibliothek stammt und was angepasst wurde — dein Punkt „Kennzeichnen, was übernommen und was angepasst wurde", nur eben sichtbar statt beschrieben. Alle Positionen stehen untereinander auf einer Seite; du entscheidest in einem Durchgang und siehst dabei die ganze Stellungnahme.</p>
+    <p><strong>Die Nummerierung entsteht aus der Reihenfolge</strong>, nicht aus dem Text. Wer eine Position nicht bestreitet, sieht ihren Abschnitt ausgegraut stehen bleiben — mit seinem Text, falls schon einer da war —, und die übrigen Nummern rücken von selbst nach. Ein Knopf am Rand, der stillschweigend geschriebenen Text vernichtet, wäre der falsche Weg.</p>
+
+    <p><strong>Die Herkunft klebt am Text, nicht an einer Tabellenzeile.</strong> Eingefügter Bibliothekstext trägt eine Auszeichnung, die das Umformulieren überlebt: dezent hinterlegt, mit der Eintragsnummer im Tooltip. Nur so bleibt nachvollziehbar, welcher Eintrag in welchem Fall gewirkt hat — die Grundlage für die Wirkungsstatistik (F2), die eine Auswahl-Tabelle beim ersten freien Überschreiben verloren hätte.</p>
+
+    <p><strong>Die vier Wächter werden zu Anmerkungen.</strong> Sie laufen nicht mehr erst vor dem Export, sondern bei jedem gespeicherten Stand, und erscheinen in derselben Randspalte: rot, was sperrt, bernstein, was zu prüfen ist. Ein Klick springt an die beanstandete Stelle im Brief. Sperren tun sie unverändert — nur eben früher und mit Fingerzeig statt als Hürde am Ende.</p>
 
     <h3>Zwei Nebenwirkungen, die sich lohnen</h3>
     <p><strong>Die Bibliothekssuche verrät, wo die Trefferliste danebenlag.</strong> Greifst du an einer Position zur Volltextsuche und wählst einen Eintrag, den die Vorschläge nicht enthielten, ist das ein Signal: hier hat die Zuordnung nicht funktioniert. Die App merkt sich die Herkunft jedes Bausteins — Vorschlag&nbsp;A, aus der Suche, eigener Text — und daraus wird ohne Zusatzaufwand die Grundlage, um das Ranking nachzuschärfen.</p>
@@ -851,6 +884,8 @@ figcaption {
       <div class="verdict">
         <b>Empfehlung — Variante C</b>
         Die Trefferliste ist eine Abkürzung für den Normalfall, nie eine Einschränkung. Damit bekommst du beides: den schnellen Weg, wenn die Zuordnung sitzt, und den vollen Zugriff, wenn nicht — ohne die Struktur zu verlieren, die Pflichtabgleich und Wirkungsmessung tragen. Im Individuell-Modus entfällt die Trefferliste ganz, Bibliothek und freier Editor bleiben.
+        <br><br>
+        <b>Nachtrag, nach dem ersten Entwurf am Bildschirm:</b> Variante&nbsp;A scheiterte in dieser Aufstellung an der Positionszuordnung — zu Recht. Der Einwand fällt weg, sobald der Abschnitt selbst seine Position trägt und die Herkunft als Auszeichnung am Text hängt. Gebaut ist deshalb <em>C in der Form von A</em>: freier Brief-Editor als Hauptfläche, die drei offenen Wege als Anmerkungen am Rand. Zuordnung, Pflichtabgleich und Wirkungsmessung bleiben vollständig erhalten.
       </div>
     </div>
 
@@ -937,7 +972,7 @@ figcaption {
 <section>
   <div class="rail">Fahrplan<br>P0&ndash;P5</div>
   <div class="body">
-    <h2>Umsetzung in sechs Phasen</h2>
+    <h2>Umsetzung in sieben Phasen</h2>
     <p>Jede Phase endet mit etwas Benutzbarem. Der Nutzerkreis ist mit „ich + Mitarbeiter" entschieden, deshalb steht das Rollenmodell bereits in P0.</p>
 
     <div class="phase">
@@ -970,7 +1005,7 @@ figcaption {
     <div class="phase">
       <div class="phase-id">P3</div>
       <div>
-        <h3>Auswahlmaske und Ausformulierung</h3>
+        <h3>Positionen und Argumentauswahl</h3>
         <p>PDF-Einlesen inklusive Scan-Pfad, Positionsextraktion und Zusammenfassung zusammengehöriger Zeilen, Treffer-Suche mit Einstufung, Auswahlmaske mit Pflichtabgleich. Dazu die drei offenen Wege je Position nach E6: Vorschläge, Volltextsuche über die gesamte Bibliothek, eigener Text — mehrfach kombinierbar und per Ziehen sortierbar, mit Übernahme eigener Texte in die Bibliothek (F9). Bilder je Position, WBW-Routing A/B, Sonderfall-Prüfliste (F4), Ausformulierung je Position mit Streaming. Individuell- und Schnellmodus.</p>
         <p class="ship">Ergebnis: erste vollständige Stellungnahme aus der App</p>
       </div>
@@ -982,6 +1017,15 @@ figcaption {
         <h3>Wächter und Ausgabe</h3>
         <p>Die vier Prüfungen aus R1–R4, Word-Ausgabe auf Basis deiner Geschäftspapier-Vorlage mit inline eingebetteten Bildern, Klartextfassung mit Bildmarkern, Dateinamenkonvention, Rückschreiben nach autoiXpert (F8), Änderungsprotokoll.</p>
         <p class="ship">Ergebnis: versandfertiges Dokument — ab hier produktiv</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-id">P4b</div>
+      <div>
+        <h3>Der Schreibtisch</h3>
+        <p>Umbau der Auswahlmaske zum Brief-Editor: das Schreiben als Dokumentbaum in der Datenbank, Abschnitte mit Positionskennung und selbsttätiger Nummerierung, Herkunftsauszeichnung am Text, Anmerkungen am Rand mit Vorschlägen, Bibliothekssuche und eigenem Text, Wächterbefunde als Randnotizen mit Sprung an die Fundstelle, Ausformulieren je Abschnitt. Die Ausgabe liest ab hier den Dokumentbaum; Word-Vorlage und Wächterregeln bleiben unverändert.</p>
+        <p class="ship">Ergebnis: geschrieben wird im Brief, nicht im Formular</p>
       </div>
     </div>
 

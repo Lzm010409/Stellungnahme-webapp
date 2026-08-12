@@ -16,8 +16,9 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 | P0 | Gerüst, Datenbankschema, Anmeldung mit Rollen, Deployment | **fertig** |
 | P1 | Argumentbibliothek: Migration, Suche, Detailansicht, Freigabe | **fertig** |
 | P2 | autoiXpert-Anbindung: Fall über Aktenzeichen oder ID | **fertig** |
-| P3 | Prüfbericht einlesen, Positionen auslesen, Auswahlmaske | **fertig** |
+| P3 | Prüfbericht einlesen, Positionen auslesen, Argumentauswahl | **fertig** |
 | P4 | Ausformulieren, vier Wächter, Word- und Klartext-Ausgabe | **fertig** |
+| P4b | Der Schreibtisch: Brief-Editor mit Anmerkungen am Rand | **fertig** |
 | P5 | Wirkungsstatistik, Prüfdienstleister-Bausteine | offen |
 
 ## Dokumente
@@ -69,6 +70,14 @@ src/pruefbericht/
 src/stellungnahme/
   treffer.ts                 Positionen → Bibliothekseinträge
   komposition.ts             Ausformulieren im Hausstil
+src/dokument/
+  typen.ts                   Der Dokumentbaum als reines JSON
+  erzeugen.ts                Kopfdaten und Positionen → Schreiben
+  nach-absaetzen.ts          Dokumentbaum → Absatzfolge der Ausgabe
+  spur.ts                    Herkunft des Textes, aus dem Baum gelesen
+  pruefung.ts                Dokumentbaum → Eingabe der vier Wächter
+  editor-schema.ts           Die Editor-Erweiterungen (nur im Browser)
+  editor-hilfen.ts           Griffe in den laufenden Editor
 src/export/
   waechter.ts                Die vier Prüfungen vor dem Export
   hausstil.ts                Aufbau des Schreibens
@@ -78,6 +87,20 @@ src/db/schema.ts             Datenmodell
 scripts/starten.mjs          Migration, Startbefüllung, Serverstart
 ```
 
+## Der Schreibtisch
+
+Geschrieben wird **im Brief**, nicht in einem Formular. Das Schreiben steht
+als Dokumentbaum in der Datenbank und wird in einem Editor bearbeitet, der
+nur kann, was die Word-Ausgabe versteht. Am rechten Rand steht je Position
+eine Anmerkung — die vorgeschlagenen Treffer, die gesamte Bibliothek und
+eigener Text —, aufgeklappt die, in der die Schreibmarke gerade steht. Ein
+gewählter Baustein wird in der Blase bearbeitet und dann eingefügt; danach
+ist er gewöhnlicher Fliesstext.
+
+Die Nummerierung der Abschnitte entsteht aus ihrer Reihenfolge, nicht aus
+dem Text: eine nicht bestrittene Position bleibt ausgegraut stehen, zählt
+aber nicht mit, und die übrigen Nummern rücken nach.
+
 ## Zwei Grundregeln, die im Code verankert sind
 
 **Die Bibliothek bleibt in beide Richtungen lesbar.** Markdown → Datenbank →
@@ -85,10 +108,17 @@ Markdown ist verlustfrei und durch Tests abgesichert. Solange der Rückexport
 läuft, funktionieren die bestehenden Skills im Chat unverändert weiter — die
 Webapp ist keine Einbahnstraße.
 
-**Vier Wächter vor jeder Ausgabe.** Offene Platzhalter und interne
+**Vier Wächter, laufend statt am Ende.** Offene Platzhalter und interne
 Feldnotizen **sperren** den Export; Zahlen ohne Beleg im Fall und
-Formulierungen an der RDG-Grenze **warnen**. Alle vier sind deterministisch
-— eine Sperre, die selbst raten muss, ist keine Sperre.
+Formulierungen an der RDG-Grenze **warnen**. Sie laufen bei jedem
+gespeicherten Stand und erscheinen als Anmerkung am Rand, mit Sprung an die
+beanstandete Stelle. Alle vier sind deterministisch — eine Sperre, die
+selbst raten muss, ist keine Sperre.
+
+**Die Herkunft klebt am Text.** Eingefügter Bibliothekstext trägt eine
+Auszeichnung, die das Umformulieren überlebt. Nur deshalb bleibt
+nachvollziehbar, welcher Eintrag in welchem Fall gewirkt hat — eine
+Tabellenzeile hätte das erste freie Überschreiben nicht überstanden.
 
 **Freigeben ist Menschensache.** Der Status `freigegeben` wird ausschließlich
 über die Oberfläche gesetzt und verlangt die Rolle `freigeber`. Kein

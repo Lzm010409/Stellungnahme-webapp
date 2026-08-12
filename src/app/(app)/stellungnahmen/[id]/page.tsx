@@ -4,16 +4,24 @@ import { ladeStellungnahme } from '@/stellungnahme/abfragen'
 import { holeVorschlaege } from '@/stellungnahme/aktionen'
 import type { Sonderfallbefund } from '@/pruefbericht/sonderfaelle'
 import type { Extraktion } from '@/pruefbericht/schema'
-import { Auswahlmaske } from './auswahlmaske'
-import { Ausgabebereich } from './ausgabe'
-import { Kopfbereich } from './kopf'
+import { gutachtenSchema } from '@/autoixpert/typen'
+import { leseFalldaten, platzhalterWerte } from '@/autoixpert/felder'
+import { stelleDokumentBereit } from '@/dokument/dienst'
 import { kiVerfuegbar } from '@/ki/client'
+import { Schreibtisch } from './schreiben'
+import { Kopfbereich } from './kopf'
 
 function euro(wert: string | number | null | undefined): string {
   if (wert === null || wert === undefined) return '—'
   const zahl = typeof wert === 'string' ? Number(wert) : wert
   if (Number.isNaN(zahl)) return '—'
   return zahl.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+}
+
+function falldatenWerte(daten: unknown): Record<string, string> {
+  const geprueft = gutachtenSchema.safeParse(daten)
+  if (!geprueft.success) return {}
+  return platzhalterWerte(leseFalldaten(geprueft.data))
 }
 
 export default async function StellungnahmeSeite({
@@ -25,12 +33,11 @@ export default async function StellungnahmeSeite({
   const s = await ladeStellungnahme(id)
   if (!s) notFound()
 
-  const vorschlaege = await holeVorschlaege(id)
+  const [vorschlaege, brief] = await Promise.all([holeVorschlaege(id), stelleDokumentBereit(s)])
+
   const befunde = (s.sonderfaelle ?? []) as Sonderfallbefund[]
   const extraktion = s.extraktion as Extraktion | null
-
   const summe = s.positionen.reduce((acc, p) => acc + Number(p.differenz ?? 0), 0)
-  const bearbeitet = s.positionen.filter((p) => p.behandlung !== 'offen').length
 
   return (
     <>
@@ -57,6 +64,7 @@ export default async function StellungnahmeSeite({
               extraktion?.pruefdienstleister ? `Prüfbericht ${extraktion.pruefdienstleister}` : null,
               extraktion?.versicherer,
               s.pruefberichtSeiten ? `${s.pruefberichtSeiten} Seiten` : null,
+              `Gesamtkürzung ${euro(summe)}`,
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -64,36 +72,12 @@ export default async function StellungnahmeSeite({
         </div>
       </div>
 
-      <div className="bilanz">
-        <div>
-          <div className="bilanz-label">Gesamtkürzung</div>
-          <div className="bilanz-wert" style={{ color: 'var(--crit)' }}>
-            {euro(summe)}
-          </div>
-        </div>
-        <div>
-          <div className="bilanz-label">Positionen</div>
-          <div className="bilanz-wert">
-            {bearbeitet} / {s.positionen.length}
-          </div>
-        </div>
-        {extraktion?.summeGutachten !== null && extraktion?.summeGutachten !== undefined ? (
-          <div>
-            <div className="bilanz-label">Gutachten</div>
-            <div className="bilanz-wert">{euro(extraktion.summeGutachten)}</div>
-          </div>
-        ) : null}
-        {extraktion?.summeGekuerzt !== null && extraktion?.summeGekuerzt !== undefined ? (
-          <div>
-            <div className="bilanz-label">Nach Prüfung</div>
-            <div className="bilanz-wert">{euro(extraktion.summeGekuerzt)}</div>
-          </div>
-        ) : null}
-      </div>
-
       {befunde.length > 0 ? (
-        <section style={{ marginBottom: 22 }}>
-          <h2>Prüfliste</h2>
+        <details className="klappe">
+          <summary>
+            Prüfliste
+            <span className="marke-pille m-warn">{befunde.length}</span>
+          </summary>
           {befunde.map((b) => (
             <div key={b.kennung} className={`sonderfall ${b.dringlichkeit}`}>
               <div className="sonderfall-titel">
@@ -104,25 +88,31 @@ export default async function StellungnahmeSeite({
               <div className="sonderfall-handlung">{b.handlung}</div>
             </div>
           ))}
-        </section>
+        </details>
       ) : null}
 
       {extraktion?.unklarheiten && extraktion.unklarheiten.length > 0 ? (
-        <div className="hinweis warn" style={{ marginBottom: 22 }}>
-          <strong>Beim Auslesen unklar geblieben:</strong>
+        <details className="klappe">
+          <summary>
+            Beim Auslesen unklar geblieben
+            <span className="marke-pille m-warn">{extraktion.unklarheiten.length}</span>
+          </summary>
           <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
             {extraktion.unklarheiten.map((u, i) => (
               <li key={i}>{u}</li>
             ))}
           </ul>
-        </div>
+        </details>
       ) : null}
 
-      <h2>Positionen</h2>
-      <p className="unterzeile" style={{ margin: '0 0 14px' }}>
-        Die Vorschläge sind eine Abkürzung. Die gesamte Bibliothek und ein eigener Text stehen
-        bei jeder Position offen — auch bei einem direkten Treffer.
-      </p>
+      <Kopfbereich
+        stellungnahmeId={s.id}
+        empfaengerName={s.empfaengerName}
+        empfaengerStrasse={s.empfaengerStrasse}
+        empfaengerPlzOrt={s.empfaengerPlzOrt}
+        einleitungDatum={s.einleitungDatum}
+        einleitungMedium={s.einleitungMedium}
+      />
 
       {s.positionen.length === 0 ? (
         <div className="leer">
@@ -130,65 +120,48 @@ export default async function StellungnahmeSeite({
             Aus diesem Bericht wurde keine Position übernommen, die in eine Stellungnahme gehört.
           </p>
         </div>
-      ) : (
-        <Auswahlmaske
-          positionen={s.positionen.map((p) => ({
-            id: p.id,
-            bezeichnung: p.bezeichnung,
-            betragGutachten: p.betragGutachten,
-            betragGekuerzt: p.betragGekuerzt,
-            differenz: p.differenz,
-            begruendungVersicherer: p.begruendungVersicherer,
-            behandlung: p.behandlung,
-            seite: p.seite,
-            bausteine: p.bausteine.map((b) => ({
-              id: b.id,
-              typ: b.typ,
-              textFinal: b.textFinal,
-              herkunft: b.herkunft,
-              inBibliothekUebernehmen: b.inBibliothekUebernehmen,
-            })),
-          }))}
-          vorschlaege={vorschlaege.map((v) => ({
-            positionId: v.positionId,
-            besteGuete: v.besteGuete,
-            kandidaten: v.kandidaten.map((k) => ({
-              eintragId: k.eintrag.id,
-              nummer: k.eintrag.nummer,
-              titel: k.eintrag.titel,
-              abschnitt: k.eintrag.abschnitt,
-              status: k.eintrag.status,
-              haeufigkeitText: k.eintrag.haeufigkeitText,
-              guete: k.guete,
-              treffergruende: k.treffergruende,
-              passendeVarianten: k.passendeVarianten,
-              hatText: Boolean(k.eintrag.gegenargument),
-              vorgehen: k.eintrag.vorgehen,
-            })),
-          }))}
-        />
-      )}
+      ) : null}
 
-      <Kopfbereich
+      <Schreibtisch
         stellungnahmeId={s.id}
-        empfaengerName={s.empfaengerName}
-        empfaengerStrasse={s.empfaengerStrasse}
-        empfaengerPlzOrt={s.empfaengerPlzOrt}
-        betreff={s.betreff}
-        anrede={s.anrede}
-        einleitungDatum={s.einleitungDatum}
-        einleitungMedium={s.einleitungMedium}
-        ergebnisAbsatz={s.ergebnisAbsatz}
-      />
-
-      <Ausgabebereich
-        stellungnahmeId={s.id}
-        hatBausteine={s.positionen.some((p) => p.bausteine.length > 0)}
+        dokument={brief.dokument}
+        stand={brief.stand}
         kiAktiv={kiVerfuegbar()}
-        vorgemerkt={
-          s.positionen.flatMap((p) => p.bausteine).filter((b) => b.inBibliothekUebernehmen).length
-        }
         versendet={Boolean(s.versendetAm)}
+        werte={falldatenWerte(s.fall?.daten)}
+        positionen={s.positionen.map((p) => ({
+          id: p.id,
+          bezeichnung: p.bezeichnung,
+          betragGutachten: p.betragGutachten,
+          betragGekuerzt: p.betragGekuerzt,
+          differenz: p.differenz,
+          begruendungVersicherer: p.begruendungVersicherer,
+          behandlung: p.behandlung,
+          seite: p.seite,
+        }))}
+        vorschlaege={vorschlaege.map((v) => ({
+          positionId: v.positionId,
+          besteGuete: v.besteGuete,
+          kandidaten: v.kandidaten.map((k) => ({
+            eintragId: k.eintrag.id,
+            nummer: k.eintrag.nummer,
+            titel: k.eintrag.titel,
+            abschnitt: k.eintrag.abschnitt,
+            status: k.eintrag.status,
+            haeufigkeitText: k.eintrag.haeufigkeitText,
+            guete: k.guete,
+            treffergruende: k.treffergruende,
+            // Der Text der passenden Variante kommt mit — die Blase soll ihn
+            // zeigen und bearbeiten lassen, ohne dafür nachzuladen.
+            passendeVarianten: k.passendeVarianten.map((pv) => ({
+              id: pv.id,
+              bezeichnung: pv.bezeichnung,
+              text: k.eintrag.varianten.find((x) => x.id === pv.id)?.text ?? '',
+            })),
+            text: k.eintrag.gegenargument,
+            vorgehen: k.eintrag.vorgehen,
+          })),
+        }))}
       />
     </>
   )

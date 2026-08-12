@@ -15,6 +15,13 @@
       "when": 1786540768056,
       "tag": "0001_funny_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786551375550,
+      "tag": "0002_faithful_patch",
+      "breakpoints": true
     }
   ]
 }

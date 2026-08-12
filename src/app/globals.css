@@ -583,74 +583,7 @@ code {
   }
 }
 
-/* ---------- Auswahlmaske ---------- */
-
-.position {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  margin-bottom: 14px;
-  overflow: hidden;
-}
-
-.position.erledigt { border-color: var(--good); }
-.position.ausgelassen { opacity: 0.62; }
-
-.position-kopf {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line-soft);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.position-titel {
-  font-weight: 640;
-  font-size: 15px;
-  letter-spacing: -0.01em;
-}
-
-.position-betrag {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  color: var(--crit);
-  white-space: nowrap;
-}
-
-.position-begruendung {
-  font-family: var(--serif);
-  font-size: 14px;
-  font-style: italic;
-  color: var(--ink-mid);
-  padding: 12px 18px;
-  background: var(--surface-alt);
-  border-bottom: 1px solid var(--line-soft);
-  line-height: 1.55;
-}
-
-.wege { padding: 4px 18px 14px; }
-
-.weg {
-  border-top: 1px solid var(--line-soft);
-  padding: 11px 0;
-}
-.weg:first-child { border-top: 0; }
-
-.weg-kopf {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  font-weight: 600;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* ---------- Trefferliste und Prüfliste ---------- */
 
 .vorschlag {
   display: grid;
@@ -664,39 +597,11 @@ code {
   background: var(--ground);
 }
 
-.vorschlag-titel { font-weight: 600; font-size: 13.5px; }
+.vorschlag-titel { font-weight: 600; font-size: 13.5px; overflow-wrap: break-word; }
 .vorschlag-meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
 
 .b-direkt { background: var(--good-soft); color: var(--good); }
 .b-teilweise { background: var(--warn-soft); color: var(--warn); }
-
-.baustein {
-  border: 1px solid var(--accent);
-  border-left-width: 3px;
-  border-radius: var(--radius);
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  background: var(--accent-soft);
-}
-
-.baustein-kopf {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 5px;
-}
-
-.baustein-text {
-  font-family: var(--serif);
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  max-height: 8.5em;
-  overflow: hidden;
-  position: relative;
-}
-.baustein-text.offen { max-height: none; }
 
 .sonderfall {
   border-left: 3px solid var(--warn);
@@ -719,25 +624,511 @@ code {
 .sonderfall-text { font-size: 13px; line-height: 1.5; }
 .sonderfall-handlung { font-size: 13px; color: var(--ink-mid); margin-top: 5px; }
 
-.bilanz {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px 32px;
-  padding: 14px 18px;
+
+/* ---------- Klappe ---------- */
+
+.klappe {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  margin-bottom: 18px;
+  padding: 0 16px;
+  margin-bottom: 14px;
 }
-.bilanz-wert {
+
+.klappe > summary {
+  cursor: pointer;
+  padding: 11px 0;
+  font-weight: 620;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+}
+
+.klappe > summary::-webkit-details-marker {
+  display: none;
+}
+
+.klappe > summary::before {
+  content: '▸';
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.klappe[open] > summary::before {
+  content: '▾';
+}
+
+.klappe[open] > summary {
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 14px;
+}
+
+.klappe > *:last-child {
+  margin-bottom: 16px;
+}
+
+/* ---------- Schreibtisch: links der Brief, rechts die Anmerkungen ---------- */
+
+.werkbank-leiste {
+  position: sticky;
+  top: 54px;
+  z-index: 10;
+  background: var(--ground);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.werkzeuge {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.werkzeuge button {
+  padding: 4px 10px;
+  font-size: 13px;
+  min-width: 32px;
+}
+
+.werkzeuge button.an {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.speicherstand {
   font-family: var(--mono);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.speicherstand.speichert { color: var(--accent); }
+.speicherstand.geaendert { color: var(--warn); }
+.speicherstand.konflikt,
+.speicherstand.fehler { color: var(--crit); font-weight: 600; }
+
+.pruefstand {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.ausgabe-leiste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.werkbank-raster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 22px;
+  align-items: start;
+}
+
+/* ---------- Der Brief ---------- */
+
+.brief {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 40px 52px 48px;
+  min-height: 60vh;
+}
+
+.brief-flaeche {
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 1.68;
+  outline: none;
+  counter-reset: abschnitt;
+  max-width: 46em;
+}
+
+.brief-flaeche p {
+  margin: 0 0 1em;
+}
+
+.brief-flaeche .d-betreff {
+  font-weight: 700;
+  font-family: var(--sans);
+  font-size: 15px;
+  margin-bottom: 1.6em;
+}
+
+.brief-flaeche .d-anrede {
+  margin-bottom: 1.2em;
+}
+
+.brief-flaeche .d-abschnitt {
+  counter-increment: abschnitt;
+  margin: 0 0 1.4em;
+  position: relative;
+}
+
+.brief-flaeche .d-ueberschrift {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 660;
+  margin: 0 0 0.7em;
+  letter-spacing: -0.01em;
+}
+
+.brief-flaeche .d-ueberschrift::before {
+  content: counter(abschnitt) '. ';
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
-.bilanz-label {
-  font-size: 11.5px;
+
+/**
+ * Ein Abschnitt ohne Text erscheint auch im fertigen Schreiben nicht — er
+ * bekommt deshalb keine Nummer. Sonst zeigte der Editor eine andere
+ * Zählung als das versandte Dokument.
+ */
+.brief-flaeche .d-abschnitt.abschnitt-leer {
+  counter-increment: none;
+}
+
+.brief-flaeche .d-abschnitt.abschnitt-leer .d-ueberschrift {
   color: var(--ink-soft);
+}
+
+.brief-flaeche .d-abschnitt.abschnitt-leer .d-ueberschrift::before {
+  content: '— ';
+}
+
+.brief-flaeche .d-ergebnis {
+  margin: 1.8em 0 1.4em;
+}
+
+.brief-flaeche .d-signatur {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+  margin-top: 26px;
+  color: var(--ink-soft);
+  user-select: none;
+}
+
+.brief-flaeche .d-signatur p {
+  margin: 0;
+  min-height: 1.4em;
+}
+
+/**
+ * Eingefügter Bibliothekstext bleibt erkennbar — dezent, damit der Brief
+ * nicht wie ein Formular aussieht, aber sichtbar genug, um beim
+ * Überarbeiten zu wissen, was von wem stammt.
+ */
+.brief-flaeche .d-quelle {
+  box-shadow: inset 0 -0.55em 0 var(--accent-soft);
+}
+
+.brief-flaeche .d-quelle[data-herkunft='eigener_text'] {
+  box-shadow: none;
+}
+
+.brief-flaeche ul,
+.brief-flaeche ol {
+  margin: 0 0 1em;
+  padding-left: 1.4em;
+}
+
+.brief-flaeche p.is-empty::before,
+.brief-flaeche h3.is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-soft);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  font-family: var(--sans);
+  font-size: 13.5px;
+}
+
+.brief-flaeche ::selection {
+  background: var(--accent-soft);
+}
+
+/* ---------- Die Anmerkungen am Rand ---------- */
+
+.rand {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  /* Bezugspunkt für die Höhenberechnung der Blasen. */
+  position: relative;
+}
+
+.blase {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  width: 100%;
+  text-align: left;
+  transition: margin-top 0.12s ease-out;
+}
+
+.blase.zu {
+  display: grid;
+  white-space: normal;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 12px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.blase.zu:hover {
+  border-color: var(--accent);
+}
+
+.blase.auf {
+  border-color: var(--accent);
+  border-left-width: 3px;
+  padding: 12px 14px 14px;
+}
+
+.blase.draussen {
+  opacity: 0.62;
+}
+
+.blase-kopf,
+.blase.zu {
+  font-size: 13.5px;
+}
+
+.blase-kopf {
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.blase-nummer {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  padding: 2px 6px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.blase-titel {
+  font-weight: 620;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.blase-marken {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.blase-betrag {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--crit);
+  white-space: nowrap;
+}
+
+.blase-zitat {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-mid);
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.blase-abschnitt {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.blase-abschnitt:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+}
+
+.blase-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.blase-vorschlag {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  background: var(--ground);
+  overflow: hidden;
+}
+
+.blase-vorschlag-kopf {
+  display: grid;
+  white-space: normal;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.blase-vorschlag-kopf:hover {
+  background: var(--surface-alt);
+}
+
+.blase-entwurf {
+  border-top: 1px solid var(--line-soft);
+  padding: 10px;
+  background: var(--surface);
+}
+
+.blase-entwurf textarea {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.blase-variante {
+  padding: 3px 9px;
+  font-size: 12px;
+  margin: 0 5px 5px 0;
+}
+
+.blase-knoepfe {
+  display: flex;
+  gap: 7px;
+  margin-top: 9px;
+  flex-wrap: wrap;
+}
+
+.blase-knoepfe button {
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.blase-fuss {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 10px;
+  margin-top: 12px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.blase-fuss button {
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.blase-befunde {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.befund {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border: 0;
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--warn-soft);
+  color: var(--ink);
+  cursor: pointer;
+  width: 100%;
+}
+
+.befund.sperrt {
+  border-left-color: var(--crit);
+  background: var(--crit-soft);
+}
+
+@media (max-width: 1100px) {
+  .werkbank-raster {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .brief {
+    padding: 26px 24px 32px;
+  }
+
+  /* Ohne zweite Spalte tragen die Blasen keine Anker mehr. */
+  .rand {
+    gap: 8px;
+  }
+
+  .blase {
+    margin-top: 0 !important;
+  }
+}
+
+/**
+ * Ein nicht bestrittener Abschnitt bleibt sichtbar, gehört aber nicht in
+ * das Schreiben: keine Nummer, zurückgenommene Farbe. Sein Text bleibt
+ * erhalten — wer die Position doch bestreitet, findet ihn wieder.
+ */
+.brief-flaeche .d-abschnitt[data-ausgelassen] {
+  counter-increment: none;
+  opacity: 0.5;
+}
+
+.brief-flaeche .d-abschnitt[data-ausgelassen] .d-ueberschrift::before {
+  content: 'nicht bestritten — ';
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }

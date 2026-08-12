@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, asc, eq, max } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { eintrag, fall, position, positionBaustein, stellungnahme } from '@/db/schema'
+import { fall, position, stellungnahme } from '@/db/schema'
 import { verlangeBenutzer } from '@/auth/sitzung'
 import { leseBericht } from '@/pruefbericht/einlesen'
 import { extrahierePositionen } from '@/pruefbericht/extraktion'
@@ -173,120 +173,4 @@ export async function holeVorschlaege(stellungnahmeId: string) {
 export async function durchsucheBibliothek(begriff: string) {
   await verlangeBenutzer()
   return sucheInBibliothek(begriff)
-}
-
-/** Nächste freie Position in der Bausteinreihenfolge. */
-async function naechsteReihenfolge(positionId: string): Promise<number> {
-  const zeilen = await db
-    .select({ hoechste: max(positionBaustein.reihenfolge) })
-    .from(positionBaustein)
-    .where(eq(positionBaustein.positionId, positionId))
-  return (zeilen[0]?.hoechste ?? -1) + 1
-}
-
-/** Hängt einen Bibliothekseintrag als Baustein an eine Position. */
-export async function fuegeBibliotheksbausteinEin(
-  positionId: string,
-  eintragId: string,
-  herkunft: 'vorschlag' | 'bibliothekssuche',
-): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
-
-  const zeilen = await db.select().from(eintrag).where(eq(eintrag.id, eintragId)).limit(1)
-  const quelle = zeilen[0]
-  if (!quelle) return { fehler: 'Eintrag nicht gefunden.' }
-
-  const naechste = await naechsteReihenfolge(positionId)
-
-  await db.insert(positionBaustein).values({
-    positionId,
-    typ: 'bibliothek',
-    eintragId,
-    textFinal: quelle.gegenargument,
-    herkunft,
-    reihenfolge: naechste,
-  })
-
-  await db
-    .update(position)
-    .set({ behandlung: 'bestritten' })
-    .where(and(eq(position.id, positionId), eq(position.behandlung, 'offen')))
-
-  revalidatePath('/stellungnahmen')
-  return { hinweis: `Eintrag ${quelle.nummer} eingefügt.` }
-}
-
-/** Der dritte Weg aus E6: eigener Text. */
-export async function fuegeEigenenTextEin(
-  positionId: string,
-  text: string,
-): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
-  const inhalt = text.trim()
-  if (!inhalt) return { fehler: 'Bitte einen Text eingeben.' }
-
-  const naechste = await naechsteReihenfolge(positionId)
-
-  await db.insert(positionBaustein).values({
-    positionId,
-    typ: 'eigener_text',
-    textFinal: inhalt,
-    herkunft: 'eigener_text',
-    reihenfolge: naechste,
-  })
-
-  await db
-    .update(position)
-    .set({ behandlung: 'bestritten' })
-    .where(and(eq(position.id, positionId), eq(position.behandlung, 'offen')))
-
-  revalidatePath('/stellungnahmen')
-  return { hinweis: 'Eigener Text eingefügt.' }
-}
-
-export async function entferneBaustein(bausteinId: string): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
-  await db.delete(positionBaustein).where(eq(positionBaustein.id, bausteinId))
-  revalidatePath('/stellungnahmen')
-  return { hinweis: 'Baustein entfernt.' }
-}
-
-/** Ordnet die Bausteine einer Position neu — das Ergebnis des Ziehens. */
-export async function ordneBausteine(
-  positionId: string,
-  reihenfolge: string[],
-): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
-  for (const [i, id] of reihenfolge.entries()) {
-    await db
-      .update(positionBaustein)
-      .set({ reihenfolge: i })
-      .where(and(eq(positionBaustein.id, id), eq(positionBaustein.positionId, positionId)))
-  }
-  revalidatePath('/stellungnahmen')
-  return {}
-}
-
-export async function setzeBehandlung(
-  positionId: string,
-  behandlung: 'offen' | 'bestritten' | 'anerkannt' | 'nicht_bestreiten',
-): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
-  await db.update(position).set({ behandlung }).where(eq(position.id, positionId))
-  revalidatePath('/stellungnahmen')
-  return {}
-}
-
-/** Merkt vor, dass ein eigener Text in die Bibliothek übernommen werden soll (F9). */
-export async function merkeFuerBibliothek(
-  bausteinId: string,
-  uebernehmen: boolean,
-): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
-  await db
-    .update(positionBaustein)
-    .set({ inBibliothekUebernehmen: uebernehmen })
-    .where(eq(positionBaustein.id, bausteinId))
-  revalidatePath('/stellungnahmen')
-  return {}
 }

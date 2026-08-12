@@ -16,6 +16,16 @@ export interface Befund {
   /** Wo es klemmt — Positionsnummer oder „Dokument". */
   stelle: string
   text: string
+  /**
+   * Der beanstandete Wortlaut, buchstabengetreu.
+   *
+   * Damit findet die Oberfläche die Stelle im Brief wieder und markiert
+   * sie. Ohne ihn wäre ein Befund eine Behauptung, die der Schreibende
+   * selbst suchen muss.
+   */
+  fundstelle?: string
+  /** Abschnitt, in dem der Befund steckt — für die Anmerkung am Rand. */
+  positionId?: string | null
 }
 
 export interface PruefBaustein {
@@ -24,6 +34,7 @@ export interface PruefBaustein {
   text: string
   /** Interne Hinweise des zugrunde liegenden Bibliothekseintrags. */
   interneHinweise?: string | null
+  positionId?: string | null
 }
 
 export interface PruefEingabe {
@@ -59,18 +70,21 @@ export function findeOffeneKlammern(text: string): string[] {
 function pruefeR1(eingabe: PruefEingabe): Befund[] {
   const befunde: Befund[] = []
   for (const b of eingabe.bausteine) {
-    const offen = findeOffeneKlammern(b.text)
-    if (offen.length === 0) continue
-    befunde.push({
-      kennung: 'R1',
-      schwere: 'sperrt',
-      titel: 'Offene Platzhalter',
-      stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
-      text:
-        `Noch nicht ersetzt: ${offen.map((o) => `[${o}]`).join(', ')}. ` +
-        'Ein stehen gebliebener Beispielwert aus der Bibliothek ist im versandten ' +
-        'Schreiben schlimmer als eine Rückfrage.',
-    })
+    // Je Platzhalter ein Befund: nur so lässt sich jeder einzeln im Brief
+    // markieren und abarbeiten.
+    for (const offen of findeOffeneKlammern(b.text)) {
+      befunde.push({
+        kennung: 'R1',
+        schwere: 'sperrt',
+        titel: 'Offener Platzhalter',
+        stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
+        fundstelle: `[${offen}]`,
+        positionId: b.positionId ?? null,
+        text:
+          `Noch nicht ersetzt: [${offen}]. Ein stehen gebliebener Beispielwert aus der ` +
+          'Bibliothek ist im versandten Schreiben schlimmer als eine Rückfrage.',
+      })
+    }
   }
   return befunde
 }
@@ -116,6 +130,8 @@ function pruefeR4(eingabe: PruefEingabe): Befund[] {
           schwere: 'sperrt',
           titel: 'Interne Notiz im Text',
           stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
+          fundstelle: b.text.slice(klein.indexOf(signal), klein.indexOf(signal) + signal.length),
+          positionId: b.positionId ?? null,
           text: `Der Text enthält „${signal}" — das klingt nach einer Feldnotiz und gehört nicht in ein versandtes Schreiben.`,
         })
         break
@@ -135,6 +151,8 @@ function pruefeR4(eingabe: PruefEingabe): Befund[] {
           schwere: 'sperrt',
           titel: 'Interner Hinweis wörtlich übernommen',
           stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
+          fundstelle: satz,
+          positionId: b.positionId ?? null,
           text: `Aus den internen Hinweisen übernommen: „${satz.slice(0, 90)}…"`,
         })
       }
@@ -212,6 +230,8 @@ function pruefeZahlen(eingabe: PruefEingabe): Befund[] {
       schwere: 'warnt',
       titel: 'Zahl ohne Beleg im Fall',
       stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
+      fundstelle: unbelegte[0],
+      positionId: b.positionId ?? null,
       text:
         `Im Text stehen Zahlen, die weder in den Falldaten noch in der Kürzungstabelle ` +
         `vorkommen: ${unbelegte.slice(0, 6).join(', ')}. Bitte prüfen — Beispielwerte aus ` +
@@ -299,6 +319,8 @@ function pruefeRdg(eingabe: PruefEingabe): Befund[] {
         schwere: 'warnt',
         titel: `RDG-Grenze: ${signal.hinweis}`,
         stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
+        fundstelle: treffer[0],
+        positionId: b.positionId ?? null,
         text: `„${treffer[0]}" — als Sachverständiger wird technisch begründet, nicht rechtlich beraten. Stattdessen etwa: ${signal.statt}.`,
       })
     }
@@ -311,6 +333,8 @@ function pruefeRdg(eingabe: PruefEingabe): Befund[] {
         schwere: 'warnt',
         titel: 'Weiche Formulierung',
         stelle: `Position ${b.positionNummer} — ${b.positionBezeichnung}`,
+        fundstelle: treffer[0],
+        positionId: b.positionId ?? null,
         text: `„${treffer[0]}" schwächt die eigene Feststellung. Der Hausstil formuliert bestimmt: „ist erforderlich".`,
       })
     }

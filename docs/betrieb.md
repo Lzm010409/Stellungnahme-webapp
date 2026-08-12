@@ -14,6 +14,11 @@
 
 Bei jedem Start läuft `starten.mjs`, bevor der Server hochkommt:
 
+Zum Stand mit dem Brief-Editor gehört die Migration `0002`: sie legt die
+Spalten `dokument`, `dokument_stand` und `dokument_geaendert_am` an. Ältere
+Stellungnahmen bekommen ihr Schreiben beim ersten Öffnen aus ihren
+bisherigen Bausteinen — ein eigenes Migrationsskript gibt es dafür nicht.
+
 1. **Migrationen anwenden** — versionierte SQL-Dateien aus `drizzle/`, mit
    Buchführung in `__migrationen`. Bereits angewandte werden übersprungen.
 2. **Bibliothek befüllen**, falls sie leer ist — die Startbefüllung entsteht
@@ -105,11 +110,17 @@ pnpm benutzer:anlegen --email test@example.org --name Test \
 pnpm dev
 ```
 
-Ein Sichtprüfungslauf durch einen echten Browser inklusive Bildschirmfotos:
+Zwei Sichtprüfungsläufe durch einen echten Browser, mit Bildschirmfotos:
 
 ```bash
 pnpm exec tsx scripts/rundgang.ts http://localhost:3000 /tmp/rundgang
+pnpm exec tsx scripts/rundgang-brief.ts http://localhost:3000 /tmp/brief
 ```
+
+Der zweite geht den Weg am Schreibtisch ab: Brief öffnen, Anmerkung
+aufklappen, Baustein bearbeiten und einfügen, im Brief weiterschreiben,
+Position herausnehmen und wieder aufnehmen, Dokument erzeugen. Er meldet
+jeden Konsolenfehler und bricht dann ab.
 
 ## Was die Anwendung kann
 
@@ -120,11 +131,12 @@ pnpm exec tsx scripts/rundgang.ts http://localhost:3000 /tmp/rundgang
 | Prüfbericht einlesen (Text und Scan) | läuft |
 | Kürzungspositionen auslesen | braucht `ANTHROPIC_API_KEY` |
 | Sonderfall-Prüfliste B.1–B.8 | läuft |
-| Auswahlmaske mit Vorschlägen, Suche, eigenem Text | läuft |
-| Ausformulieren im Hausstil | braucht `ANTHROPIC_API_KEY` |
-| Vier Wächter vor dem Export | läuft |
+| Brief-Editor mit Anmerkungen am Rand | läuft |
+| Vorschläge, Bibliothekssuche und eigener Text je Position | läuft |
+| Ausformulieren je Abschnitt | braucht `ANTHROPIC_API_KEY` |
+| Vier Wächter, laufend und als Randnotiz | läuft |
 | Word- und Klartext-Ausgabe | läuft |
-| Eigenen Text in die Bibliothek übernehmen | läuft |
+| Selbst geschriebenen Abschnitt in die Bibliothek übernehmen | läuft |
 
 ## Bekannte Einschränkungen
 

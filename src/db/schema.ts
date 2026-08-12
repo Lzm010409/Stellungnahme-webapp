@@ -344,6 +344,24 @@ export const stellungnahme = pgTable(
     pruefberichtDateiname: text(),
     pruefberichtSeiten: integer(),
 
+    /**
+     * Das Schreiben selbst, als Dokumentbaum (ProseMirror-JSON).
+     *
+     * Seit dem Umbau auf den Brief-Editor ist diese Spalte die Wahrheit über
+     * den Text — nicht mehr die Bausteinzeilen. Die Herkunft eingefügter
+     * Bibliothekstexte hängt als Marke am Text und übersteht damit freies
+     * Umformulieren; eine Fremdschlüsselzeile täte das nicht.
+     */
+    dokument: jsonb(),
+    /**
+     * Zählt jede gespeicherte Fassung hoch. Zwei Mitarbeiter an derselben
+     * Stellungnahme überschreiben sich damit nicht stillschweigend: wer auf
+     * einem alten Stand speichert, bekommt eine Meldung statt eines
+     * verlorenen Absatzes.
+     */
+    dokumentStand: integer().notNull().default(0),
+    dokumentGeaendertAm: timestamp({ withTimezone: true }),
+
     empfaengerName: text(),
     empfaengerStrasse: text(),
     empfaengerPlzOrt: text(),
@@ -382,9 +400,12 @@ export const position = pgTable(
 )
 
 /**
- * Eine Position trägt eine GEORDNETE LISTE von Bausteinen, keine einzelne
- * Auswahl (Konzept E6): Vorschlag, quer gesuchter Bibliothekseintrag und
- * eigener Text lassen sich frei kombinieren und sortieren.
+ * Bausteine einer Position — der Stand vor dem Brief-Editor.
+ *
+ * Seit der Umstellung ist `stellungnahme.dokument` die Wahrheit über den
+ * Text; hier wird nichts mehr geschrieben. Die Tabelle bleibt, weil ältere
+ * Stellungnahmen ihr Dokument beim ersten Öffnen aus diesen Zeilen
+ * bekommen — sie ist die Quelle der Übernahme, nicht mehr des Schreibens.
  */
 export const positionBaustein = pgTable(
   'position_baustein',

@@ -10,3 +10,7 @@ next-env.d.ts
 .DS_Store
 /uploads/
 /seed/
+
+# Von "next dev" erzeugte Hinweise für Agenten
+/AGENTS.md
+/CLAUDE.md
