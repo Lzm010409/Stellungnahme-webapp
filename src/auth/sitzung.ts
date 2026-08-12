@@ -8,6 +8,20 @@ import { benutzer, sitzung } from '@/db/schema'
 export const COOKIE_NAME = 'werkbank_sitzung'
 const GUELTIGKEIT_TAGE = 14
 
+/**
+ * Ob das Sitzungscookie als `Secure` gesetzt wird.
+ *
+ * Ausschlaggebend ist die tatsächliche Adresse der Anwendung, nicht
+ * `NODE_ENV`: ein Produktionsbau hinter einem Proxy ohne TLS würde sonst ein
+ * `Secure`-Cookie senden, das der Browser verwirft — die Anmeldung schlüge
+ * stumm fehl, ohne erkennbare Ursache.
+ */
+export function nurUeberHttps(): boolean {
+  const basis = process.env.APP_BASIS_URL
+  if (basis) return basis.startsWith('https://')
+  return process.env.NODE_ENV === 'production'
+}
+
 export type Rolle = 'ersteller' | 'freigeber' | 'admin'
 
 export interface AngemeldeterBenutzer {
@@ -40,7 +54,7 @@ export async function starteSitzung(benutzerId: string): Promise<void> {
   speicher.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: nurUeberHttps(),
     path: '/',
     expires: laeuftAbAm,
   })

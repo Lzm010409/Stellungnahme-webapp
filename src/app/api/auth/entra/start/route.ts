@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { baueAnmeldeUrl, leseEntraKonfiguration, zufallswert } from '@/auth/entra'
+import { nurUeberHttps } from '@/auth/sitzung'
 
 /** Startet die Anmeldung: erzeugt state, nonce und PKCE-Verifier. */
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
   const gemeinsam = {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    secure: nurUeberHttps(),
     path: '/api/auth/entra',
     // Kurz gültig: der Umweg über Entra dauert selten länger als ein paar Minuten.
     maxAge: 600,
