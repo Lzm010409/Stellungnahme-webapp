@@ -1,0 +1,584 @@
+:root {
+  --ground: #f7f8f7;
+  --surface: #ffffff;
+  --surface-alt: #eff2f1;
+  --line: #d6dcda;
+  --line-soft: #e5eae8;
+  --ink: #1b1f1d;
+  --ink-mid: #4a524f;
+  --ink-soft: #6e7773;
+  --accent: #0f4c4a;
+  --accent-soft: #e2edeb;
+  --accent-ink: #ffffff;
+  --warn: #9c6414;
+  --warn-soft: #f6eddf;
+  --crit: #7e2c2c;
+  --crit-soft: #f5e6e4;
+  --good: #2f6b45;
+  --good-soft: #e4efe7;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --serif: Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia, 'Times New Roman', serif;
+  --mono: ui-monospace, 'SF Mono', SFMono-Regular, 'Cascadia Mono', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ground: #0f1312;
+    --surface: #161b1a;
+    --surface-alt: #1c2322;
+    --line: #2c3634;
+    --line-soft: #232b2a;
+    --ink: #e3e8e6;
+    --ink-mid: #aeb8b5;
+    --ink-soft: #848e8b;
+    --accent: #57ada6;
+    --accent-soft: #16302e;
+    --accent-ink: #0f1312;
+    --warn: #d5a05a;
+    --warn-soft: #2e2517;
+    --crit: #d98c86;
+    --crit-soft: #33201f;
+    --good: #7cb894;
+    --good-soft: #17291e;
+  }
+}
+
+:root[data-theme='dark'] {
+  --ground: #0f1312;
+  --surface: #161b1a;
+  --surface-alt: #1c2322;
+  --line: #2c3634;
+  --line-soft: #232b2a;
+  --ink: #e3e8e6;
+  --ink-mid: #aeb8b5;
+  --ink-soft: #848e8b;
+  --accent: #57ada6;
+  --accent-soft: #16302e;
+  --accent-ink: #0f1312;
+  --warn: #d5a05a;
+  --warn-soft: #2e2517;
+  --crit: #d98c86;
+  --crit-soft: #33201f;
+  --good: #7cb894;
+  --good-soft: #17291e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ---------- Kopfzeile ---------- */
+
+.kopf {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.kopf-innen {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.marke {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kopf-nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.kopf-nav a {
+  padding: 6px 11px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-mid);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.kopf-nav a:hover {
+  background: var(--surface-alt);
+  color: var(--ink);
+}
+
+.kopf-nav a[aria-current='page'] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.kopf-benutzer {
+  font-size: 13px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+/* ---------- Grundgerüst ---------- */
+
+main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 24px 96px;
+}
+
+.seiten-kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 22px;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 630;
+  letter-spacing: -0.012em;
+  margin: 0 0 10px;
+}
+
+.unterzeile {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+/* ---------- Formularelemente ---------- */
+
+.feld {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-mid);
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='search'],
+select,
+textarea {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  width: 100%;
+}
+
+textarea {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 120px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+button,
+.knopf {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+button:hover,
+.knopf:hover {
+  background: var(--surface-alt);
+}
+
+button.haupt,
+.knopf.haupt {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+button.haupt:hover,
+.knopf.haupt:hover {
+  filter: brightness(1.12);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Karten und Listen ---------- */
+
+.karte {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.werkzeugleiste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.werkzeugleiste input[type='search'] {
+  flex: 1;
+  min-width: 220px;
+}
+
+.werkzeugleiste select {
+  width: auto;
+  min-width: 150px;
+}
+
+.treffer-zahl {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.zeile {
+  background: var(--surface);
+  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  text-decoration: none;
+  color: inherit;
+}
+
+.zeile:hover {
+  background: var(--surface-alt);
+}
+
+.zeile-nummer {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  padding-top: 2px;
+}
+
+.zeile-titel {
+  font-weight: 600;
+  font-size: 14.5px;
+  letter-spacing: -0.008em;
+  margin-bottom: 3px;
+  text-wrap: balance;
+}
+
+.zeile-meta {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.zeile-auszug {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  color: var(--ink-mid);
+  margin-top: 5px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.zeile-rechts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+/* ---------- Marker ---------- */
+
+.marke-pille {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.m-entwurf {
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+}
+.m-pruefung {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.m-freigegeben {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.m-zurueckgezogen {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+.m-akzent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.m-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+/* ---------- Detailansicht ---------- */
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.block {
+  margin-bottom: 20px;
+}
+
+.block-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fliesstext {
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.zitat {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 13px 16px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.intern {
+  border-left: 3px solid var(--warn);
+  background: var(--warn-soft);
+  padding: 13px 16px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 14px;
+}
+
+.seitenleiste .karte + .karte {
+  margin-top: 14px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  font-size: 13px;
+}
+
+.kv dt {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.kv dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.marker-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.hinweis {
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.hinweis.warn {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.hinweis.fehler {
+  border-left-color: var(--crit);
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+.leer {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--surface-alt);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  padding: 0.08em 0.34em;
+}
+
+/* ---------- Anmeldung ---------- */
+
+.anmelde-huelle {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.anmelde-karte {
+  width: 100%;
+  max-width: 370px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 30px 28px;
+}
+
+.anmelde-karte form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

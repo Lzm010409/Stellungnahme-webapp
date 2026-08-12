@@ -1,0 +1,488 @@
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
+import { relations, sql } from 'drizzle-orm'
+
+/* ------------------------------------------------------------------ *
+ * Aufzählungen
+ * ------------------------------------------------------------------ */
+
+/** Anspruchstyp, nach dem die Skills die Bibliothek gliedern. */
+export const bereichEnum = pgEnum('bereich', [
+  'kalkulation',
+  'wertminderung',
+  'wbw',
+  'restwert',
+  'sonderfall',
+])
+
+/**
+ * Freigabestand eines Bibliothekseintrags. Der Übergang nach `freigegeben`
+ * ist ausschließlich über die Oberfläche möglich (Konzept E5) — kein
+ * KI-Aufruf darf ihn auslösen.
+ */
+export const eintragStatusEnum = pgEnum('eintrag_status', [
+  'entwurf',
+  'pruefung',
+  'freigegeben',
+  'zurueckgezogen',
+])
+
+/** Woher ein Eintrag stammt — für den Prüfbericht der Migration und die Audit-Spur. */
+export const herkunftEnum = pgEnum('herkunft', [
+  'migration',
+  'manuell',
+  'ki_vorschlag',
+  'aus_stellungnahme',
+])
+
+export const rolleEnum = pgEnum('rolle', ['ersteller', 'freigeber', 'admin'])
+
+/** Woher der Wert eines Platzhalters kommt. */
+export const platzhalterQuelleEnum = pgEnum('platzhalter_quelle', [
+  'autoixpert',
+  'pruefbericht',
+  'manuell',
+  'berechnet',
+])
+
+export const belegTypEnum = pgEnum('beleg_typ', [
+  'urteil',
+  'norm',
+  'literatur',
+  'regelwerk',
+])
+
+/**
+ * Klammerausdrücke im Bibliothekstext sind zweierlei:
+ * - `wert`: einzusetzender Fallwert, z.B. `[Betrag]`, `[Bauteilseite]`.
+ * - `regieanweisung`: Arbeitsauftrag an den Schreibenden, der im fertigen
+ *   Text nicht stehen bleiben darf, z.B. „[Mit Screenshots aus dem
+ *   Kalkulationsprogramm belegen.]".
+ * Beide sperren den Export, solange sie ungelöst sind — aber sie werden
+ * in der Oberfläche unterschiedlich dargestellt.
+ */
+export const platzhalterArtEnum = pgEnum('platzhalter_art', [
+  'wert',
+  'regieanweisung',
+])
+
+/** Wie eine Kürzungsposition in der Stellungnahme behandelt wird. */
+export const behandlungEnum = pgEnum('behandlung', [
+  'offen',
+  'bestritten',
+  'anerkannt',
+  'nicht_bestreiten',
+])
+
+/**
+ * Woher ein Baustein an einer Position kam. Trägt zwei spätere Auswertungen:
+ * wo die Trefferliste danebenlag, und die Wirkungsstatistik je Eintrag.
+ */
+export const bausteinHerkunftEnum = pgEnum('baustein_herkunft', [
+  'vorschlag',
+  'bibliothekssuche',
+  'eigener_text',
+])
+
+export const bausteinTypEnum = pgEnum('baustein_typ', ['bibliothek', 'eigener_text'])
+
+export const modusEnum = pgEnum('modus', ['standard', 'schnell', 'individuell'])
+
+/* ------------------------------------------------------------------ *
+ * Benutzer und Sitzungen
+ * ------------------------------------------------------------------ */
+
+export const benutzer = pgTable(
+  'benutzer',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    email: text().notNull(),
+    name: text().notNull(),
+    /**
+     * Nullable: wer sich über Microsoft Entra anmeldet, braucht kein
+     * lokales Passwort. Die Passwortanmeldung bleibt als Rückfallebene,
+     * falls der Tenant einmal nicht erreichbar ist.
+     */
+    passwortHash: text(),
+    /**
+     * Die unveränderliche Objekt-ID des Kontos in Entra (`oid`). Sie bleibt
+     * stabil, wenn sich die Mailadresse ändert — deshalb ist sie und nicht
+     * die Adresse der eigentliche Schlüssel zum Konto.
+     */
+    entraOid: text(),
+    rolle: rolleEnum().notNull().default('ersteller'),
+    aktiv: boolean().notNull().default(true),
+    letzteAnmeldung: timestamp({ withTimezone: true }),
+    erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('benutzer_email_idx').on(sql`lower(${t.email})`),
+    uniqueIndex('benutzer_entra_idx').on(t.entraOid),
+  ],
+)
+
+export const sitzung = pgTable(
+  'sitzung',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    benutzerId: uuid()
+      .notNull()
+      .references(() => benutzer.id, { onDelete: 'cascade' }),
+    tokenHash: text().notNull(),
+    laeuftAbAm: timestamp({ withTimezone: true }).notNull(),
+    erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('sitzung_token_idx').on(t.tokenHash),
+    index('sitzung_benutzer_idx').on(t.benutzerId),
+  ],
+)
+
+/* ------------------------------------------------------------------ *
+ * Argumentbibliothek — bildet das bestehende Markdown-Format ab
+ * (Kürzungsgrund → Typische Begründung → Gegenargument → Hinweise
+ *  → Varianten → Ergänzung), siehe Konzept E4.
+ * ------------------------------------------------------------------ */
+
+export const eintrag = pgTable(
+  'eintrag',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+
+    /** Gliederungsnummer aus der Quelldatei, z.B. "1.2". */
+    nummer: text().notNull(),
+    titel: text().notNull(),
+    bereich: bereichEnum().notNull(),
+    /** Themenabschnitt, z.B. "1. Ersatzteile-Erforderlichkeit / E-Positionen". */
+    abschnitt: text().notNull(),
+
+    /** Was der Prüfdienstleister typischerweise vorbringt — der Auslöser. */
+    typischeBegruendung: text(),
+    /**
+     * Der einsatzfertige Gegenargument-Text. Nullable, weil nicht jeder
+     * Eintrag einen trägt: die Wertminderungseinträge 3 und 4 halten
+     * stattdessen unter `vorgehen` fest, dass die Kürzung in der Praxis
+     * meist hinzunehmen ist oder auf einen anderen Eintrag verweist.
+     */
+    gegenargument: text(),
+    /**
+     * Handlungsanweisung statt fertigem Text. Erscheint in der Auswahlmaske
+     * als Hinweis zur Behandlung der Position, nicht als einfügbarer Baustein.
+     */
+    vorgehen: text(),
+    /**
+     * Interne Feldnotizen. Dürfen NIE in ein versandtes Dokument geraten
+     * (Konzept R4) — das Exportmodell in src/export/ liest diese Spalte nicht.
+     */
+    hinweise: text(),
+    /** Häufigkeitsangabe aus der Prosa, z.B. "in über 10 Fällen". */
+    haeufigkeitText: text(),
+
+    status: eintragStatusEnum().notNull().default('entwurf'),
+    herkunft: herkunftEnum().notNull().default('manuell'),
+    version: integer().notNull().default(1),
+
+    /** Reserviert für semantische Suche, sobald die Bibliothek dafür groß genug ist. */
+    embedding: jsonb(),
+
+    quelldatei: text(),
+    erstelltVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
+    freigegebenVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
+    freigegebenAm: timestamp({ withTimezone: true }),
+    erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    geaendertAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('eintrag_bereich_nummer_idx').on(t.bereich, t.nummer),
+    index('eintrag_status_idx').on(t.status),
+    index('eintrag_bereich_idx').on(t.bereich),
+  ],
+)
+
+/** Untervarianten eines Eintrags, z.B. die acht Bauteilarten unter 1.3. */
+export const eintragVariante = pgTable(
+  'eintrag_variante',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    eintragId: uuid()
+      .notNull()
+      .references(() => eintrag.id, { onDelete: 'cascade' }),
+    bezeichnung: text().notNull(),
+    text: text().notNull(),
+    /** Wann diese Variante greift, sofern im Original angegeben. */
+    bedingung: text(),
+    reihenfolge: integer().notNull().default(0),
+  },
+  (t) => [index('variante_eintrag_idx').on(t.eintragId)],
+)
+
+/** Vertiefende Zusatzabsätze, optional zuschaltbar. */
+export const eintragErgaenzung = pgTable(
+  'eintrag_ergaenzung',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    eintragId: uuid()
+      .notNull()
+      .references(() => eintrag.id, { onDelete: 'cascade' }),
+    titel: text().notNull(),
+    text: text().notNull(),
+    wannEinsetzen: text(),
+    reihenfolge: integer().notNull().default(0),
+  },
+  (t) => [index('ergaenzung_eintrag_idx').on(t.eintragId)],
+)
+
+/**
+ * Platzhalter, die im Gegenargument-Text stehen (z.B. `[Betrag]`).
+ * Aus dem Text geparst; blockieren den Export, solange sie leer sind (R1).
+ */
+export const eintragPlatzhalter = pgTable(
+  'eintrag_platzhalter',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    eintragId: uuid()
+      .notNull()
+      .references(() => eintrag.id, { onDelete: 'cascade' }),
+    schluessel: text().notNull(),
+    art: platzhalterArtEnum().notNull().default('wert'),
+    quelle: platzhalterQuelleEnum().notNull().default('manuell'),
+    /** Feldpfad in den autoiXpert-Falldaten, falls quelle = autoixpert. */
+    feldpfad: text(),
+    pflicht: boolean().notNull().default(true),
+    beispiel: text(),
+  },
+  (t) => [
+    index('platzhalter_eintrag_idx').on(t.eintragId),
+    uniqueIndex('platzhalter_eintrag_schluessel_idx').on(t.eintragId, t.schluessel),
+  ],
+)
+
+/**
+ * Tatsachen, die im konkreten Fall zutreffen müssen, damit das Argument
+ * richtig ist ("lückenlos scheckheftgepflegt", "Fotos belegen den Schaden").
+ * Der Skill verbietet ausdrücklich, sie als erfüllt zu unterstellen.
+ */
+export const eintragVorbedingung = pgTable(
+  'eintrag_vorbedingung',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    eintragId: uuid()
+      .notNull()
+      .references(() => eintrag.id, { onDelete: 'cascade' }),
+    text: text().notNull(),
+    mussBestaetigtWerden: boolean().notNull().default(true),
+  },
+  (t) => [index('vorbedingung_eintrag_idx').on(t.eintragId)],
+)
+
+/** Gerichtsentscheidungen und Normen. Unverifiziert = Export gesperrt. */
+export const beleg = pgTable(
+  'beleg',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    eintragId: uuid()
+      .notNull()
+      .references(() => eintrag.id, { onDelete: 'cascade' }),
+    typ: belegTypEnum().notNull().default('urteil'),
+    gericht: text(),
+    aktenzeichen: text(),
+    datum: text(),
+    fundstelle: text(),
+    kernaussage: text(),
+    quelleUrl: text(),
+    verifiziertAm: timestamp({ withTimezone: true }),
+    verifiziertVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
+  },
+  (t) => [index('beleg_eintrag_idx').on(t.eintragId)],
+)
+
+/* ------------------------------------------------------------------ *
+ * Fälle und Stellungnahmen
+ * ------------------------------------------------------------------ */
+
+export const fall = pgTable(
+  'fall',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    /** Aktenzeichen des Büros = externalId in autoiXpert. */
+    aktenzeichen: text(),
+    /** Technische Ressourcen-ID in autoiXpert. */
+    autoixpertId: text(),
+    /** Rohantwort der Schnittstelle, für Feldpfade und Nachvollziehbarkeit. */
+    daten: jsonb(),
+    abgerufenAm: timestamp({ withTimezone: true }),
+    erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('fall_aktenzeichen_idx').on(t.aktenzeichen),
+    index('fall_autoixpert_idx').on(t.autoixpertId),
+  ],
+)
+
+export const stellungnahme = pgTable(
+  'stellungnahme',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    fallId: uuid().references(() => fall.id, { onDelete: 'set null' }),
+    modus: modusEnum().notNull().default('standard'),
+
+    empfaengerName: text(),
+    empfaengerStrasse: text(),
+    empfaengerPlzOrt: text(),
+    anrede: text(),
+    betreff: text(),
+    einleitungDatum: text(),
+    einleitungMedium: text(),
+    vorbemerkungEinfuegen: boolean().notNull().default(false),
+    ergebnisAbsatz: text(),
+
+    erstelltVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
+    erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    versendetAm: timestamp({ withTimezone: true }),
+  },
+  (t) => [index('stellungnahme_fall_idx').on(t.fallId)],
+)
+
+/** Eine Kürzungsposition aus dem Prüfbericht. */
+export const position = pgTable(
+  'position',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    stellungnahmeId: uuid()
+      .notNull()
+      .references(() => stellungnahme.id, { onDelete: 'cascade' }),
+    bezeichnung: text().notNull(),
+    seite: integer(),
+    betragGutachten: numeric({ precision: 12, scale: 2 }),
+    betragGekuerzt: numeric({ precision: 12, scale: 2 }),
+    differenz: numeric({ precision: 12, scale: 2 }),
+    begruendungVersicherer: text(),
+    behandlung: behandlungEnum().notNull().default('offen'),
+    reihenfolge: integer().notNull().default(0),
+  },
+  (t) => [index('position_stellungnahme_idx').on(t.stellungnahmeId)],
+)
+
+/**
+ * Eine Position trägt eine GEORDNETE LISTE von Bausteinen, keine einzelne
+ * Auswahl (Konzept E6): Vorschlag, quer gesuchter Bibliothekseintrag und
+ * eigener Text lassen sich frei kombinieren und sortieren.
+ */
+export const positionBaustein = pgTable(
+  'position_baustein',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    positionId: uuid()
+      .notNull()
+      .references(() => position.id, { onDelete: 'cascade' }),
+    typ: bausteinTypEnum().notNull(),
+    eintragId: uuid().references(() => eintrag.id, { onDelete: 'set null' }),
+    /** Gewählte Varianten und Ergänzungen des Eintrags. */
+    variantenIds: jsonb().$type<string[]>().default([]),
+    ergaenzungenIds: jsonb().$type<string[]>().default([]),
+    /** Ausformulierter Text mit eingesetzten Fallwerten. */
+    textFinal: text(),
+    herkunft: bausteinHerkunftEnum().notNull(),
+    reihenfolge: integer().notNull().default(0),
+    /** Nur bei eigenem Text: Brücke in die Bibliothekserweiterung (F9). */
+    inBibliothekUebernehmen: boolean().notNull().default(false),
+  },
+  (t) => [index('baustein_position_idx').on(t.positionId)],
+)
+
+export const positionBild = pgTable(
+  'position_bild',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    positionId: uuid()
+      .notNull()
+      .references(() => position.id, { onDelete: 'cascade' }),
+    dateiname: text().notNull(),
+    pfad: text().notNull(),
+    breiteEmu: integer(),
+    hoeheEmu: integer(),
+    reihenfolge: integer().notNull().default(0),
+  },
+  (t) => [index('bild_position_idx').on(t.positionId)],
+)
+
+/* ------------------------------------------------------------------ *
+ * Beziehungen
+ * ------------------------------------------------------------------ */
+
+export const eintragRelations = relations(eintrag, ({ many }) => ({
+  varianten: many(eintragVariante),
+  ergaenzungen: many(eintragErgaenzung),
+  platzhalter: many(eintragPlatzhalter),
+  vorbedingungen: many(eintragVorbedingung),
+  belege: many(beleg),
+}))
+
+export const varianteRelations = relations(eintragVariante, ({ one }) => ({
+  eintrag: one(eintrag, { fields: [eintragVariante.eintragId], references: [eintrag.id] }),
+}))
+
+export const ergaenzungRelations = relations(eintragErgaenzung, ({ one }) => ({
+  eintrag: one(eintrag, { fields: [eintragErgaenzung.eintragId], references: [eintrag.id] }),
+}))
+
+export const platzhalterRelations = relations(eintragPlatzhalter, ({ one }) => ({
+  eintrag: one(eintrag, { fields: [eintragPlatzhalter.eintragId], references: [eintrag.id] }),
+}))
+
+export const vorbedingungRelations = relations(eintragVorbedingung, ({ one }) => ({
+  eintrag: one(eintrag, { fields: [eintragVorbedingung.eintragId], references: [eintrag.id] }),
+}))
+
+export const belegRelations = relations(beleg, ({ one }) => ({
+  eintrag: one(eintrag, { fields: [beleg.eintragId], references: [eintrag.id] }),
+}))
+
+export const stellungnahmeRelations = relations(stellungnahme, ({ one, many }) => ({
+  fall: one(fall, { fields: [stellungnahme.fallId], references: [fall.id] }),
+  positionen: many(position),
+}))
+
+export const positionRelations = relations(position, ({ one, many }) => ({
+  stellungnahme: one(stellungnahme, {
+    fields: [position.stellungnahmeId],
+    references: [stellungnahme.id],
+  }),
+  bausteine: many(positionBaustein),
+  bilder: many(positionBild),
+}))
+
+export const bausteinRelations = relations(positionBaustein, ({ one }) => ({
+  position: one(position, {
+    fields: [positionBaustein.positionId],
+    references: [position.id],
+  }),
+  eintrag: one(eintrag, {
+    fields: [positionBaustein.eintragId],
+    references: [eintrag.id],
+  }),
+}))
+
+export const bildRelations = relations(positionBild, ({ one }) => ({
+  position: one(position, { fields: [positionBild.positionId], references: [position.id] }),
+}))
+
+export type Eintrag = typeof eintrag.$inferSelect
+export type NeuerEintrag = typeof eintrag.$inferInsert
+export type Variante = typeof eintragVariante.$inferSelect
+export type Ergaenzung = typeof eintragErgaenzung.$inferSelect
+export type Platzhalter = typeof eintragPlatzhalter.$inferSelect
+export type Vorbedingung = typeof eintragVorbedingung.$inferSelect
+export type Beleg = typeof beleg.$inferSelect
+export type Benutzer = typeof benutzer.$inferSelect
