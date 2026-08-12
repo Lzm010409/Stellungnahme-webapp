@@ -461,9 +461,9 @@ figcaption {
 <div class="wrap">
 
 <header class="masthead">
-  <p class="kicker">Konzeptvorlage zur Freigabe &middot; Fassung 2</p>
+  <p class="kicker">Konzeptvorlage zur Freigabe &middot; Fassung 3</p>
   <h1>Kürzungsabwehr&nbsp;Werkbank</h1>
-  <p class="standfirst">Wie aus den beiden Skills <code>stellungnahme-erstellen</code> und <code>argumentbibliothek-erweitern</code> eine Webapp wird. Diese Fassung ist gegen die tatsächlichen Skill-Dateien geprüft — und korrigiert zwei Annahmen der ersten Fassung, die daran nicht standgehalten haben.</p>
+  <p class="standfirst">Wie aus den beiden Skills <code>stellungnahme-erstellen</code> und <code>argumentbibliothek-erweitern</code> eine Webapp wird. Gegen die tatsächlichen Skill-Dateien geprüft. Leitgedanke der Bedienung: die vorgeschlagenen Treffer sind eine Abkürzung — die volle Bibliothek und ein eigener Text stehen bei jeder Position dauerhaft offen.</p>
   <div class="meta-row">
     <span>Gollenstede Sachverstand</span>
     <span>6 Entscheidungen &middot; 6 Phasen</span>
@@ -495,7 +495,7 @@ figcaption {
       <span class="note-label">Hausstil, Abschnitt 12</span>
       <p>„Argumente werden NIEMALS automatisch und kommentarlos aus der Bibliothek übernommen. Für jede Position werden dem Nutzer immer mehrere ausgearbeitete Optionen vorgelegt (Auswahl-Modus) … <strong>Kein Argument ohne Auswahl</strong> — außer der Nutzer sagt ausdrücklich ‚automatisch'."</p>
     </div>
-    <p>Die Leitinteraktion ist also <em>Auswählen aus vorbereiteten Optionen</em>, nicht freies Zusammenziehen. Drag&nbsp;&amp;&nbsp;Drop behält seinen Platz, aber an der richtigen Stelle: im Individuell-Modus und zum Nachschieben einer Variante oder Ergänzung in eine bereits gewählte Position. Details in E6.</p>
+    <p>Die Leitinteraktion ist also <em>Auswählen</em>, nicht freies Zusammenziehen — aber die Auswahl darf niemals auf die zwei, drei vorgeschlagenen Treffer beschränkt sein. Bei jeder Position bleiben die gesamte Bibliothek und ein eigener Textblock dauerhaft erreichbar, in beliebiger Kombination und Reihenfolge. Damit bekommt Drag&nbsp;&amp;&nbsp;Drop seinen richtigen Platz: nicht als Ersatz für die Struktur, sondern als der Weg, mit dem ein Bibliothekseintrag aus der Suche an eine Position wandert und dort einsortiert wird. Details in E6.</p>
 
     <h4>Korrektur 3 — Was ich schlicht übersehen hatte</h4>
     <ul>
@@ -736,6 +736,29 @@ figcaption {
 
     <p>Die vier ergänzten Felder tun jeweils genau eine Sache, die dein Markdown heute nicht leisten kann: <strong>Platzhalter</strong> und <strong>Vorbedingungen</strong> machen deinen Pflichtabgleich aus einer Gedächtnisleistung zu einer Prüfliste, die die App führt. Das <strong>Embedding</strong> ersetzt das Durchsuchen von 86&nbsp;KB Markdown. <strong>Status und Version</strong> machen die KI-Erweiterung ungefährlich.</p>
 
+    <h3>Die Position im Fall</h3>
+    <p>Davon getrennt steht, was in einer konkreten Stellungnahme passiert. Entscheidend ist die dritte Zeile: eine Position trägt eine <strong>geordnete Liste</strong> von Bausteinen, keine einzelne Auswahl.</p>
+
+<pre><code><span class="c-key">Position</span>                         <span class="c-note">// eine Zeile/Gruppe aus dem Prüfbericht</span>
+  bezeichnung, seite
+  betrag_gutachten, betrag_gekuerzt, differenz
+  begruendung_versicherer
+  behandlung                       <span class="c-note">// bestritten | anerkannt | nicht_bestreiten</span>
+
+  <span class="c-key">bausteine[]</span>                      <span class="c-warn">// GEORDNETE LISTE, nicht eine Wahl</span>
+    typ                            <span class="c-note">// bibliothek | eigener_text</span>
+    eintrag_id?, varianten[], ergaenzungen[]
+    text_final                     <span class="c-note">// mit eingesetzten Fallwerten</span>
+    <span class="c-key">herkunft</span>                       <span class="c-note">// vorschlag | bibliothekssuche | eigener_text</span>
+    reihenfolge                    <span class="c-note">// per Ziehen änderbar</span>
+    in_bibliothek_uebernehmen      <span class="c-note">// nur bei eigener_text: Brücke zu E5</span>
+
+  <span class="c-key">bilder[]</span>                         <span class="c-note">// inline unter der Position im Word-Dokument</span>
+    datei, reihenfolge
+</code></pre>
+
+    <p>Das Feld <code>herkunft</code> kostet nichts und trägt zwei spätere Features: es zeigt, wo die Trefferliste danebenlag, und es ist die Bezugsgröße für die Wirkungsstatistik (F2). <code>in_bibliothek_uebernehmen</code> ist die Brücke zwischen deinen beiden Skills — was du einmal frei formuliert hast, muss nicht ein zweites Mal geschrieben werden.</p>
+
     <div class="decision">
       <div class="decision-head">
         <span class="decision-id">E4</span>
@@ -763,18 +786,28 @@ figcaption {
       <div class="mock-pos">Position 1 — Oberflächenlackierung Tür vorne links &nbsp;<span style="color:var(--crit)">−179,00&nbsp;€</span></div>
       <div class="mock-reason">„Beilackierung angrenzender Bauteile technisch nicht erforderlich, da Farbtonangleichung über Musterblech erfolgt."</div>
       <div class="mock-opt">
-        <span class="mock-radio">(&bull;)</span>
+        <span class="mock-radio">[&check;]</span>
         <span><strong>A — Aus einem Guss</strong><span class="badge b-direct">Direkter Treffer</span><br>
         <span style="color:var(--ink-mid); font-size:0.87rem">Eintrag 2.1 · in über 10 Fällen verwendet · 1 Platzhalter offen: <code>[Bauteilseite]</code></span></span>
       </div>
       <div class="mock-opt">
-        <span class="mock-radio">( )</span>
+        <span class="mock-radio">[&nbsp;]</span>
         <span><strong>B — Widersprüchliche Doppelargumentation</strong><span class="badge b-part">Teiltreffer</span><br>
         <span style="color:var(--ink-mid); font-size:0.87rem">Eintrag 2.2 · <span style="color:var(--warn)">⚠ Vorbedingung: Prüfbericht muss beide Aussagen enthalten</span></span></span>
       </div>
+      <div class="mock-opt" style="border-top:2px solid var(--accent);">
+        <span class="mock-radio">&#9906;</span>
+        <span><strong style="color:var(--accent)">Gesamte Bibliothek durchsuchen</strong><span class="badge b-none">alle 67 Einträge</span><br>
+        <span style="color:var(--ink-mid); font-size:0.87rem">Volltext und Themenfilter über alle Bereiche — auch quer zur erkannten Kategorie. Treffer per Klick oder Ziehen anhängen.</span></span>
+      </div>
       <div class="mock-opt">
-        <span class="mock-radio">( )</span>
-        <span><strong>A + B kombinieren</strong> &nbsp;·&nbsp; <strong>Eigene Stichpunkte</strong> &nbsp;·&nbsp; <strong>Nicht bestreiten</strong><span class="badge b-none">wird weggelassen</span></span>
+        <span class="mock-radio">&#9998;</span>
+        <span><strong style="color:var(--accent)">Eigener Text</strong><br>
+        <span style="color:var(--ink-mid); font-size:0.87rem">Frei schreiben oder Stichpunkte in den Hausstil bringen lassen — Substanz bleibt unverändert.</span></span>
+      </div>
+      <div class="mock-opt">
+        <span class="mock-radio">&#8709;</span>
+        <span><strong>Nicht bestreiten</strong><span class="badge b-none">Position wird weggelassen</span></span>
       </div>
       <div class="mock-opt">
         <span class="mock-radio">[+]</span>
@@ -782,7 +815,13 @@ figcaption {
       </div>
     </div>
 
+    <p><strong>Die Vorschläge sind eine Abkürzung, kein Tor.</strong> Die vier unteren Zeilen stehen bei <em>jeder</em> Position dauerhaft offen — auch wenn die Trefferliste einen direkten Treffer meldet. Die Kästchen sind bewusst Mehrfachauswahl: eine Position kann aus Eintrag&nbsp;2.1, einem quer dazu gesuchten Eintrag aus einem ganz anderen Abschnitt und einem eigenen Absatz bestehen, in einer Reihenfolge, die du per Ziehen festlegst.</p>
+
     <p>Der vollständige Argumenttext steht aufklappbar unter jeder Option, mit bereits eingesetzten Fallwerten und farblich markiert, was aus der Bibliothek stammt und was angepasst wurde — dein Punkt „Kennzeichnen, was übernommen und was angepasst wurde", nur eben sichtbar statt beschrieben. Alle Positionen stehen untereinander auf einer Seite; du entscheidest in einem Durchgang und siehst dabei die ganze Stellungnahme.</p>
+
+    <h3>Zwei Nebenwirkungen, die sich lohnen</h3>
+    <p><strong>Die Bibliothekssuche verrät, wo die Trefferliste danebenlag.</strong> Greifst du an einer Position zur Volltextsuche und wählst einen Eintrag, den die Vorschläge nicht enthielten, ist das ein Signal: hier hat die Zuordnung nicht funktioniert. Die App merkt sich die Herkunft jedes Bausteins — Vorschlag&nbsp;A, aus der Suche, eigener Text — und daraus wird ohne Zusatzaufwand die Grundlage, um das Ranking nachzuschärfen.</p>
+    <p><strong>Eigener Text ist der natürliche Einstieg in die Bibliothekserweiterung.</strong> Hast du für eine Position frei formuliert, fragt die App beim Export einmal nach: soll daraus ein Bibliothekseintrag werden? Ein Klick, und der Text landet als Entwurf in der Freigabe-Strecke aus E5 — mit der Versichererbegründung dieser Position bereits als „Typische Begründung" vorbelegt. Damit füllt sich die Bibliothek genau dort, wo sie nachweislich Lücken hat: an den Positionen, für die du selbst schreiben musstest.</p>
 
     <div class="decision">
       <div class="decision-head">
@@ -805,12 +844,13 @@ figcaption {
         <span class="decision-title">Wo Drag &amp; Drop wirklich hingehört</span>
       </div>
       <ul class="opts">
-        <li class="opt-no"><span class="mark">A</span><span><span class="opt-name">Freier Editor mit Argumentpalette als Leitinteraktion.</span> Dein ursprünglicher Gedanke, und optisch der attraktivste. Er steht aber gegen deine eigene Regel „Kein Argument ohne Auswahl" und verliert die Positionszuordnung, an der Treffer-Einstufung, Pflichtabgleich und spätere Erfolgsmessung hängen.</span></li>
-        <li class="opt-yes"><span class="mark">B</span><span><span class="opt-name">Auswahlmaske führt, Ziehen ergänzt.</span> Gezogen wird dort, wo es echte Arbeit spart: Bilder auf Positionen, Varianten und Ergänzungen in eine gewählte Option, Positionen umsortieren, und im Individuell-Modus Bausteine in ein freies Dokument. Nach der Auswahl steht der Volltexteditor für den letzten Schliff bereit.</span></li>
+        <li class="opt-no"><span class="mark">A</span><span><span class="opt-name">Freier Editor mit Argumentpalette als Leitinteraktion.</span> Optisch der attraktivste Weg. Er verliert aber die Positionszuordnung, an der Treffer-Einstufung, Pflichtabgleich und spätere Erfolgsmessung hängen — und die Kürzungstabelle des Prüfberichts gibt die Gliederung ohnehin schon vor.</span></li>
+        <li class="opt-no"><span class="mark">B</span><span><span class="opt-name">Auswahlmaske mit geschlossener Optionsliste.</span> Schnell und aufgeräumt — aber sobald die Zuordnung danebenliegt, sitzt du fest. Bei 67 Einträgen und quer laufenden Themen passiert das regelmäßig.</span></li>
+        <li class="opt-yes"><span class="mark">C</span><span><span class="opt-name">Auswahlmaske mit offener Bibliothek.</span> Je Position drei gleichrangige Wege, dauerhaft verfügbar: die vorgeschlagenen Treffer, die Volltextsuche über <em>alle</em> Einträge quer zu Bereich und Abschnitt, und eigener Text. Mehrfachauswahl und freie Reihenfolge per Ziehen. Gezogen wird zusätzlich, wo es Arbeit spart: Bilder auf Positionen, Varianten in einen gewählten Baustein, Positionen umsortieren.</span></li>
       </ul>
       <div class="verdict">
-        <b>Empfehlung — Variante B</b>
-        Damit bekommst du das, was du dir von Drag&nbsp;&amp;&nbsp;Drop versprochen hast — schnelles Zusammensetzen ohne Tippen — ohne die Struktur zu verlieren, die deine Skills aus gutem Grund erzwingen. Wenn du Variante A trotzdem willst, ist sie baubar; sie kostet dann F2 als Nebenwirkung.
+        <b>Empfehlung — Variante C</b>
+        Die Trefferliste ist eine Abkürzung für den Normalfall, nie eine Einschränkung. Damit bekommst du beides: den schnellen Weg, wenn die Zuordnung sitzt, und den vollen Zugriff, wenn nicht — ohne die Struktur zu verlieren, die Pflichtabgleich und Wirkungsmessung tragen. Im Individuell-Modus entfällt die Trefferliste ganz, Bibliothek und freier Editor bleiben.
       </div>
     </div>
 
@@ -883,6 +923,7 @@ figcaption {
           <tr><td class="num">F6</td><td>Sammelfall für Fuhrpark/Flotte (B.8)</td><td><span class="tag t-mid">Mittel</span></td><td class="num">klein</td><td class="num">P5+</td></tr>
           <tr><td class="num">F7</td><td>Fristen und Wiedervorlage je Kürzung</td><td><span class="tag t-mid">Mittel</span></td><td class="num">klein</td><td class="num">P5+</td></tr>
           <tr><td class="num">F8</td><td>Rückschreiben der Stellungnahme nach autoiXpert</td><td><span class="tag t-lo">Komfort</span></td><td class="num">klein</td><td class="num">P4</td></tr>
+          <tr><td class="num">F9</td><td>Eigenen Positionstext direkt in die Bibliothek übernehmen</td><td><span class="tag t-hi">Hoch</span></td><td class="num">klein</td><td class="num">P3</td></tr>
         </tbody>
       </table>
     </div>
@@ -930,7 +971,7 @@ figcaption {
       <div class="phase-id">P3</div>
       <div>
         <h3>Auswahlmaske und Ausformulierung</h3>
-        <p>PDF-Einlesen inklusive Scan-Pfad, Positionsextraktion und Zusammenfassung zusammengehöriger Zeilen, Treffer-Suche mit Einstufung, Auswahlmaske mit Pflichtabgleich, Bilder je Position, WBW-Routing A/B, Sonderfall-Prüfliste (F4), Ausformulierung je Position mit Streaming. Individuell- und Schnellmodus.</p>
+        <p>PDF-Einlesen inklusive Scan-Pfad, Positionsextraktion und Zusammenfassung zusammengehöriger Zeilen, Treffer-Suche mit Einstufung, Auswahlmaske mit Pflichtabgleich. Dazu die drei offenen Wege je Position nach E6: Vorschläge, Volltextsuche über die gesamte Bibliothek, eigener Text — mehrfach kombinierbar und per Ziehen sortierbar, mit Übernahme eigener Texte in die Bibliothek (F9). Bilder je Position, WBW-Routing A/B, Sonderfall-Prüfliste (F4), Ausformulierung je Position mit Streaming. Individuell- und Schnellmodus.</p>
         <p class="ship">Ergebnis: erste vollständige Stellungnahme aus der App</p>
       </div>
     </div>
