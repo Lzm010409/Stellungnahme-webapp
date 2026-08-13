@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { speichereKopf } from '@/stellungnahme/export-aktionen'
+import { nachDeutsch, nachIso } from '@/export/datum'
 
 /**
  * Empfänger und Anschreiben-Datum.
@@ -25,7 +26,10 @@ export function Kopfbereich(props: {
     empfaengerName: props.empfaengerName ?? '',
     empfaengerStrasse: props.empfaengerStrasse ?? '',
     empfaengerPlzOrt: props.empfaengerPlzOrt ?? '',
-    einleitungDatum: props.einleitungDatum ?? '',
+    // Was kein Datum ist, gilt als keines. In älteren Schreiben steht hier
+    // gelegentlich ein Bruchstück — der Kasten klappte beim Tippen zu, und
+    // was bis dahin im Feld stand, wurde später gespeichert.
+    einleitungDatum: nachDeutsch(nachIso(props.einleitungDatum ?? '')),
     einleitungMedium: props.einleitungMedium ?? 'schreiben',
   })
 
@@ -37,8 +41,22 @@ export function Kopfbereich(props: {
     !werte.einleitungDatum && 'Datum des Anschreibens',
   ].filter(Boolean)
 
+  /**
+   * Ob der Kasten offen steht, entscheidet der Benutzer — nicht der Inhalt.
+   *
+   * Vorher hing `open` unmittelbar an den fehlenden Angaben. Das erste
+   * getippte Zeichen im letzten leeren Feld machte die Lücke voll, und der
+   * Kasten klappte mitten im Wort zu: die Eingabe brach ab, der Fokus war
+   * weg. Der Anfangszustand richtet sich weiter nach dem, was fehlt.
+   */
+  const [offen, setzeOffen] = useState(fehlend.length > 0)
+
   return (
-    <details className="klappe schmal" open={fehlend.length > 0}>
+    <details
+      className="klappe schmal"
+      open={offen}
+      onToggle={(e) => setzeOffen(e.currentTarget.open)}
+    >
       <summary>
         Empfänger
         {fehlend.length > 0 ? (
@@ -87,12 +105,23 @@ export function Kopfbereich(props: {
         </div>
         <div className="feld">
           <label htmlFor="dat">Datum des Anschreibens</label>
+          {/* Ein echter Datumswähler statt eines Textfeldes: das Datum geht
+              in den Einleitungssatz des Briefes ein, und ein Tippfehler
+              darin fällt erst im versandten Schreiben auf. */}
           <input
             id="dat"
-            placeholder="TT.MM.JJJJ"
-            value={werte.einleitungDatum}
-            onChange={(e) => setze('einleitungDatum', e.target.value)}
+            type="date"
+            value={nachIso(werte.einleitungDatum)}
+            onChange={(e) => setze('einleitungDatum', nachDeutsch(e.target.value))}
           />
+          {/* Wie der Datumswähler aussieht, bestimmt der Browser — mal
+              TT.MM.JJJJ, mal MM/TT/JJJJ. Was im Brief steht, bestimmt das
+              Büro. Deshalb steht es hier ausgeschrieben daneben. */}
+          <span className="unterzeile" style={{ margin: '4px 0 0' }}>
+            {werte.einleitungDatum
+              ? `Im Brief: „mit ${werte.einleitungMedium === 'mail' ? 'der Mail' : 'dem Schreiben'} vom ${werte.einleitungDatum} …"`
+              : 'Noch kein Datum — ohne es beginnt der Brief ohne Einleitungssatz.'}
+          </span>
         </div>
         <div className="feld">
           <label htmlFor="med">Übermittlungsweg</label>

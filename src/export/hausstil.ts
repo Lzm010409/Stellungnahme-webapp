@@ -8,6 +8,8 @@
  * Argumentation der einzelnen Positionen wird formuliert.
  */
 
+import { nachIso } from './datum'
+
 export type Ergebnisart = 'vollstaendig' | 'teilweise' | 'scharfe_kritik' | 'einzelfrage'
 
 export interface Kopfdaten {
@@ -61,7 +63,11 @@ export function deutschesDatum(d: Date): string {
  * Bericht einen Prüfdienstleister, wird er ausdrücklich erwähnt.
  */
 export function baueEinleitung(kopf: Kopfdaten): string | null {
-  if (!kopf.einleitungDatum) return null
+  // Ein Bruchstück ist kein Datum. „mit dem Schreiben vom 0 überließen Sie
+  // uns …" stand tatsächlich einmal so da: das Eingabefeld war ein
+  // Textfeld, und die angefangene Eingabe blieb stehen. Lieber gar kein
+  // Einleitungssatz — dann fällt die fehlende Angabe vor dem Versand auf.
+  if (!kopf.einleitungDatum || !nachIso(kopf.einleitungDatum)) return null
 
   const medium = kopf.einleitungMedium === 'mail' ? 'mit der Mail vom' : 'mit dem Schreiben vom'
 
