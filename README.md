@@ -277,6 +277,29 @@ läge sonst vielfach in der Datenbank, und eine berichtigte Beschreibung
 erreichte nur eine der Kopien. Deshalb lässt sich ein Bild auch nicht
 löschen, solange es in einem Schreiben steht.
 
+## Zwei Proben im Browser
+
+Zwei Skripte fahren die Anwendung in einem echten Browser:
+
+```bash
+pnpm exec tsx scripts/rundgang-brief.ts   # der Weg durch ein Schreiben
+pnpm exec tsx scripts/ui-pruefung.ts      # jede Schaltfläche, zweimal
+```
+
+Der **Rundgang** geht den Weg des Sachverständigen: Brief öffnen, Anmerkung
+aufklappen, Baustein bearbeiten und einfügen, Bild einsetzen und ziehen,
+ausschneiden und einfügen, Dokument erzeugen. Er beanstandet, was dabei
+schiefgeht, und bricht mit Fehlercode ab.
+
+Die **Bedienprobe** geht statt dessen die Fläche ab: 66 Handgriffe, jeder
+zweimal — das erste Mal zeigt, ob etwas geht, das zweite Mal, ob es auch
+beim Wiederholen geht. Sie unterscheidet im Bericht zwischen *fehlerhaftem*
+und *ungünstigem* Verhalten: ein Knopf, der nichts tut, ist ein Fehler; ein
+Knopf, der etwas tut, ohne es zu sagen, ist ungünstig. Für die zerstörenden
+Handgriffe — Position entfernen, Stellungnahme löschen — legt sie sich
+Wegwerf-Schreiben an und räumt sie wieder weg; dafür braucht sie
+`DATABASE_URL`.
+
 ## Warten mit Auskunft
 
 Die beiden langen Vorgänge — Prüfbericht auswerten und Dokument erzeugen —

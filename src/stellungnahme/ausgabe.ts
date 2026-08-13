@@ -75,12 +75,30 @@ export async function* erzeugeAusgabe(
   const pruefung = await pruefeDokument(stellungnahmeId, dokument)
   if (pruefung.gesperrt) {
     const anzahl = pruefung.zusammenfassung.sperrt
+
+    /**
+     * Die Sperre nennt ihre Stellen.
+     *
+     * „Vier Prüfungen sperren die Ausgabe" ist eine Aufgabe ohne Adresse.
+     * Genannt werden deshalb Kennung und Stelle der ersten drei — der Rest
+     * steht als Anmerkung an seiner Position.
+     */
+    const stellen = [
+      ...new Set(
+        pruefung.befunde
+          .filter((b) => b.schwere === 'sperrt')
+          .map((b) => `${b.kennung} bei ${b.stelle}`),
+      ),
+    ]
+    const genannt = stellen.slice(0, 3).join('; ')
+    const rest = stellen.length > 3 ? ` und ${stellen.length - 3} weitere` : ''
+
     yield {
       art: 'fehler',
       befunde: pruefung.befunde,
       fehler:
         `${anzahl} Prüfung${anzahl === 1 ? '' : 'en'} sperr${anzahl === 1 ? 't' : 'en'} ` +
-        'die Ausgabe. Bitte zuerst beheben.',
+        `die Ausgabe: ${genannt}${rest}. Die Anmerkung am Rand führt an jede Stelle.`,
     }
     return
   }

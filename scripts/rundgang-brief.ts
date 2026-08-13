@@ -445,7 +445,23 @@ async function main() {
     console.log(`  Erste Meldung: ${meldung}`)
     await schritt('9-fortschritt')
   }
-  await seite.waitForSelector('.ausgabe-leiste', { timeout: 30000 })
+  // Zwei gültige Ausgänge: fertige Dateien — oder eine Sperre der Wächter,
+  // wenn im Schreiben noch ein offener Platzhalter steht. Beides muss
+  // sichtbar sein; stillschweigend enden darf der Vorgang nicht.
+  await Promise.race([
+    seite.waitForSelector('.ausgabe-leiste', { timeout: 40000 }),
+    seite.waitForSelector('.hinweis.fehler', { timeout: 40000 }),
+  ]).catch(() => null)
+  if ((await seite.locator('.ausgabe-leiste').count()) > 0) {
+    console.log('  Ausgabe: beide Dateien stehen bereit.')
+  } else {
+    // Genau die Meldung des Schreibtischs, nicht irgendeinen Hinweis am Rand.
+    const meldung = await seite.locator('.werkbank > .hinweis[role=status]').innerText().catch(() => '')
+    console.log(`  Ausgabe gesperrt: ${meldung.replace(/\n/g, ' ').slice(0, 120)}`)
+    if (!meldung.trim()) {
+      maengel.push('Das Erzeugen endete weder mit Dateien noch mit einer Meldung.')
+    }
+  }
   await schritt('9b-ausgabe')
 
   await kontext.close()

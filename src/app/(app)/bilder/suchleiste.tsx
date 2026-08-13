@@ -62,7 +62,16 @@ export function Suchleiste({
       </select>
 
       {begriff || thema ? (
-        <button type="button" onClick={() => starte(() => router.replace('/bilder'))}>
+        <button
+          type="button"
+          onClick={() => {
+            // Erst das Feld leeren, dann die Adresse: sonst stellt die
+            // Verzögerung oben die eben weggeräumte Suche sofort wieder her
+            // — der Knopf machte sich selbst rückgängig.
+            setzeSuche('')
+            starte(() => router.replace('/bilder'))
+          }}
+        >
           Filter zurücksetzen
         </button>
       ) : null}

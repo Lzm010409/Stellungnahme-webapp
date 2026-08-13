@@ -225,6 +225,28 @@ export function Schreibtisch({
 
   editorRef.current = editor
 
+  /**
+   * Einmal prüfen, sobald das Schreiben dasteht.
+   *
+   * Vorher lief die Prüfung erst mit dem ersten Speichern. Wer ein
+   * Schreiben öffnete und gleich auf „Dokument erzeugen" ging, erfuhr erst
+   * dort, dass Beanstandungen die Ausgabe sperren — und suchte sie danach
+   * am Rand. Jetzt steht der Stand der Wächter von Anfang an in der Leiste.
+   */
+  useEffect(() => {
+    if (!editor) return
+    let abgebrochen = false
+    void (async () => {
+      const ergebnis = await pruefeDokument(stellungnahmeId, dokumentJson(editor))
+      if (abgebrochen) return
+      setzeBefunde(ergebnis.befunde)
+      setzePruefung(ergebnis)
+    })()
+    return () => {
+      abgebrochen = true
+    }
+  }, [editor, stellungnahmeId])
+
   /* ---------------- Speichern ---------------- */
 
   const speichereJetzt = useCallback(async () => {
@@ -576,6 +598,19 @@ export function Schreibtisch({
         setzeAusgabestand(null)
         setzeMeldung(ereignis.fehler)
         if (ereignis.befunde) {
+          /**
+           * Die erste sperrende Stelle aufschlagen.
+           *
+           * Eine Meldung „vier Prüfungen sperren die Ausgabe" ist eine
+           * Aufgabe ohne Adresse. Die Anmerkung dazu wird deshalb gleich
+           * geöffnet und der Abschnitt angesprungen — von dort führt jeder
+           * Befund weiter an seine Fundstelle im Text.
+           */
+          const erste = ereignis.befunde.find((b) => b.schwere === 'sperrt' && b.positionId)
+          if (erste?.positionId) {
+            setzeAktiv(erste.positionId)
+            springeInAbschnitt(editor, erste.positionId)
+          }
           setzeBefunde(ereignis.befunde)
           setzePruefung({
             befunde: ereignis.befunde,
