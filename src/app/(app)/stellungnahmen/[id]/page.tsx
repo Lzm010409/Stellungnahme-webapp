@@ -10,6 +10,7 @@ import { stelleDokumentBereit } from '@/dokument/dienst'
 import { kiVerfuegbar } from '@/ki/client'
 import { Schreibtisch } from './schreiben'
 import { Kopfbereich } from './kopf'
+import { KlappenSchliesser } from './klappen'
 import { Loeschknopf } from '../loeschknopf'
 
 function euro(wert: string | number | null | undefined): string {
@@ -66,6 +67,7 @@ export default async function StellungnahmeSeite({
           <strong>{euro(summe)}</strong>
         </span>
 
+        <KlappenSchliesser />
         <div className="brief-kopf-klappen">
         {befunde.length > 0 ? (
           <details className="klappe schmal">

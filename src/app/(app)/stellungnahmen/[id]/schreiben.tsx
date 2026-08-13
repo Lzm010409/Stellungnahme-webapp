@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { briefErweiterungen } from '@/dokument/editor-schema'
+import { EREIGNIS_MARKE, briefErweiterungen } from '@/dokument/editor-schema'
 import {
   abschnittsReihenfolge,
   abschnittsText,
@@ -265,6 +265,27 @@ export function Schreibtisch({
   useEffect(() => () => void (uhr.current && clearTimeout(uhr.current)), [])
 
   /* ---------------- Randspalte ausrichten ---------------- */
+
+  /**
+   * Die Marken im Papierrand.
+   *
+   * Der Knopf am Abschnitt meldet seinen Klick als Ereignis; hier wird
+   * daraus die offene Anmerkung und ein Sprung in den Abschnitt. Bei
+   * achtzehn Positionen ist das der kürzeste Weg zum Argument — man wählt
+   * es dort, wo man liest.
+   */
+  useEffect(() => {
+    const brief = briefRef.current
+    if (!brief) return
+    const hoere = (ereignis: Event) => {
+      const id = (ereignis as CustomEvent<string>).detail
+      if (typeof id !== 'string' || !id) return
+      setzeAktiv(id)
+      if (editor) springeInAbschnitt(editor, id)
+    }
+    brief.addEventListener(EREIGNIS_MARKE, hoere)
+    return () => brief.removeEventListener(EREIGNIS_MARKE, hoere)
+  }, [editor])
 
   /**
    * Den Abschnitt zur offenen Anmerkung hervorheben.

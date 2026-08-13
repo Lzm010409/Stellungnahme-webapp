@@ -190,6 +190,25 @@ Brief entsteht getrennt davon aus der Reihenfolge der Abschnitte mit Text;
 welche Nummer eine Position im Schreiben hat, sagt der Hinweistext ihrer
 Marke.
 
+### Achtzehn Positionen
+
+Ein Prüfbericht mit achtzehn Kürzungen ist kein Sonderfall. Drei Dinge
+richten sich danach:
+
+- **Die Marke im Papierrand.** Neben jedem Abschnitt steht seine Zahl. Ein
+  Klick öffnet die Anmerkung dazu — dort, wo man gerade liest, statt sie am
+  Rand zu suchen. Sie ist eine Auszeichnung des Editors, kein Text: im
+  Word-Dokument taucht sie nicht auf.
+- **Die Leiste bricht um**, statt waagerecht davonzulaufen. Vorher standen
+  bei achtzehn Positionen die ersten Marken ausserhalb des Bildes.
+- **Nichts legt sich mehr über die Leiste.** Prüfliste, Unklarheiten und
+  Empfänger klappen als schwebende Kästen auf; sie öffnen sich nicht mehr
+  von selbst und schliessen sich, sobald man daneben klickt.
+
+Wer zu einem Abschnitt oder einer Anmerkung springt, findet sie nicht mehr
+unter der festliegenden Kopfleiste: alles Anspringbare hält den nötigen
+Abstand zum oberen Rand frei.
+
 ### Schnellauswahl über der Markierung
 
 Markierter Text bekommt eine schwebende Leiste: Fett, Kursiv, Aufzählung,

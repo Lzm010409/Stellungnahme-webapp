@@ -294,6 +294,32 @@ async function main() {
     maengel.push('In der Positionsleiste stand statt einer Zahl ein Strich.')
   }
 
+  // Die Leiste bricht um, statt waagerecht davonzulaufen.
+  const rolltWeg = await seite
+    .locator('.positionsleiste')
+    .evaluate((e) => e.scrollWidth > e.clientWidth + 2)
+  console.log(`  Positionsleiste rollt waagerecht: ${rolltWeg}`)
+  if (rolltWeg) maengel.push('Die Positionsleiste rollt waagerecht — Marken stehen ausserhalb.')
+
+  // Die Marken im Papierrand: eine je Abschnitt, und ein Klick öffnet die
+  // zugehörige Anmerkung.
+  const markenImBrief = await seite.locator('.brief-flaeche .abschnittsmarke').count()
+  const abschnittsZahlJetzt = await seite.locator('.brief-flaeche .d-abschnitt').count()
+  console.log(`  Marken im Brief: ${markenImBrief} bei ${abschnittsZahlJetzt} Abschnitten`)
+  if (markenImBrief !== abschnittsZahlJetzt) {
+    maengel.push('Nicht jeder Abschnitt trägt eine Marke im Papierrand.')
+  }
+  if (markenImBrief > 1) {
+    await seite.locator('.brief-flaeche .abschnittsmarke').nth(1).click()
+    await seite.waitForTimeout(700)
+    const geoeffnet = await seite.locator('.blase.auf .blase-nummer').innerText()
+    console.log(`  Klick auf Marke 2 öffnet Anmerkung: ${geoeffnet.trim()}`)
+    if (geoeffnet.trim() !== '2') {
+      maengel.push('Der Klick auf eine Marke im Brief öffnete die falsche Anmerkung.')
+    }
+    await schritt('6c-marken')
+  }
+
   // Eine gelöschte Überschrift darf den Abschnitt nicht unsichtbar machen.
   const kopf = seite.locator('.brief-flaeche .d-abschnitt .d-ueberschrift').first()
   const kopfText = (await kopf.innerText()).trim()
@@ -410,7 +436,13 @@ async function main() {
   const balken = await wartetAufBalken
   console.log(`  Fortschrittsbalken beim Erzeugen erschienen: ${Boolean(balken)}`)
   if (balken) {
-    console.log(`  Erste Meldung: ${await seite.locator('.fortschritt-text').innerText()}`)
+    // Bei einem kleinen Schreiben ist der Balken schon wieder weg, bevor
+    // sein Text gelesen werden kann — das ist kein Mangel.
+    const meldung = await seite
+      .locator('.fortschritt-text')
+      .innerText()
+      .catch(() => '— schon durch —')
+    console.log(`  Erste Meldung: ${meldung}`)
     await schritt('9-fortschritt')
   }
   await seite.waitForSelector('.ausgabe-leiste', { timeout: 30000 })

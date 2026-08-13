@@ -1141,14 +1141,25 @@ code {
 
 /* ---------- Positionsleiste ---------- */
 
+/* Kopfleiste und Werkzeugleiste kleben oben fest. Wer zu einem Abschnitt
+   oder einer Anmerkung springt, soll sie nicht darunter suchen müssen —
+   deshalb hält alles Anspringbare diesen Abstand zum oberen Rand frei. */
+.brief-flaeche .d-abschnitt,
+.blase,
+.d-bild {
+  scroll-margin-top: 150px;
+}
+
+/* Die Leiste bricht um, statt zu rollen. Vorher lief sie bei achtzehn
+   Positionen waagerecht davon: die ersten Marken standen ausserhalb des
+   Bildes, und wer nach Position 1 suchte, fand sie nicht mehr. */
 .positionsleiste {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   flex: 1;
   min-width: 0;
   justify-content: center;
-  overflow-x: auto;
-  scrollbar-width: thin;
   padding: 2px 4px;
 }
 
@@ -1236,6 +1247,60 @@ code {
   counter-increment: abschnitt;
   margin: 0 0 1.4em;
   position: relative;
+}
+
+/**
+ * Die Marke im Papierrand.
+ *
+ * Sie steht neben dem Abschnitt, nicht in ihm: dieselbe Zahl wie in der
+ * Leiste oben und an der Anmerkung am Rand. Ein Klick öffnet die Anmerkung
+ * genau dort, wo gerade gelesen wird — bei achtzehn Positionen der
+ * Unterschied zwischen Suchen und Finden.
+ */
+.abschnittsmarke {
+  position: absolute;
+  left: -2.6em;
+  top: 0.05em;
+  width: 1.9em;
+  min-width: 0;
+  padding: 1px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: var(--radius-klein);
+  cursor: pointer;
+  user-select: none;
+}
+
+.abschnittsmarke:hover {
+  border-color: var(--accent);
+}
+
+.abschnittsmarke.leer {
+  color: var(--ink-soft);
+  background: var(--surface-alt);
+}
+
+.abschnittsmarke.draussen {
+  color: var(--ink-soft);
+  background: transparent;
+  border-style: dotted;
+  border-color: var(--line);
+  text-decoration: line-through;
+}
+
+/* Auf schmalen Schirmen ist kein Rand übrig — dann sitzt die Marke am
+   Abschnittsanfang, wo sie zwar auffällt, aber nichts verdeckt. */
+@media (max-width: 1100px) {
+  .abschnittsmarke {
+    position: static;
+    display: inline-block;
+    margin: 0 0 4px;
+  }
 }
 
 .brief-flaeche .d-ueberschrift {

@@ -86,3 +86,29 @@ describe('ergaenzeFehlendeAbschnitte', () => {
     expect(neu.content?.[1]).toMatchObject({ type: KNOTEN.absatz })
   })
 })
+
+describe('Der Ergebnisabsatz', () => {
+  it('kommt zurück, wenn er dem Schreiben abhandengekommen ist', () => {
+    const ohne: Elementknoten = {
+      type: KNOTEN.dokument,
+      content: [
+        { type: KNOTEN.betreff, content: [text('Betreff')] },
+        { type: KNOTEN.anrede, content: [text('Sehr geehrte Damen und Herren,')] },
+        abschnitt({ positionId: 'p1', bezeichnung: 'Lackierlohn' }, 'Lackierlohn'),
+        { type: KNOTEN.signatur },
+      ],
+    }
+
+    const nachher = ergaenzeFehlendeAbschnitte(ohne, [{ id: 'p1', bezeichnung: 'Lackierlohn' }])
+
+    expect(nachher.ergaenzt).toEqual(['ergebnis'])
+    const arten = (nachher.dokument.content ?? []).map((k) => ('type' in k ? k.type : 'text'))
+    expect(arten.at(-1)).toBe(KNOTEN.signatur)
+    expect(arten.at(-2)).toBe(KNOTEN.ergebnis)
+  })
+
+  it('bleibt unangetastet, wenn er dasteht', () => {
+    const mit = brief([abschnitt({ positionId: 'p1', bezeichnung: 'Lackierlohn' }, 'Lackierlohn')])
+    expect(ergaenzeFehlendeAbschnitte(mit, [{ id: 'p1', bezeichnung: 'Lackierlohn' }]).ergaenzt).toEqual([])
+  })
+})

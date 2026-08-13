@@ -44,12 +44,17 @@ export function Kopfbereich(props: {
   /**
    * Ob der Kasten offen steht, entscheidet der Benutzer — nicht der Inhalt.
    *
-   * Vorher hing `open` unmittelbar an den fehlenden Angaben. Das erste
-   * getippte Zeichen im letzten leeren Feld machte die Lücke voll, und der
-   * Kasten klappte mitten im Wort zu: die Eingabe brach ab, der Fokus war
-   * weg. Der Anfangszustand richtet sich weiter nach dem, was fehlt.
+   * Zweimal war es andersherum falsch. Erst hing `open` unmittelbar an den
+   * fehlenden Angaben: das erste getippte Zeichen im letzten leeren Feld
+   * machte die Lücke voll, und der Kasten klappte mitten im Wort zu. Dann
+   * ging er beim Öffnen der Seite von selbst auf und legte sich über
+   * Werkzeugleiste und Positionsmarken — bei achtzehn Positionen sah es
+   * aus, als wären sie verschwunden.
+   *
+   * Der Hinweis auf das, was fehlt, steht deshalb in der Zeile darüber:
+   * „2 offen" in Warnfarbe, einen Klick entfernt. Er verdeckt nichts.
    */
-  const [offen, setzeOffen] = useState(fehlend.length > 0)
+  const [offen, setzeOffen] = useState(false)
 
   return (
     <details

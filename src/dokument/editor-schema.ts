@@ -12,12 +12,12 @@
 
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
-import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
+import { Plugin, PluginKey, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { Fragment, Node as PmNode, Schema as PmSchema } from '@tiptap/pm/model'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
-import { SIGNATUR } from '@/export/hausstil'
+import { ERGEBNIS_ABSAETZE, SIGNATUR } from '@/export/hausstil'
 import { BILD_BREITE_STANDARD, KNOTEN, MARKE_BIBLIOTHEK } from './typen'
 import { BildAnsicht } from '@/app/(app)/stellungnahmen/[id]/bild-ansicht'
 
@@ -260,6 +260,36 @@ export const Bild = Node.create({
   },
 })
 
+/** Das Ereignis, mit dem eine Marke im Brief ihre Position meldet. */
+export const EREIGNIS_MARKE = 'abschnittsmarke'
+
+/**
+ * Die Marke am Rand eines Abschnitts.
+ *
+ * Ein Knopf im Papierrand, der die Nummer der Position trägt. Er meldet
+ * seinen Klick als Ereignis nach oben, statt eine Rückrufadresse aus React
+ * mitzuschleppen: die Auszeichnungen entstehen einmal beim Bau des Editors,
+ * eine mitgegebene Funktion wäre nach dem ersten Neuzeichnen veraltet.
+ */
+function baueMarke(nummer: number, positionId: string, zustand: string): HTMLElement {
+  const knopf = document.createElement('button')
+  knopf.type = 'button'
+  knopf.className = `abschnittsmarke ${zustand}`
+  knopf.textContent = String(nummer)
+  knopf.contentEditable = 'false'
+  knopf.tabIndex = -1
+  knopf.title = `Position ${nummer} — Anmerkung öffnen`
+  knopf.setAttribute('aria-label', `Anmerkung zu Position ${nummer} öffnen`)
+  knopf.addEventListener('mousedown', (ereignis) => {
+    // Ohne `preventDefault` setzt ProseMirror die Schreibmarke an den Rand
+    // des Abschnitts, bevor der Klick überhaupt ankommt.
+    ereignis.preventDefault()
+    ereignis.stopPropagation()
+    knopf.dispatchEvent(new CustomEvent(EREIGNIS_MARKE, { bubbles: true, detail: positionId }))
+  })
+  return knopf
+}
+
 /**
  * Markiert Abschnitte ohne Text.
  *
@@ -278,12 +308,42 @@ export const LeereAbschnitte = Extension.create({
         props: {
           decorations(state) {
             const auszeichnungen: Decoration[] = []
+            let laufend = 0
             state.doc.descendants((node, pos) => {
               if (node.type.name !== KNOTEN.abschnitt) return true
               let text = ''
               node.forEach((kind) => {
                 if (kind.type.name !== KNOTEN.ueberschrift) text += kind.textContent
               })
+
+              /**
+               * Die Marke im Papierrand.
+               *
+               * Sie trägt dieselbe Zahl wie die Marke in der Leiste und die
+               * Anmerkung am Rand — die Reihenfolge des Prüfberichts. Bei
+               * achtzehn Positionen ist sie der kürzeste Weg zum Argument:
+               * die Anmerkung wird dort geöffnet, wo man ohnehin liest,
+               * statt am Rand gesucht zu werden.
+               */
+              // Als eigene Konstante, nicht als Zähler: die Funktion unten
+              // wird später aufgerufen und läse sonst den Endstand.
+              const nummer = (laufend += 1)
+              const positionId =
+                typeof node.attrs.positionId === 'string' ? node.attrs.positionId : ''
+              const zustand = node.attrs.ausgelassen
+                ? 'draussen'
+                : text.trim()
+                  ? 'fertig'
+                  : 'leer'
+              if (positionId) {
+                auszeichnungen.push(
+                  Decoration.widget(pos + 1, () => baueMarke(nummer, positionId, zustand), {
+                    side: -1,
+                    key: `marke-${positionId}-${nummer}-${zustand}`,
+                  }),
+                )
+              }
+
               if (!text.trim()) {
                 auszeichnungen.push(
                   Decoration.node(pos, pos + node.nodeSize, { class: 'abschnitt-leer' }),
@@ -393,6 +453,41 @@ function abschnitteImStueck(inhalt: Fragment): PmNode[] {
  */
 export const RAHMEN_FREI = 'rahmenFrei'
 
+
+/**
+ * Legt den Ergebnisabsatz wieder an, wenn eine Änderung ihn mitgenommen hat.
+ *
+ * Er gehört zum Rahmen wie die Abschnitte: das Schema lässt ihn als
+ * gewöhnlichen Block zu, ein Rundumschnitt nimmt ihn also mit. Ohne ihn
+ * endet das Schreiben ohne den Schlusssatz des Hausstils — und niemand
+ * sieht, dass er fehlt.
+ */
+function ergaenzeErgebnis(tr: Transaction, altesDoc: PmNode, schema: PmSchema): boolean {
+  const hatte = (doc: PmNode) => {
+    let da = false
+    doc.forEach((kind) => {
+      if (kind.type.name === KNOTEN.ergebnis) da = true
+    })
+    return da
+  }
+  if (!hatte(altesDoc) || hatte(tr.doc)) return false
+
+  tr.insert(
+    stelleVorDerSignatur(tr.doc),
+    schema.nodes[KNOTEN.ergebnis]!.create(null, schema.text(ERGEBNIS_ABSAETZE.vollstaendig)),
+  )
+  return true
+}
+
+/** Die Stelle unmittelbar vor der Signatur. */
+function stelleVorDerSignatur(doc: PmNode): number {
+  let stelle: number | null = null
+  doc.forEach((kind, versatz) => {
+    if (stelle === null && kind.type.name === KNOTEN.signatur) stelle = versatz
+  })
+  return stelle ?? doc.content.size
+}
+
 /**
  * Der Rahmen des Schreibens überlebt jede Bearbeitung.
  *
@@ -426,11 +521,13 @@ export const Rahmen = Extension.create({
           if (vorgaenge.some((v) => v.getMeta(RAHMEN_FREI) === true)) return null
 
           const vorher = abschnitteImBaum(alt.doc).filter((a) => a.id)
-          if (vorher.length === 0) return null
-
           const jetzt = new Set(abschnitteImBaum(neu.doc).map((a) => a.id))
           const fehlend = vorher.filter((a) => !jetzt.has(a.id))
-          if (fehlend.length === 0) return null
+
+          if (fehlend.length === 0) {
+            const tr = neu.tr
+            return ergaenzeErgebnis(tr, alt.doc, neu.schema) ? tr : null
+          }
 
           const reihenfolge = vorher.map((a) => a.id)
           const tr = neu.tr
@@ -440,13 +537,19 @@ export const Rahmen = Extension.create({
               leererAbschnitt(neu.schema, a.node.attrs),
             )
           }
+          ergaenzeErgebnis(tr, alt.doc, neu.schema)
           return tr
         },
 
         props: {
-          handlePaste(sicht, _ereignis, stueck) {
+          handlePaste(sicht, ereignis, stueck) {
             const abschnitte = abschnitteImStueck(stueck.content)
             if (abschnitte.length === 0) return false
+
+            // Der Wortlaut aus der Ablage, unverarbeitet. Betreff, Anrede
+            // und Ergebnis werden daraus gelesen — nicht aus dem
+            // eingefügten Stück.
+            const html = (ereignis as ClipboardEvent).clipboardData?.getData('text/html') ?? ''
 
             const tr = sicht.state.tr
             const unbekannt: PmNode[] = []
@@ -469,25 +572,43 @@ export const Rahmen = Extension.create({
               schreibmarke = fund.pos + knoten.content.size
             }
 
-            // Betreff, Anrede und Ergebnis stehen ausserhalb der Abschnitte
-            // und gehören zum Hin- und Rückweg dazu. Die Signatur nicht:
-            // sie kommt aus dem Hausstil und ist gesperrt.
-            stueck.content.forEach((knoten) => {
-              const name = knoten.type.name
-              if (name !== KNOTEN.betreff && name !== KNOTEN.anrede && name !== KNOTEN.ergebnis) {
-                return
-              }
-              let ziel: { pos: number; node: PmNode } | null = null
-              tr.doc.descendants((kind, pos) => {
-                if (ziel) return false
-                if (kind.type.name === name) ziel = { pos, node: kind }
-                return !ziel
-              })
-              if (ziel) {
+            /**
+             * Betreff, Anrede und Ergebnis gehören zum Hin- und Rückweg
+             * dazu — die Signatur nicht, die kommt aus dem Hausstil.
+             *
+             * Ihr Wortlaut wird unmittelbar aus der Ablage gelesen, an
+             * ihren Merkmalen im Geschriebenen. ProseMirror liest ein
+             * eingefügtes Stück im Zusammenhang der Einfügestelle: steht
+             * die Schreibmarke in einem Absatz, kann dort kein Betreff
+             * stehen, und aus dem Betreff wird ein gewöhnlicher Absatz.
+             * Betreff und Anrede kamen deshalb leer zurück, während die
+             * Abschnitte vollständig waren.
+             */
+            if (html) {
+              const baum = new window.DOMParser().parseFromString(html, 'text/html')
+              const rahmen: [string, string][] = [
+                [KNOTEN.betreff, 'p[data-betreff]'],
+                [KNOTEN.anrede, 'p[data-anrede]'],
+                [KNOTEN.ergebnis, 'p[data-ergebnis]'],
+              ]
+              for (const [name, merkmal] of rahmen) {
+                const wortlaut = baum.querySelector(merkmal)?.textContent?.trim()
+                if (!wortlaut) continue
+                let ziel: { pos: number; node: PmNode } | null = null
+                tr.doc.descendants((kind, pos) => {
+                  if (ziel) return false
+                  if (kind.type.name === name) ziel = { pos, node: kind }
+                  return !ziel
+                })
+                if (!ziel) continue
                 const z = ziel as { pos: number; node: PmNode }
-                tr.replaceWith(z.pos + 1, z.pos + z.node.nodeSize - 1, knoten.content)
+                tr.replaceWith(
+                  z.pos + 1,
+                  z.pos + z.node.nodeSize - 1,
+                  sicht.state.schema.text(wortlaut),
+                )
               }
-            })
+            }
 
             for (const knoten of unbekannt) {
               tr.insert(stelleVorDemSchluss(tr.doc), knoten)

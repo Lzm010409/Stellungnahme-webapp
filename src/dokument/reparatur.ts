@@ -16,13 +16,8 @@
  * Browser und lässt sich ohne Browser prüfen.
  */
 
-import {
-  KNOTEN,
-  abschnitt,
-  istText,
-  type Elementknoten,
-  type Knoten,
-} from './typen'
+import { KNOTEN, abschnitt, istText, text, type Elementknoten, type Knoten } from './typen'
+import { ERGEBNIS_ABSAETZE } from '@/export/hausstil'
 
 export interface Positionsangabe {
   id: string
@@ -32,7 +27,10 @@ export interface Positionsangabe {
 
 export interface Reparatur {
   dokument: Elementknoten
-  /** Die Kennungen der Abschnitte, die neu angelegt wurden. */
+  /**
+   * Was neu angelegt wurde: die Kennungen fehlender Abschnitte, und
+   * `ergebnis`, falls der Schlusssatz gefehlt hat.
+   */
   ergaenzt: string[]
 }
 
@@ -62,7 +60,25 @@ export function ergaenzeFehlendeAbschnitte(
   const inhalt = [...(dokument.content ?? [])]
   const vorhanden = new Set(abschnittsKennungen(inhalt))
   const fehlend = positionen.filter((p) => !vorhanden.has(p.id))
-  if (fehlend.length === 0) return { dokument, ergaenzt: [] }
+
+  /**
+   * Der Ergebnisabsatz gehört zum Rahmen wie die Abschnitte.
+   *
+   * Das Schema lässt ihn als gewöhnlichen Block zu — ein Rundumschnitt
+   * nimmt ihn also mit, und das Schreiben endet danach ohne den Schlusssatz
+   * des Hausstils. Wieder angelegt wird er mit dem Satz, mit dem er
+   * entstanden wäre.
+   */
+  const ohneErgebnis = !inhalt.some((k) => !istText(k) && k.type === KNOTEN.ergebnis)
+  if (fehlend.length === 0 && !ohneErgebnis) return { dokument, ergaenzt: [] }
+
+  if (ohneErgebnis) {
+    const vorDerSignatur = inhalt.findIndex((k) => !istText(k) && k.type === KNOTEN.signatur)
+    inhalt.splice(vorDerSignatur >= 0 ? vorDerSignatur : inhalt.length, 0, {
+      type: KNOTEN.ergebnis,
+      content: [text(ERGEBNIS_ABSAETZE.vollstaendig)],
+    })
+  }
 
   const reihenfolge = positionen.map((p) => p.id)
 
@@ -80,7 +96,7 @@ export function ergaenzeFehlendeAbschnitte(
 
   return {
     dokument: { ...dokument, content: inhalt },
-    ergaenzt: fehlend.map((p) => p.id),
+    ergaenzt: [...fehlend.map((p) => p.id), ...(ohneErgebnis ? ['ergebnis'] : [])],
   }
 }
 
