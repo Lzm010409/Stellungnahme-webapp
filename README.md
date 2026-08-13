@@ -169,6 +169,26 @@ Daraus folgt, was beim Bearbeiten geschieht:
   ein vollständiger Hin- und Rückweg, Rückgängig eingeschlossen.
 - Schreiben, die vor dieser Fassung Abschnitte verloren haben, **heilen
   beim Öffnen**: die fehlenden kommen leer an ihre Stelle zurück.
+- Wer die **Überschrift** eines Abschnitts löscht, sieht an ihrer Stelle
+  den Namen der Position als Schatten. Ein Abschnitt verschwindet damit nie
+  spurlos aus dem Bild — sonst stünden die Marke in der Leiste und die
+  Anmerkung am Rand scheinbar ohne Grund da.
+
+Für eine Position gibt es deshalb zwei verschiedene Wege hinaus, und der
+Unterschied ist wichtig:
+
+| | **Nicht bestreiten** | **Position entfernen** |
+| --- | --- | --- |
+| Wofür | Die Kürzung wird hingenommen | Die Zeile ist gar keine Kürzung — falsch gelesen, doppelt, eine Zwischensumme |
+| Abschnitt | bleibt ausgegraut stehen, wird nicht gedruckt | ist weg |
+| Marke in der Leiste | bleibt, durchgestrichen | ist weg |
+| Umkehrbar | jederzeit über „Doch bestreiten" | nein, mit Rückfrage |
+
+Die Marken in der Leiste tragen die Zahlen des **Prüfberichts** — sie
+stehen fest, solange die Position zum Fall gehört. Die Nummerierung im
+Brief entsteht getrennt davon aus der Reihenfolge der Abschnitte mit Text;
+welche Nummer eine Position im Schreiben hat, sagt der Hinweistext ihrer
+Marke.
 
 ### Schnellauswahl über der Markierung
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { briefErweiterungen } from '@/dokument/editor-schema'
 import {
@@ -14,6 +15,7 @@ import {
   fuegeAbschnittEin,
   fuegeAnStelleEin,
   fuegeBlockEin,
+  entferneAbschnitt,
   fuegeInAbschnittEin,
   markiereAktivenAbschnitt,
   setzeAusgelassen,
@@ -39,6 +41,7 @@ import { Schnellauswahl } from './schnellauswahl'
 import { leseEreignisse } from '@/app/teile/strom'
 import type { Ausgabeereignis } from '@/stellungnahme/ausgabe'
 import {
+  entfernePosition,
   formuliereAbschnitt,
   pruefeDokument,
   setzeBehandlung,
@@ -107,6 +110,7 @@ export function Schreibtisch({
   const [bildLaeuft, setzeBildLaeuft] = useState(0)
   const [fokus, setzeFokus] = useState(false)
   const [laeuft, starte] = useTransition()
+  const router = useRouter()
 
   const standRef = useRef(anfangsStand)
   const uhr = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -454,6 +458,37 @@ export function Schreibtisch({
       await setzeBehandlung(positionId, 'bestritten')
     })
 
+  /**
+   * Nimmt eine Position ganz aus dem Fall.
+   *
+   * Erst der Abschnitt, dann das Speichern, dann die Zeile: in dieser
+   * Reihenfolge, damit nach einem Fehlschlag nie eine Position ohne
+   * Abschnitt oder ein Abschnitt ohne Position übrig bleibt.
+   */
+  const entfernen = (positionId: string, bezeichnung: string) => {
+    if (
+      !window.confirm(
+        `„${bezeichnung}" ganz aus diesem Fall entfernen? ` +
+          'Der Abschnitt und die Anmerkung dazu verschwinden. ' +
+          'Soll die Kürzung nur hingenommen werden, ist „Nicht bestreiten" der richtige Weg.',
+      )
+    ) {
+      return
+    }
+    starte(async () => {
+      if (!editor) return
+      entferneAbschnitt(editor, positionId)
+      await speichereJetzt()
+      const e = await entfernePosition(positionId)
+      if (e.fehler) {
+        setzeMeldung(e.fehler)
+        return
+      }
+      setzeAktiv(null)
+      router.refresh()
+    })
+  }
+
   const inBibliothek = (positionId: string) =>
     starte(async () => {
       if (!editor) return
@@ -677,26 +712,40 @@ export function Schreibtisch({
       */}
         {positionen.length > 0 ? (
           <div className="positionsleiste" role="group" aria-label="Positionen">
-            {positionen.map((p) => {
-              const nummer = nummerJePosition.get(p.id)
+            {positionen.map((p, i) => {
               const zahl = befundeJePosition.get(p.id)?.length ?? 0
               const zustandsname = !imBrief.has(p.id)
                 ? 'draussen'
                 : mitText.has(p.id)
                   ? 'fertig'
                   : 'leer'
+              const stand = !imBrief.has(p.id)
+                ? 'nicht bestritten'
+                : mitText.has(p.id)
+                  ? `im Schreiben als Nr. ${nummerJePosition.get(p.id)}`
+                  : 'noch ohne Text'
               return (
                 <button
                   key={p.id}
                   type="button"
                   className={`positionsmarke ${zustandsname} ${aktiv === p.id ? 'aktiv' : ''}`}
-                  title={`${p.bezeichnung}${p.differenz ? ` · −${p.differenz} €` : ''}`}
+                  title={
+                    `Position ${i + 1} des Prüfberichts: ${p.bezeichnung}` +
+                    `${p.differenz ? ` · −${p.differenz} €` : ''} — ${stand}`
+                  }
                   onClick={() => {
                     setzeAktiv(p.id)
                     if (editor && imBrief.has(p.id)) springeInAbschnitt(editor, p.id)
                   }}
                 >
-                  <span>{nummer ?? '—'}</span>
+                  {/*
+                    Die Zahl ist die des Prüfberichts, nicht die des Briefes:
+                    sie steht fest, solange die Position zum Fall gehört.
+                    Vorher stand hier die Nummer im Schreiben — die gibt es
+                    erst, sobald der Abschnitt Text hat, und bis dahin sah die
+                    ganze Leiste aus wie eine Reihe von Strichen.
+                  */}
+                  <span>{i + 1}</span>
                   {zahl > 0 ? <em>{zahl}</em> : null}
                 </button>
               )
@@ -795,7 +844,11 @@ export function Schreibtisch({
         </div>
 
         <aside className="rand" ref={randRef}>
-          {positionen.map((p) => (
+          {/* Die Zahl an der Blase ist die des Prüfberichts — dieselbe wie
+              auf der Marke in der Leiste. Vorher war es die Nummer im
+              Schreiben, die es erst mit Text gibt: bei einem frischen Fall
+              stand am ganzen Rand nur ein Strich. */}
+          {positionen.map((p, i) => (
             <div
               key={p.id}
               ref={(el) => {
@@ -806,7 +859,7 @@ export function Schreibtisch({
                 position={p}
                 vorschlag={vorschlaege.find((v) => v.positionId === p.id)}
                 befunde={befundeJePosition.get(p.id) ?? []}
-                nummer={nummerJePosition.get(p.id) ?? null}
+                nummer={i + 1}
                 imBrief={imBrief.has(p.id)}
                 hatText={mitText.has(p.id)}
                 aktiv={aktiv === p.id}
@@ -821,6 +874,7 @@ export function Schreibtisch({
                 aufAusformulieren={() => ausformulieren(p.id)}
                 aufHerausnehmen={() => herausnehmen(p.id)}
                 aufAufnehmen={() => aufnehmen(p.id, p.bezeichnung)}
+                aufEntfernen={() => entfernen(p.id, p.bezeichnung)}
                 aufFundstelle={springeZu}
                 aufInBibliothek={() => inBibliothek(p.id)}
                 aufBildEinfuegen={(gut) => setzeBibliotheksbild(gut)}

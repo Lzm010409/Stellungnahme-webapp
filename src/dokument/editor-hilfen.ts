@@ -13,7 +13,7 @@
 import type { Editor } from '@tiptap/react'
 import type { Node as PmNode } from '@tiptap/pm/model'
 import { KNOTEN, type Knoten } from './typen'
-import { SCHLUESSEL_AKTIV } from './editor-schema'
+import { RAHMEN_FREI, SCHLUESSEL_AKTIV } from './editor-schema'
 
 /**
  * Der Dokumentbaum als schlichtes JSON.
@@ -270,7 +270,15 @@ export function fuegeBlockEin(
   let tiefe = $pos.depth
   while (tiefe > 1 && $pos.node(tiefe - 1).type.name !== KNOTEN.abschnitt) tiefe--
 
-  const ziel = tiefe >= 1 ? $pos.after(tiefe) : editor.state.doc.content.size
+  /**
+   * Steht die Auswahl über dem ganzen Dokument — nach „Alles markieren"
+   * etwa —, gibt es keinen Block, hinter den etwas passen würde. Früher
+   * landete das Bild dann am Dokumentende, also hinter der Signatur, wo das
+   * Schema nichts zulässt: es geschah schlicht nichts. Jetzt kommt es ans
+   * Ende des Fliesstextes, vor Ergebnis und Signatur.
+   */
+  const ziel =
+    tiefe >= 1 ? $pos.after(tiefe) : (ergebnisPosition(editor) ?? editor.state.doc.content.size)
 
   editor.chain().focus().insertContentAt(ziel, knoten as never).run()
   return true
@@ -315,6 +323,29 @@ export function setzeAusgelassen(
     .focus()
     .command(({ tr }) => {
       tr.setNodeMarkup(fund.pos, undefined, { ...fund.node.attrs, ausgelassen })
+      return true
+    })
+    .run()
+  return true
+}
+
+/**
+ * Nimmt den Abschnitt einer Position ganz aus dem Schreiben.
+ *
+ * Nur für den einen Fall gedacht, in dem die Position selbst aus dem Fall
+ * verschwindet. Die Beigabe `RAHMEN_FREI` sagt dem Rahmen, dass er diesen
+ * Abschnitt nicht zurücklegen soll — sonst stünde er im nächsten Augenblick
+ * wieder da.
+ */
+export function entferneAbschnitt(editor: Editor, positionId: string): boolean {
+  const fund = findeAbschnitt(editor, positionId)
+  if (!fund) return false
+
+  editor
+    .chain()
+    .command(({ tr }) => {
+      tr.setMeta(RAHMEN_FREI, true)
+      tr.delete(fund.pos, fund.pos + fund.node.nodeSize)
       return true
     })
     .run()

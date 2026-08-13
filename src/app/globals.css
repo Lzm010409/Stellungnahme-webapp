@@ -1172,8 +1172,15 @@ code {
   border-style: dashed;
 }
 
+/* Nicht bestritten: die Marke bleibt — die Position gehört zum Fall —, sagt
+   aber unübersehbar, dass sie nicht im Schreiben steht. */
 .positionsmarke.draussen {
   opacity: 0.55;
+  border-style: dotted;
+}
+
+.positionsmarke.draussen span {
+  text-decoration: line-through;
 }
 
 .positionsmarke.aktiv {
@@ -1279,6 +1286,20 @@ code {
 
 .brief-flaeche .d-abschnitt.abschnitt-leer .d-ueberschrift::before {
   content: '';
+}
+
+/* Eine Überschrift, die gelöscht wurde, zeigt den Namen ihrer Position als
+   Schatten. Ein Abschnitt verschwindet damit nie ganz aus dem Bild. */
+.brief-flaeche .d-ueberschrift.ueberschrift-leer::before {
+  content: none;
+}
+
+.brief-flaeche .d-ueberschrift.ueberschrift-leer::after {
+  content: attr(data-titel);
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-style: italic;
+  pointer-events: none;
 }
 
 /* Der leere Absatz darunter bleibt anklickbar, nimmt aber kaum Raum. */

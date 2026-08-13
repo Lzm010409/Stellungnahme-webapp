@@ -115,6 +115,7 @@ export function Blase({
   aufAusformulieren,
   aufHerausnehmen,
   aufAufnehmen,
+  aufEntfernen,
   aufFundstelle,
   aufInBibliothek,
   aufBildEinfuegen,
@@ -134,6 +135,7 @@ export function Blase({
   aufAusformulieren: () => void
   aufHerausnehmen: () => void
   aufAufnehmen: () => void
+  aufEntfernen: () => void
   aufFundstelle: (befund: Befund) => void
   aufInBibliothek: () => void
   aufBildEinfuegen: (gut: Bildziehgut) => void
@@ -237,11 +239,25 @@ export function Blase({
       {!imBrief ? (
         <div className="blase-abschnitt">
           <p className="unterzeile" style={{ margin: '0 0 8px' }}>
-            Diese Position erscheint nicht im Schreiben.
+            Diese Position wird nicht bestritten. Ihr Abschnitt steht ausgegraut im Brief und wird
+            nicht mitgedruckt.
           </p>
-          <button type="button" disabled={laeuft} onClick={aufAufnehmen}>
-            Doch bestreiten
-          </button>
+          <div className="blase-knoepfe">
+            <button type="button" disabled={laeuft} onClick={aufAufnehmen}>
+              Doch bestreiten
+            </button>
+            {/* Der Weg für eine Zeile, die gar keine Kürzung ist: dann soll
+                sie nicht ausgegraut stehen bleiben, sondern verschwinden —
+                aus dem Brief, aus dieser Leiste und aus dem Fall. */}
+            <button
+              type="button"
+              disabled={laeuft}
+              title="Die Position gehört nicht in diesen Fall — sie verschwindet ganz"
+              onClick={aufEntfernen}
+            >
+              Position entfernen
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -574,7 +590,12 @@ export function Blase({
             >
               {laeuft ? <Kreisel text="Ausformulieren" /> : 'Ausformulieren'}
             </button>
-            <button type="button" disabled={laeuft} onClick={aufHerausnehmen}>
+            <button
+              type="button"
+              disabled={laeuft}
+              title="Die Kürzung wird hingenommen. Der Abschnitt bleibt ausgegraut stehen, sein Text ist damit nicht verloren."
+              onClick={aufHerausnehmen}
+            >
               Nicht bestreiten
             </button>
             {hatText ? (

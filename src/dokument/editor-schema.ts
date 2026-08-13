@@ -289,6 +289,23 @@ export const LeereAbschnitte = Extension.create({
                   Decoration.node(pos, pos + node.nodeSize, { class: 'abschnitt-leer' }),
                 )
               }
+
+              // Eine leere Überschrift trägt den Namen der Position als
+              // Schatten. Ohne ihn verschwindet ein Abschnitt, dessen
+              // Überschrift gelöscht wurde, vollständig aus dem Bild — die
+              // Marke in der Leiste und die Anmerkung am Rand stehen dann
+              // scheinbar ohne Grund da.
+              const bezeichnung =
+                typeof node.attrs.bezeichnung === 'string' ? node.attrs.bezeichnung : ''
+              const kopf = node.firstChild
+              if (kopf && kopf.type.name === KNOTEN.ueberschrift && !kopf.textContent.trim()) {
+                auszeichnungen.push(
+                  Decoration.node(pos + 1, pos + 1 + kopf.nodeSize, {
+                    class: 'ueberschrift-leer',
+                    'data-titel': bezeichnung || 'Ohne Überschrift',
+                  }),
+                )
+              }
               return false
             })
             return DecorationSet.create(state.doc, auszeichnungen)
@@ -370,6 +387,13 @@ function abschnitteImStueck(inhalt: Fragment): PmNode[] {
 }
 
 /**
+ * Beigabe an eine Änderung, die einen Abschnitt absichtlich wegnimmt.
+ *
+ * Ohne sie legt der Rahmen ihn sofort wieder an — genau dafür ist er da.
+ */
+export const RAHMEN_FREI = 'rahmenFrei'
+
+/**
  * Der Rahmen des Schreibens überlebt jede Bearbeitung.
  *
  * Zwei Dinge tut diese Erweiterung, und beide hängen zusammen.
@@ -397,6 +421,9 @@ export const Rahmen = Extension.create({
       new Plugin({
         appendTransaction(vorgaenge, alt, neu) {
           if (!vorgaenge.some((v) => v.docChanged)) return null
+          // Eine Position, die ganz aus dem Fall genommen wird, darf ihren
+          // Abschnitt mitnehmen. Sie sagt es ausdrücklich an.
+          if (vorgaenge.some((v) => v.getMeta(RAHMEN_FREI) === true)) return null
 
           const vorher = abschnitteImBaum(alt.doc).filter((a) => a.id)
           if (vorher.length === 0) return null

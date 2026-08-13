@@ -201,6 +201,25 @@ export async function setzeBehandlung(
   return {}
 }
 
+/**
+ * Entfernt eine Kürzungsposition ganz.
+ *
+ * Der Unterschied zu „Nicht bestreiten" ist wesentlich: dort bleibt die
+ * Position im Fall, wird nur nicht bestritten — ihr Abschnitt steht weiter
+ * im Brief, ausgegraut, und ihre Marke in der Leiste bleibt. Hier
+ * verschwindet sie ganz: aus dem Schreiben, aus der Leiste, aus dem Fall.
+ *
+ * Dafür gibt es einen guten Grund: die Auswertung des Prüfberichts liest
+ * gelegentlich eine Zeile heraus, die gar keine Kürzung ist — eine
+ * doppelte, eine falsch gelesene, eine Zwischensumme. So etwas gehört
+ * nicht ausgegraut, sondern weg.
+ */
+export async function entfernePosition(positionId: string): Promise<{ fehler?: string }> {
+  await verlangeBenutzer()
+  await db.delete(position).where(eq(position.id, positionId))
+  return {}
+}
+
 /* ------------------------------------------------------------------ *
  * F9 — selbst geschriebenen Abschnitt in die Bibliothek
  * ------------------------------------------------------------------ */

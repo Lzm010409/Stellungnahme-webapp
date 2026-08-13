@@ -286,6 +286,39 @@ async function main() {
   }
   await schritt('6b-schnitt-und-einfuegen')
 
+  // Die Marken in der Leiste tragen die Zahlen des Prüfberichts — auch bei
+  // einem Schreiben, in dem noch nichts steht.
+  const markenzahlen = await seite.locator('.positionsmarke span').allInnerTexts()
+  console.log(`  Marken in der Leiste: ${markenzahlen.join(' ')}`)
+  if (markenzahlen.some((t) => !/^\d+$/.test(t.trim()))) {
+    maengel.push('In der Positionsleiste stand statt einer Zahl ein Strich.')
+  }
+
+  // Eine gelöschte Überschrift darf den Abschnitt nicht unsichtbar machen.
+  const kopf = seite.locator('.brief-flaeche .d-abschnitt .d-ueberschrift').first()
+  const kopfText = (await kopf.innerText()).trim()
+  await kopf.click()
+  await seite.keyboard.press('End')
+  // Zeichenweise: eine Auswahl über Umschalt+Pos1 verhält sich je nach
+  // Umgebung anders, das Löschen von hinten nicht.
+  for (let i = 0; i < kopfText.length; i++) await seite.keyboard.press('Backspace')
+  await seite.waitForTimeout(700)
+  const schatten = await seite
+    .locator('.brief-flaeche .d-ueberschrift.ueberschrift-leer')
+    .first()
+    .getAttribute('data-titel')
+    .catch(() => null)
+  console.log(`  Gelöschte Überschrift zeigt als Schatten: ${schatten ?? '— nichts —'}`)
+  if (!schatten) {
+    maengel.push('Eine gelöschte Überschrift liess den Abschnitt spurlos verschwinden.')
+  }
+  for (let i = 0; i < kopfText.length; i++) await seite.keyboard.press('Control+z')
+  await seite.waitForTimeout(900)
+  const zurueck = (await kopf.innerText()).trim()
+  if (zurueck !== kopfText) {
+    maengel.push('Rückgängig brachte die Überschrift nicht zurück.')
+  }
+
   // Ein Bild einfügen, beschriften und in der Breite ziehen.
   const bildPfad = join(ZIEL, 'kalkulationsauszug.png')
   writeFileSync(bildPfad, baueTestPng(640, 360))
