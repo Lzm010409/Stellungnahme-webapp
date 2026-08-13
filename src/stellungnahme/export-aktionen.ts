@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
-import { stellungnahme } from '@/db/schema'
+import { bild, stellungnahme } from '@/db/schema'
 import { verlangeBenutzer } from '@/auth/sitzung'
 
 /**
@@ -54,6 +54,51 @@ export async function speichereKopf(
 
   revalidatePath(`/stellungnahmen/${stellungnahmeId}`)
   return { hinweis: 'Gespeichert.' }
+}
+
+/**
+ * Löscht eine Stellungnahme mit allem, was nur zu ihr gehört.
+ *
+ * Positionen, ihre Bausteine und die zugeordneten Bilder gehen mit — dafür
+ * sorgt die Datenbank selbst. Zwei Dinge tut diese Aktion vorher von Hand:
+ *
+ * Bilder, die in der **Bildbibliothek** stehen, werden von der Stellungnahme
+ * gelöst statt gelöscht. Sie gehören dort nicht mehr diesem einen Fall,
+ * sondern dem Büro; ein aufbereiteter Kalkulationsauszug soll nicht
+ * verschwinden, weil das Schreiben von damals weggeräumt wird.
+ *
+ * Und ein **versendetes** Schreiben lässt sich nicht löschen. Was aus dem
+ * Haus ist, bleibt nachvollziehbar; wer es doch loswerden will, muss den
+ * Versandvermerk vorher zurücknehmen.
+ */
+export async function loescheStellungnahme(stellungnahmeId: string): Promise<ExportErgebnis> {
+  await verlangeBenutzer()
+
+  const [vorhanden] = await db
+    .select({ versendetAm: stellungnahme.versendetAm, betreff: stellungnahme.betreff })
+    .from(stellungnahme)
+    .where(eq(stellungnahme.id, stellungnahmeId))
+    .limit(1)
+
+  if (!vorhanden) return { fehler: 'Diese Stellungnahme gibt es nicht mehr.' }
+  if (vorhanden.versendetAm) {
+    return {
+      fehler:
+        'Dieses Schreiben ist als versendet vermerkt und lässt sich nicht löschen. ' +
+        'Nimm den Vermerk zurück, wenn es wirklich weg soll.',
+    }
+  }
+
+  await db
+    .update(bild)
+    .set({ stellungnahmeId: null })
+    .where(and(eq(bild.stellungnahmeId, stellungnahmeId), eq(bild.inBibliothek, true)))
+
+  await db.delete(stellungnahme).where(eq(stellungnahme.id, stellungnahmeId))
+
+  revalidatePath('/stellungnahmen')
+  revalidatePath('/bilder')
+  return { hinweis: 'Stellungnahme gelöscht.' }
 }
 
 /** Positionen ohne Fall-Zuordnung brauchen keine Extraktion. */

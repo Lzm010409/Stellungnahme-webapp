@@ -534,6 +534,38 @@ button.haupt:disabled:hover {
   overflow: hidden;
 }
 
+/* Die Hülle trägt den Löschknopf, damit er nicht im Verweis steht. Blass,
+   solange die Zeile nicht angesteuert wird — aber nie ganz unsichtbar: ein
+   Knopf, den erst der Mauszeiger hervorholt, fehlt auf dem Tablet ganz. */
+.zeile-huelle {
+  position: relative;
+}
+
+.zeile-huelle .loeschknopf {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  opacity: 0.4;
+  transition: opacity 0.12s ease;
+}
+
+.zeile-huelle:hover .loeschknopf,
+.zeile-huelle .loeschknopf:focus-visible {
+  opacity: 1;
+}
+
+.loeschknopf {
+  padding: 4px 9px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  background: var(--surface);
+}
+
+.loeschknopf:hover:not(:disabled) {
+  color: var(--crit);
+  border-color: currentColor;
+}
+
 .zeile {
   background: var(--surface);
   padding: 13px 16px;
@@ -1010,6 +1042,46 @@ code {
   background: var(--accent);
   color: var(--accent-ink);
   border-color: var(--accent);
+}
+
+/* ---------- Schnellauswahl über der Markierung ---------- */
+
+.schnellauswahl {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 14%);
+  z-index: 40;
+}
+
+.schnellauswahl button {
+  padding: 3px 9px;
+  font-size: 13px;
+  min-width: 30px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.schnellauswahl button:hover:not(:disabled) {
+  background: var(--surface-alt);
+  border-color: var(--line);
+}
+
+.schnellauswahl button.an {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.schnellauswahl-strich {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 3px;
+  background: var(--line);
 }
 
 .speicherstand {

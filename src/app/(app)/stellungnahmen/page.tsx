@@ -6,6 +6,7 @@ import { werkzeugeVorhanden } from '@/pruefbericht/einlesen'
 import { gutachtenSchema } from '@/autoixpert/typen'
 import { leseFalldaten } from '@/autoixpert/felder'
 import { BerichtFormular } from './bericht-formular'
+import { Loeschknopf } from './loeschknopf'
 
 export default async function StellungnahmenSeite() {
   const [liste, faelle, werkzeuge] = await Promise.all([
@@ -64,24 +65,32 @@ export default async function StellungnahmenSeite() {
       ) : (
         <div className="liste">
           {liste.map((s) => (
-            <Link key={s.id} href={`/stellungnahmen/${s.id}`} className="zeile">
-              <span className="zeile-nummer">{s.fallAktenzeichen ?? '—'}</span>
-              <span>
-                <span className="zeile-titel">{s.betreff ?? 'Ohne Betreff'}</span>
-                <span className="zeile-meta">
-                  <span>
-                    {s.positionen} {s.positionen === 1 ? 'Position' : 'Positionen'}
+            /* Der Löschknopf steht neben der Zeile, nicht in ihr: ein Knopf
+               innerhalb eines Verweises ist weder gültiges HTML noch mit der
+               Tastatur sauber zu bedienen. */
+            <div key={s.id} className="zeile-huelle">
+              <Link href={`/stellungnahmen/${s.id}`} className="zeile">
+                <span className="zeile-nummer">{s.fallAktenzeichen ?? '—'}</span>
+                <span>
+                  <span className="zeile-titel">{s.betreff ?? 'Ohne Betreff'}</span>
+                  <span className="zeile-meta">
+                    <span>
+                      {s.positionen} {s.positionen === 1 ? 'Position' : 'Positionen'}
+                    </span>
+                    {s.pruefberichtDateiname ? <span>{s.pruefberichtDateiname}</span> : null}
+                    <span>{new Date(s.erstelltAm).toLocaleDateString('de-DE')}</span>
                   </span>
-                  {s.pruefberichtDateiname ? <span>{s.pruefberichtDateiname}</span> : null}
-                  <span>{new Date(s.erstelltAm).toLocaleDateString('de-DE')}</span>
                 </span>
-              </span>
-              <span className="zeile-rechts">
-                <span className={`marke-pille ${s.versendetAm ? 'm-freigegeben' : 'm-entwurf'}`}>
-                  {s.versendetAm ? 'versendet' : 'in Arbeit'}
+                <span className="zeile-rechts">
+                  <span className={`marke-pille ${s.versendetAm ? 'm-freigegeben' : 'm-entwurf'}`}>
+                    {s.versendetAm ? 'versendet' : 'in Arbeit'}
+                  </span>
                 </span>
-              </span>
-            </Link>
+              </Link>
+              {!s.versendetAm ? (
+                <Loeschknopf stellungnahmeId={s.id} betreff={s.betreff ?? 'Ohne Betreff'} />
+              ) : null}
+            </div>
           ))}
         </div>
       )}

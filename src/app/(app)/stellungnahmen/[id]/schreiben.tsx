@@ -35,6 +35,7 @@ import {
   type Bildziehgut,
 } from '@/dokument/ziehen'
 import { Fortschritt, Kreisel, type Fortschrittsstand } from '@/app/teile/anzeigen'
+import { Schnellauswahl } from './schnellauswahl'
 import { leseEreignisse } from '@/app/teile/strom'
 import type { Ausgabeereignis } from '@/stellungnahme/ausgabe'
 import {
@@ -789,6 +790,7 @@ export function Schreibtisch({
 
       <div className={`werkbank-raster ${fokus ? 'fokus' : ''}`}>
         <div className="brief" ref={briefRef}>
+          <Schnellauswahl editor={editor} />
           <EditorContent editor={editor} />
         </div>
 

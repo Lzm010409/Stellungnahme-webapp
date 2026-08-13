@@ -146,6 +146,52 @@ bleiben sichtbar, nehmen aber keinen Platz mehr weg. Und wer nur lesen
 will, schaltet auf **Fokus**: dann verschwindet die Randspalte und der Brief
 bekommt die ganze Breite.
 
+### Der Rahmen gehört dem Fall, der Text dem Verfasser
+
+Zu jeder Kürzungsposition des Prüfberichts gehört ein Abschnitt — auch ein
+leerer. Er trägt die Kennung der Position, und an dieser Kennung hängt
+alles Weitere: die Anmerkung am Rand, die Herkunftsspur der Bausteine, die
+Nummerierung. Wer eine Position nicht bestreiten will, nimmt sie über
+**Nicht bestreiten** heraus; der Abschnitt bleibt dann stehen und wird
+ausgelassen.
+
+Daraus folgt, was beim Bearbeiten geschieht:
+
+- Eine Änderung, die einen Abschnitt entfernt — etwa **alles markieren und
+  ausschneiden** —, bekommt ihn leer zurück, an seiner alten Stelle. Der
+  Text ist in der Ablage, der Rahmen bleibt im Brief.
+- **Eingefügtes findet zurück an seinen Platz.** Enthält das eingefügte
+  Stück Abschnitte, werden sie an ihrer Positionskennung erkannt und ihr
+  Inhalt dort wiederhergestellt, wo er hingehört — nicht an der
+  Schreibmarke, wo das Schema ihn meist gar nicht annehmen kann. Betreff,
+  Anrede und Ergebnis kommen mit; die Signatur nicht, die stammt aus dem
+  Hausstil. Ausschneiden und Einfügen über das ganze Schreiben ist damit
+  ein vollständiger Hin- und Rückweg, Rückgängig eingeschlossen.
+- Schreiben, die vor dieser Fassung Abschnitte verloren haben, **heilen
+  beim Öffnen**: die fehlenden kommen leer an ihre Stelle zurück.
+
+### Schnellauswahl über der Markierung
+
+Markierter Text bekommt eine schwebende Leiste: Fett, Kursiv, Aufzählung,
+nummerierte Liste, und das Entfernen von Fett und Kursiv. Mehr steht dort
+nicht — ein Menü, das mehr anbietet als die Word-Ausgabe versteht, führt in
+die Irre. In Betreff, Anrede und Überschrift bleibt sie weg, weil das
+Schema dort keine Auszeichnung zulässt.
+
+Das Entfernen löst ausdrücklich nur Fett und Kursiv, nicht alle Marken: die
+Herkunftsmarke der Bausteine hängt am selben Text, und sie beiläufig
+mitzulöschen hiesse, die Wirkungsstatistik still zu leeren.
+
+### Wegräumen
+
+Eine Stellungnahme lässt sich löschen — in der Liste über den Knopf am
+rechten Rand der Zeile, im Schreiben über **Löschen** in der Kopfzeile.
+Positionen, Bausteine und die Bilder des Falls gehen mit. Zwei Ausnahmen:
+Bilder, die in der **Bildbibliothek** stehen, werden nur vom Fall gelöst —
+sie gehören dort dem Büro, nicht diesem einen Schreiben. Und ein als
+**versendet** vermerktes Schreiben lässt sich nicht löschen; wer es doch
+loswerden will, nimmt den Vermerk zurück.
+
 ## Bilder
 
 Ein Bild kommt an **jede** Stelle des Briefes: aus der Zwischenablage

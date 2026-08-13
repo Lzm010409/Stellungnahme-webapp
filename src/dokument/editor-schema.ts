@@ -12,8 +12,9 @@
 
 import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import type { Fragment, Node as PmNode, Schema as PmSchema } from '@tiptap/pm/model'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
 import { SIGNATUR } from '@/export/hausstil'
@@ -298,6 +299,193 @@ export const LeereAbschnitte = Extension.create({
   },
 })
 
+/* ------------------------------------------------------------------ *
+ * Der Rahmen
+ * ------------------------------------------------------------------ */
+
+interface Abschnittsfund {
+  id: string
+  pos: number
+  node: PmNode
+}
+
+/** Alle Positionsabschnitte des Dokuments in seiner Reihenfolge. */
+function abschnitteImBaum(doc: PmNode): Abschnittsfund[] {
+  const gefunden: Abschnittsfund[] = []
+  doc.descendants((node, pos) => {
+    if (node.type.name !== KNOTEN.abschnitt) return true
+    const id = typeof node.attrs.positionId === 'string' ? node.attrs.positionId : ''
+    gefunden.push({ id, pos, node })
+    return false
+  })
+  return gefunden
+}
+
+/** Die Stelle vor Ergebnis und Signatur — das Ende des Fliesstextes. */
+function stelleVorDemSchluss(doc: PmNode): number {
+  let stelle: number | null = null
+  doc.forEach((kind, versatz) => {
+    if (stelle !== null) return
+    if (kind.type.name === KNOTEN.ergebnis || kind.type.name === KNOTEN.signatur) {
+      stelle = versatz
+    }
+  })
+  return stelle ?? doc.content.size
+}
+
+/** Ein leerer Abschnitt mit denselben Angaben wie der verlorene. */
+function leererAbschnitt(schema: PmSchema, attrs: Record<string, unknown>): PmNode {
+  const bezeichnung = typeof attrs.bezeichnung === 'string' ? attrs.bezeichnung : ''
+  return schema.nodes[KNOTEN.abschnitt]!.create(attrs, [
+    schema.nodes[KNOTEN.ueberschrift]!.create(null, bezeichnung ? schema.text(bezeichnung) : null),
+    schema.nodes.paragraph!.create(),
+  ])
+}
+
+/** Wohin ein fehlender Abschnitt gehört, gemessen an seinen Nachbarn. */
+function einfuegestelle(doc: PmNode, reihenfolge: string[], id: string): number {
+  const rang = reihenfolge.indexOf(id)
+  const da = abschnitteImBaum(doc)
+  const finde = (kennung: string) => da.find((a) => a.id === kennung)
+
+  for (let i = rang - 1; i >= 0; i--) {
+    const fund = finde(reihenfolge[i]!)
+    if (fund) return fund.pos + fund.node.nodeSize
+  }
+  for (let i = rang + 1; i < reihenfolge.length; i++) {
+    const fund = finde(reihenfolge[i]!)
+    if (fund) return fund.pos
+  }
+  return stelleVorDemSchluss(doc)
+}
+
+/** Alle Abschnitte, die in einem eingefügten Stück stecken. */
+function abschnitteImStueck(inhalt: Fragment): PmNode[] {
+  const gefunden: PmNode[] = []
+  inhalt.forEach((kind) => {
+    if (kind.type.name === KNOTEN.abschnitt) gefunden.push(kind)
+    else if (kind.isBlock && kind.childCount > 0) gefunden.push(...abschnitteImStueck(kind.content))
+  })
+  return gefunden
+}
+
+/**
+ * Der Rahmen des Schreibens überlebt jede Bearbeitung.
+ *
+ * Zwei Dinge tut diese Erweiterung, und beide hängen zusammen.
+ *
+ * **Abschnitte kehren zurück.** Wer alles markiert und ausschneidet, hat
+ * den Text in der Ablage — die Abschnitte aber wären fort, und mit ihnen
+ * die Zuordnung zu den Kürzungspositionen. Jede Änderung, die einen
+ * Abschnitt entfernt, bekommt ihn deshalb leer zurückgesetzt, an seiner
+ * alten Stelle. Was verschwinden soll, verschwindet über „Nicht
+ * bestreiten": dann bleibt der Abschnitt stehen und wird ausgelassen.
+ *
+ * **Eingefügtes findet zurück an seinen Platz.** Ein Stück, das Abschnitte
+ * enthält, wird nicht an der Schreibmarke abgelegt — dort passt es
+ * schema-seitig meist gar nicht hin, und das Einfügen scheiterte bisher
+ * lautlos. Stattdessen wird jeder Abschnitt an seiner Positionskennung
+ * erkannt und sein Inhalt an der richtigen Stelle wiederhergestellt.
+ * Ausschneiden und Einfügen ist damit ein vollständiger Hin- und Rückweg,
+ * auch über das ganze Schreiben.
+ */
+export const Rahmen = Extension.create({
+  name: 'rahmen',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        appendTransaction(vorgaenge, alt, neu) {
+          if (!vorgaenge.some((v) => v.docChanged)) return null
+
+          const vorher = abschnitteImBaum(alt.doc).filter((a) => a.id)
+          if (vorher.length === 0) return null
+
+          const jetzt = new Set(abschnitteImBaum(neu.doc).map((a) => a.id))
+          const fehlend = vorher.filter((a) => !jetzt.has(a.id))
+          if (fehlend.length === 0) return null
+
+          const reihenfolge = vorher.map((a) => a.id)
+          const tr = neu.tr
+          for (const a of fehlend) {
+            tr.insert(
+              einfuegestelle(tr.doc, reihenfolge, a.id),
+              leererAbschnitt(neu.schema, a.node.attrs),
+            )
+          }
+          return tr
+        },
+
+        props: {
+          handlePaste(sicht, _ereignis, stueck) {
+            const abschnitte = abschnitteImStueck(stueck.content)
+            if (abschnitte.length === 0) return false
+
+            const tr = sicht.state.tr
+            const unbekannt: PmNode[] = []
+            let schreibmarke: number | null = null
+
+            for (const knoten of abschnitte) {
+              const id = typeof knoten.attrs.positionId === 'string' ? knoten.attrs.positionId : ''
+              const fund = id ? abschnitteImBaum(tr.doc).find((a) => a.id === id) : null
+              if (!fund) {
+                unbekannt.push(knoten)
+                continue
+              }
+              // Erst die Angaben, dann der Inhalt: die Stelle bleibt dabei
+              // dieselbe, und „ausgelassen" kommt aus der Ablage mit.
+              tr.setNodeMarkup(fund.pos, undefined, {
+                ...fund.node.attrs,
+                ausgelassen: knoten.attrs.ausgelassen === true,
+              })
+              tr.replaceWith(fund.pos + 1, fund.pos + fund.node.nodeSize - 1, knoten.content)
+              schreibmarke = fund.pos + knoten.content.size
+            }
+
+            // Betreff, Anrede und Ergebnis stehen ausserhalb der Abschnitte
+            // und gehören zum Hin- und Rückweg dazu. Die Signatur nicht:
+            // sie kommt aus dem Hausstil und ist gesperrt.
+            stueck.content.forEach((knoten) => {
+              const name = knoten.type.name
+              if (name !== KNOTEN.betreff && name !== KNOTEN.anrede && name !== KNOTEN.ergebnis) {
+                return
+              }
+              let ziel: { pos: number; node: PmNode } | null = null
+              tr.doc.descendants((kind, pos) => {
+                if (ziel) return false
+                if (kind.type.name === name) ziel = { pos, node: kind }
+                return !ziel
+              })
+              if (ziel) {
+                const z = ziel as { pos: number; node: PmNode }
+                tr.replaceWith(z.pos + 1, z.pos + z.node.nodeSize - 1, knoten.content)
+              }
+            })
+
+            for (const knoten of unbekannt) {
+              tr.insert(stelleVorDemSchluss(tr.doc), knoten)
+            }
+
+            if (!tr.docChanged) return true
+
+            // Die Schreibmarke ans Ende des zuletzt eingesetzten Abschnitts.
+            // Ohne diesen Schritt bliebe die Auswahl von vorhin bestehen —
+            // nach einem „Alles markieren" wäre das die Auswahl über das
+            // ganze Dokument, und der nächste Handgriff träfe alles.
+            if (schreibmarke !== null) {
+              const stelle = Math.min(Math.max(schreibmarke, 0), tr.doc.content.size)
+              tr.setSelection(TextSelection.near(tr.doc.resolve(stelle), -1))
+            }
+
+            sicht.dispatch(tr.scrollIntoView())
+            return true
+          },
+        },
+      }),
+    ]
+  },
+})
+
 /** Schlüssel des Plugins, das den hervorgehobenen Abschnitt hält. */
 export const SCHLUESSEL_AKTIV = new PluginKey<string | null>('aktiverAbschnitt')
 
@@ -377,6 +565,7 @@ export function briefErweiterungen() {
     Bibliothekstext,
     LeereAbschnitte,
     AktiverAbschnitt,
+    Rahmen,
     Placeholder.configure({
       includeChildren: true,
       placeholder: ({ node }: { node: { type: { name: string } } }) => {

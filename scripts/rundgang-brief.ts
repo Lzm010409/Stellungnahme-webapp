@@ -235,6 +235,57 @@ async function main() {
     await schritt('6-gezogen')
   }
 
+  // Die Schnellauswahl über der Markierung.
+  const schreibstelle = seite.locator('.brief-flaeche .d-abschnitt p').first()
+  await schreibstelle.click()
+  await seite.keyboard.press('End')
+  await seite.keyboard.type(' Diese Stelle wird ausgezeichnet.')
+  for (let i = 0; i < 14; i++) await seite.keyboard.press('Shift+ArrowLeft')
+  await seite.waitForTimeout(700)
+  const schnellauswahlDa = await seite
+    .locator('.schnellauswahl')
+    .isVisible()
+    .catch(() => false)
+  console.log(`  Schnellauswahl über der Markierung: ${schnellauswahlDa}`)
+  if (!schnellauswahlDa) {
+    maengel.push('Über der Markierung erschien keine Schnellauswahl.')
+  } else {
+    const fettVorher = await seite.locator('.brief-flaeche strong').count()
+    await seite.locator('.schnellauswahl button[title="Fett"]').click()
+    await seite.waitForTimeout(600)
+    const fettNachher = await seite.locator('.brief-flaeche strong').count()
+    console.log(`  Fette Stellen vorher ${fettVorher}, danach ${fettNachher}`)
+    if (fettNachher <= fettVorher) maengel.push('Fett aus der Schnellauswahl blieb wirkungslos.')
+    await schritt('6a-schnellauswahl')
+  }
+
+  // Alles ausschneiden und wieder einfügen: der Rahmen muss stehen bleiben
+  // und der Text vollständig zurückkommen.
+  const briefText = () =>
+    seite.evaluate(() => (document.querySelector('.brief-flaeche') as HTMLElement)?.innerText ?? '')
+  const abschnittsZahl = () => seite.locator('.brief-flaeche .d-abschnitt').count()
+
+  const textVorSchnitt = await briefText()
+  const abschnitteVorSchnitt = await abschnittsZahl()
+  await seite.keyboard.press('Control+a')
+  await seite.keyboard.press('Control+x')
+  await seite.waitForTimeout(900)
+  const abschnitteNachSchnitt = await abschnittsZahl()
+  console.log(
+    `  Abschnitte vor dem Schnitt ${abschnitteVorSchnitt}, danach ${abschnitteNachSchnitt}`,
+  )
+  if (abschnitteNachSchnitt !== abschnitteVorSchnitt) {
+    maengel.push('Das Ausschneiden hat Abschnitte mitgenommen — der Rahmen soll stehen bleiben.')
+  }
+  await seite.keyboard.press('Control+v')
+  await seite.waitForTimeout(1600)
+  const textNachEinfuegen = await briefText()
+  console.log(`  Text nach dem Einfügen wiederhergestellt: ${textNachEinfuegen === textVorSchnitt}`)
+  if (textNachEinfuegen !== textVorSchnitt) {
+    maengel.push('Nach Ausschneiden und Einfügen stand nicht wieder dasselbe im Brief.')
+  }
+  await schritt('6b-schnitt-und-einfuegen')
+
   // Ein Bild einfügen, beschriften und in der Breite ziehen.
   const bildPfad = join(ZIEL, 'kalkulationsauszug.png')
   writeFileSync(bildPfad, baueTestPng(640, 360))
@@ -292,13 +343,20 @@ async function main() {
   const ueberschriften = () =>
     seite.locator('.brief-flaeche .d-ueberschrift').allInnerTexts()
 
+  // Eine Position, die im Schreiben steht — aus einem früheren Durchgang
+  // kann eine andere noch herausgenommen sein.
+  await seite.locator('.blase:not(.draussen)').first().click()
+  await seite.waitForTimeout(400)
+
   const vorher = await ueberschriften()
   await seite.locator('.blase.auf button:has-text("Nicht bestreiten")').click()
   await seite.waitForTimeout(1400)
   const ohne = await ueberschriften()
   console.log(`  Abschnitte vorher ${vorher.length}, nach dem Herausnehmen ${ohne.length}`)
 
-  await seite.locator('.blase.zu, .blase.auf').first().click()
+  // Die herausgenommene Position ist die mit der Marke `draussen` — nicht
+  // zwingend die erste am Rand.
+  await seite.locator('.blase.draussen').first().click()
   await seite.locator('.blase.auf button:has-text("Doch bestreiten")').click()
   await seite.waitForTimeout(1400)
   const wieder = await ueberschriften()

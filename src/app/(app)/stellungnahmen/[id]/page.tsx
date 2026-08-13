@@ -10,6 +10,7 @@ import { stelleDokumentBereit } from '@/dokument/dienst'
 import { kiVerfuegbar } from '@/ki/client'
 import { Schreibtisch } from './schreiben'
 import { Kopfbereich } from './kopf'
+import { Loeschknopf } from '../loeschknopf'
 
 function euro(wert: string | number | null | undefined): string {
   if (wert === null || wert === undefined) return '—'
@@ -111,6 +112,15 @@ export default async function StellungnahmeSeite({
           einleitungDatum={s.einleitungDatum}
           einleitungMedium={s.einleitungMedium}
         />
+
+        {!s.versendetAm ? (
+          <Loeschknopf
+            stellungnahmeId={s.id}
+            betreff={s.betreff ?? 'Ohne Betreff'}
+            danach="/stellungnahmen"
+            beschriftung="🗑 Löschen"
+          />
+        ) : null}
         </div>
       </div>
 

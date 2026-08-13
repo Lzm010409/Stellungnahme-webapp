@@ -5,6 +5,7 @@ import { eintrag, stellungnahme } from '@/db/schema'
 import type { Extraktion } from '@/pruefbericht/schema'
 import type { GeladeneStellungnahme } from '@/stellungnahme/abfragen'
 import { erzeugeDokument, type DokumentBaustein } from './erzeugen'
+import { ergaenzeFehlendeAbschnitte } from './reparatur'
 import { istDokument, type Elementknoten } from './typen'
 
 /**
@@ -21,7 +22,7 @@ export async function stelleDokumentBereit(
   s: GeladeneStellungnahme,
 ): Promise<{ dokument: Elementknoten; stand: number }> {
   if (istDokument(s.dokument)) {
-    return { dokument: s.dokument, stand: s.dokumentStand }
+    return heileAbschnitte(s, s.dokument, s.dokumentStand)
   }
 
   const dokument = await baueAusBausteinen(s)
@@ -45,6 +46,41 @@ export async function stelleDokumentBereit(
   return istDokument(aktuell?.dokument)
     ? { dokument: aktuell.dokument, stand: aktuell.stand }
     : { dokument, stand: 1 }
+}
+
+/**
+ * Legt Abschnitte an, die dem Schreiben abhandengekommen sind.
+ *
+ * Vor der Fassung mit dem festen Rahmen konnte ein Ausschneiden über das
+ * ganze Dokument Abschnitte mitnehmen; die Anmerkung am Rand stand dann als
+ * „nicht im Schreiben" da und der Bezug zum Prüfbericht war fort. Solche
+ * Schreiben heilen beim Öffnen: die fehlenden Abschnitte kommen leer an
+ * ihre Stelle zurück.
+ *
+ * Geschrieben wird nur, wenn niemand sonst zwischenzeitlich gespeichert
+ * hat. Misslingt das, bekommt der Editor das reparierte Schreiben trotzdem
+ * — beim nächsten Speichern geht es von selbst mit.
+ */
+async function heileAbschnitte(
+  s: GeladeneStellungnahme,
+  dokument: Elementknoten,
+  stand: number,
+): Promise<{ dokument: Elementknoten; stand: number }> {
+  const repariert = ergaenzeFehlendeAbschnitte(
+    dokument,
+    s.positionen.map((p) => ({
+      id: p.id,
+      bezeichnung: p.bezeichnung,
+      behandlung: p.behandlung,
+    })),
+  )
+  if (repariert.ergaenzt.length === 0) return { dokument, stand }
+
+  const geschrieben = await schreibeDokument(s.id, repariert.dokument, stand)
+  return {
+    dokument: repariert.dokument,
+    stand: 'stand' in geschrieben ? geschrieben.stand : stand,
+  }
 }
 
 async function baueAusBausteinen(s: GeladeneStellungnahme): Promise<Elementknoten> {
