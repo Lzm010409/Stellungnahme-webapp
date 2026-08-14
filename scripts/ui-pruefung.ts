@@ -740,7 +740,7 @@ async function teilStellungnahmenliste(seite: Page) {
 
   await pruefe('Zeile öffnet den Schreibtisch, Rückweg führt zurück', async () => {
     await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-    await offeneZeile(seite).click()
+    await (await offeneZeile(seite)).click()
     await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
     const zurueck = seite.locator('.brief-kopfzeile a.zurueck')
     if ((await zurueck.count()) === 0) {
@@ -787,19 +787,33 @@ async function sorgeFuerOffeneAnmerkung(seite: Page) {
 }
 
 /**
- * Die erste Stellungnahme, die noch offen ist.
+ * Die erste Stellungnahme, die sich am Schreibtisch prüfen lässt.
  *
- * `.zeile` ohne Auswahl trifft die neueste — und das kann eine als
- * versendet vermerkte sein. Die ist absichtlich geschlossen: der Editor
- * nimmt keine Eingabe mehr an. Alle Handgriffe am Schreibtisch schlügen
- * dann fehl und meldeten einen Fehler, wo die Anwendung genau das tut,
- * was sie soll.
+ * Zwei Bedingungen, beide aus Fehlschlägen gelernt:
+ *
+ * Sie darf **nicht versendet** sein. Ein als versendet vermerktes
+ * Schreiben ist absichtlich geschlossen — der Editor nimmt keine Eingabe
+ * mehr an. Alle Handgriffe schlügen fehl und meldeten einen Fehler, wo die
+ * Anwendung genau das tut, was sie soll.
+ *
+ * Und sie braucht **mindestens eine Position**. Ohne Kürzungsposition gibt
+ * es keinen Abschnitt, in den sich schreiben liesse; die Prüfung wartete
+ * dann dreissig Sekunden auf einen Absatz, den es nicht gibt.
+ *
+ * Die Übersicht ist nach Anlagedatum sortiert — welches Schreiben oben
+ * steht, wechselt also mit dem Datenbestand. Deshalb wird gesucht statt
+ * angenommen.
  */
-function offeneZeile(seite: Page) {
-  return seite
-    .locator('.zeile')
-    .filter({ hasNot: seite.locator('.marke-pille', { hasText: 'versendet' }) })
-    .first()
+async function offeneZeile(seite: Page) {
+  const stelle = await seite.locator('.zeile').evaluateAll((zeilen) =>
+    zeilen.findIndex((z) => {
+      const text = (z as HTMLElement).innerText
+      if (/versendet/i.test(text)) return false
+      const treffer = text.match(/(\d+)\s+Position/)
+      return Boolean(treffer) && Number(treffer![1]) > 0
+    }),
+  )
+  return seite.locator('.zeile').nth(stelle >= 0 ? stelle : 0)
 }
 
 /* ---------------- Schreibtisch ---------------- */
@@ -809,7 +823,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
 
   const oeffne = async () => {
     await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-    await offeneZeile(seite).click()
+    await (await offeneZeile(seite)).click()
     await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
     await seite.waitForTimeout(900)
   }
