@@ -770,6 +770,23 @@ async function teilStellungnahmenliste(seite: Page) {
 }
 
 /**
+ * Sorgt dafür, dass eine Anmerkung offen ist.
+ *
+ * Die Randspalte klappt die Anmerkung des Abschnitts auf, in dem die
+ * Schreibmarke steht — ein Klick in den Brief schliesst also die vorherige.
+ * Prüfungen, die eine offene Anmerkung brauchen, dürfen sich deshalb nicht
+ * darauf verlassen, dass die vorige sie offen gelassen hat; sonst melden
+ * sie „fehlt", wo nur nichts offen war.
+ */
+async function sorgeFuerOffeneAnmerkung(seite: Page) {
+  if ((await seite.locator('.blase.auf').count()) > 0) return
+  const zu = seite.locator('.blase.zu')
+  if ((await zu.count()) === 0) return
+  await zu.first().click()
+  await seite.waitForTimeout(600)
+}
+
+/**
  * Die erste Stellungnahme, die noch offen ist.
  *
  * `.zeile` ohne Auswahl trifft die neueste — und das kann eine als
@@ -950,7 +967,18 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   await pruefe('Vorschlag wählen, bearbeiten, einfügen', async (durchgang) => {
     const kopf = seite.locator('.blase.auf .blase-vorschlag-kopf').first()
     if ((await kopf.count()) === 0) {
-      melde('unschoen', 'Zur offenen Anmerkung gibt es keinen Vorschlag.')
+      /*
+        Ob hier ein Vorschlag steht, hängt am Datenbestand: die Randspalte
+        sucht über die typische Begründung des Prüfdienstleisters. Bei einem
+        Schreiben aus `scripts/probedaten.ts` passt dazu nichts in der
+        Bibliothek — dann ist das kein Befund über die Anwendung, sondern
+        einer über die Probe. Deshalb der Zusatz.
+      */
+      melde(
+        'unschoen',
+        'Zur offenen Anmerkung gibt es keinen Vorschlag ' +
+          '(möglich: der Prüfling ist ein Probeschreiben ohne passenden Bibliothekseintrag).',
+      )
       return
     }
     await kopf.click()
@@ -991,6 +1019,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Bibliothekssuche in der Anmerkung', async (durchgang) => {
+    await sorgeFuerOffeneAnmerkung(seite)
     const feld = seite.locator('.blase.auf input[aria-label="Bibliothek durchsuchen"]')
     if ((await feld.count()) === 0) {
       melde('unschoen', 'In der Anmerkung fehlt die Suche über die gesamte Bibliothek.')
@@ -1010,6 +1039,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Eigenen Text einfügen', async (durchgang) => {
+    await sorgeFuerOffeneAnmerkung(seite)
     const feld = seite.locator('.blase.auf textarea[placeholder^="Eigene Argumentation"]')
     if ((await feld.count()) === 0) {
       melde('unschoen', 'In der Anmerkung fehlt das Feld für eigenen Text.')
