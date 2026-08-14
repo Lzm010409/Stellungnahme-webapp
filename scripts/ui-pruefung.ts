@@ -769,6 +769,15 @@ async function teilStellungnahmenliste(seite: Page) {
   })
 }
 
+/** Was gerade offen ist — als Beleg für eine Meldung. */
+async function zustandDerAnmerkung(seite: Page): Promise<string> {
+  const klassen = await seite
+    .locator('.blase')
+    .evaluateAll((e) => e.map((x) => (x as HTMLElement).className.trim()))
+  const labels = await seite.locator('.blase.auf .blase-label').allTextContents()
+  return `(Anmerkungen: ${klassen.join(' | ') || 'keine'}; Abschnitte der offenen: ${labels.join(', ') || 'keine'})`
+}
+
 /**
  * Sorgt dafür, dass eine Anmerkung offen ist.
  *
@@ -1036,7 +1045,10 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     await sorgeFuerOffeneAnmerkung(seite)
     const feld = seite.locator('.blase.auf input[aria-label="Bibliothek durchsuchen"]')
     if ((await feld.count()) === 0) {
-      melde('unschoen', 'In der Anmerkung fehlt die Suche über die gesamte Bibliothek.')
+      // Mit Beleg statt bloss „fehlt": ohne die Klassen und die Beschriftungen
+      // der offenen Anmerkung liess sich nicht unterscheiden, ob das Feld
+      // wirklich fehlt oder ob gerade gar keine Anmerkung offen war.
+      melde('unschoen', `In der Anmerkung fehlt die Suche über die gesamte Bibliothek. ${await zustandDerAnmerkung(seite)}`)
       return
     }
     await feld.fill('ab')
@@ -1056,7 +1068,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     await sorgeFuerOffeneAnmerkung(seite)
     const feld = seite.locator('.blase.auf textarea[placeholder^="Eigene Argumentation"]')
     if ((await feld.count()) === 0) {
-      melde('unschoen', 'In der Anmerkung fehlt das Feld für eigenen Text.')
+      melde('unschoen', `In der Anmerkung fehlt das Feld für eigenen Text. ${await zustandDerAnmerkung(seite)}`)
       return
     }
     const knopf = seite.locator('.blase.auf .blase-abschnitt button:has-text("In den Brief einfügen")').last()
