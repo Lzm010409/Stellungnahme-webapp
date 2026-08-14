@@ -614,6 +614,15 @@ button.haupt:disabled:hover {
   white-space: nowrap;
 }
 
+/* Auf einem Telefon ist die Zeile „12 Fälle · zuletzt abgerufen …" breiter
+   als der Schirm; mit `nowrap` schob sie die ganze Seite quer (gemessen:
+   433px bei 380px Fenster). Dort darf sie umbrechen. */
+@media (max-width: 520px) {
+  .treffer-zahl {
+    white-space: normal;
+  }
+}
+
 .liste {
   display: flex;
   flex-direction: column;
@@ -654,7 +663,13 @@ button.haupt:disabled:hover {
   background: var(--surface);
   padding: 13px 16px;
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
+  /* Die erste Spalte trägt mal eine Gliederungsnummer („2.11"), mal ein
+     Aktenzeichen („PA-0726/2011TG"). Bei festen 58px lief das Aktenzeichen
+     aus seiner Zelle heraus und legte sich quer über den Titel daneben —
+     Rasterzellen schneiden nichts ab, sie lassen überlaufen. Deshalb wächst
+     die Spalte jetzt mit ihrem Inhalt und schrumpft im Notfall wieder auf
+     58px, wo dann der Umbruch greift. */
+  grid-template-columns: minmax(58px, auto) minmax(0, 1fr) auto;
   gap: 16px;
   align-items: start;
   text-decoration: none;
@@ -671,9 +686,19 @@ button.haupt:disabled:hover {
   color: var(--accent);
   font-weight: 600;
   padding-top: 2px;
+  min-width: 0;
+  /* Ein Aktenzeichen hat keine Leerzeichen, an denen umbrochen werden
+     könnte. Ohne diese Zeile bliebe es auch in einer engen Spalte in einer
+     Zeile stehen und ragte hinaus. */
+  overflow-wrap: anywhere;
 }
 
 .zeile-titel {
+  /* Als `inline` wirkten weder der untere Abstand noch `text-wrap`, und der
+     Titel ragte auf schmalen Schirmen über den rechten Rand hinaus. */
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-weight: 600;
   font-size: 14.5px;
   letter-spacing: -0.008em;
