@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { aktuellerBenutzer } from '@/auth/sitzung'
 import { istEntraAktiv } from '@/auth/entra'
 import { AnmeldeFormular } from './formular'
+import { STARTSEITE } from '@/auth/startseite'
 
 const FEHLERTEXTE: Record<string, string> = {
   'kein-konto':
@@ -20,7 +21,7 @@ export default async function AnmeldeSeite({
 }: {
   searchParams: Promise<{ fehler?: string }>
 }) {
-  if (await aktuellerBenutzer()) redirect('/bibliothek')
+  if (await aktuellerBenutzer()) redirect(STARTSEITE)
 
   const { fehler } = await searchParams
   const meldung = fehler ? (FEHLERTEXTE[fehler] ?? 'Die Anmeldung ist fehlgeschlagen.') : null

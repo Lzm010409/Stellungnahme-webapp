@@ -298,6 +298,15 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
   )
 }
 
+/** Datum als TT.MM.JJJJ — wie überall sonst im Haus. */
+function tagesdatum(wert: Date | string): string {
+  return new Date(wert).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 /**
  * Die Schreiben, die zu diesem Fall schon angelegt wurden.
  *
@@ -333,16 +342,17 @@ function Schreiben({
                 <span>
                   {s.positionen} {s.positionen === 1 ? 'Position' : 'Positionen'}
                 </span>
-                {s.erstelltAm ? (
-                  <span>angelegt {new Date(s.erstelltAm).toLocaleDateString('de-DE')}</span>
-                ) : null}
-                {s.versendetAm ? (
-                  <span className="marke-pille m-freigegeben">
-                    versendet {new Date(s.versendetAm).toLocaleDateString('de-DE')}
-                  </span>
-                ) : (
-                  <span className="marke-pille m-entwurf">Entwurf</span>
-                )}
+                {s.erstelltAm ? <span>angelegt {tagesdatum(s.erstelltAm)}</span> : null}
+                {s.versendetAm ? <span>versendet {tagesdatum(s.versendetAm)}</span> : null}
+                {/*
+                  Wortlaut und Schreibweise wie in der Übersicht der
+                  Stellungnahmen: „in Arbeit", nicht „Entwurf", und das Datum
+                  zweistellig. Zwei Bezeichnungen für denselben Zustand lesen
+                  sich wie zwei verschiedene Anwendungen.
+                */}
+                <span className={`marke-pille ${s.versendetAm ? 'm-freigegeben' : 'm-entwurf'}`}>
+                  {s.versendetAm ? 'versendet' : 'in Arbeit'}
+                </span>
               </span>
             </Link>
           ))}

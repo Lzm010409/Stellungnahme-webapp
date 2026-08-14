@@ -410,6 +410,61 @@ function stelleVorDemSchluss(doc: PmNode): number {
   return stelle ?? doc.content.size
 }
 
+/**
+ * Der Einleitungssatz aus der Ablage — und sein Platz im Dokument.
+ *
+ * Betreff, Anrede und Ergebnis tragen ein Merkmal, an dem sie sich in der
+ * Ablage wiederfinden lassen. Der Einleitungssatz („mit dem Schreiben vom
+ * … überliessen Sie uns den Kürzungsbericht") trägt keines: er ist ein
+ * gewöhnlicher Absatz. Nach Ausschneiden und Einfügen fiel er deshalb als
+ * einziger Teil des Briefkopfs unter den Tisch — und anders als bei den
+ * Abschnitten fällt das nicht auf, weil an seiner Stelle einfach ein leerer
+ * Absatz steht.
+ *
+ * Er lässt sich trotzdem eindeutig bestimmen: es ist alles, was zwischen
+ * der Anrede und dem ersten Abschnitt steht. Genau so wird er hier aus der
+ * Ablage gelesen und genau dorthin zurückgeschrieben — aber nur, wenn dort
+ * nichts steht. Was der Verfasser inzwischen selbst geschrieben hat, wird
+ * nie überschrieben.
+ */
+function einleitungAusAblage(baum: Document): string[] {
+  const absaetze: string[] = []
+  let nachAnrede = false
+  for (const el of baum.body.querySelectorAll('p, section')) {
+    if (el.matches('p[data-anrede]')) {
+      nachAnrede = true
+      continue
+    }
+    if (el.tagName === 'SECTION') break
+    if (!nachAnrede) continue
+    if (el.matches('p[data-betreff], p[data-ergebnis]')) continue
+    const text = el.textContent?.trim()
+    if (text) absaetze.push(text)
+  }
+  return absaetze
+}
+
+/** Die Strecke zwischen Anrede und erstem Abschnitt. */
+function einleitungsstrecke(doc: PmNode): { von: number; bis: number; leer: boolean } | null {
+  let von: number | null = null
+  let bis: number | null = null
+  let leer = true
+  doc.forEach((kind, versatz) => {
+    if (kind.type.name === KNOTEN.anrede) {
+      von = versatz + kind.nodeSize
+      return
+    }
+    if (von === null || bis !== null) return
+    if (kind.type.name === KNOTEN.abschnitt || kind.type.name === KNOTEN.ergebnis) {
+      bis = versatz
+      return
+    }
+    if (kind.textContent.trim() !== '') leer = false
+  })
+  if (von === null) return null
+  return { von, bis: bis ?? von, leer }
+}
+
 /** Ein leerer Abschnitt mit denselben Angaben wie der verlorene. */
 function leererAbschnitt(schema: PmSchema, attrs: Record<string, unknown>): PmNode {
   const bezeichnung = typeof attrs.bezeichnung === 'string' ? attrs.bezeichnung : ''
@@ -606,6 +661,18 @@ export const Rahmen = Extension.create({
                   z.pos + 1,
                   z.pos + z.node.nodeSize - 1,
                   sicht.state.schema.text(wortlaut),
+                )
+              }
+
+              // Und der Einleitungssatz, der kein Merkmal trägt.
+              const einleitung = einleitungAusAblage(baum)
+              const strecke = einleitungsstrecke(tr.doc)
+              if (einleitung.length > 0 && strecke && strecke.leer) {
+                const absatz = sicht.state.schema.nodes.paragraph!
+                tr.replaceWith(
+                  strecke.von,
+                  strecke.bis,
+                  einleitung.map((text) => absatz.create(null, sicht.state.schema.text(text))),
                 )
               }
             }

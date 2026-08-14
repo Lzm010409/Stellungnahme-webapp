@@ -146,7 +146,7 @@ async function anmelden(seite: Page): Promise<void> {
   await seite.fill('#email', EMAIL)
   await seite.fill('#passwort', PASSWORT)
   await Promise.all([
-    seite.waitForURL('**/bibliothek', { timeout: 20000 }),
+    seite.waitForURL('**/stellungnahmen', { timeout: 20000 }),
     seite.locator('form button[type=submit]').click(),
   ])
 }
@@ -219,7 +219,8 @@ async function teilAnmeldung(seite: Page) {
 
   await pruefe('Anmelden und abmelden', async () => {
     await anmelden(seite)
-    if (!seite.url().includes('/bibliothek')) melde('fehler', 'Anmeldung führte nicht zur Bibliothek.')
+    if (!seite.url().includes('/stellungnahmen'))
+      melde('fehler', 'Anmeldung führte nicht zu den Stellungnahmen.')
     await seite.locator('button:has-text("Abmelden")').click()
     await seite.waitForURL('**/anmelden', { timeout: 15000 })
   })

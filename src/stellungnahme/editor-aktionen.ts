@@ -26,6 +26,43 @@ export type SpeicherErgebnis =
   | { fehler: string }
 
 /**
+ * Der Satz, mit dem ein versendetes Schreiben jede Änderung abweist.
+ *
+ * Ein Schreiben, das aus dem Haus ist, ist ein Beleg: was dort steht, ist
+ * das, was der Versicherer bekommen hat. Bisher liess sich ein als
+ * versendet vermerktes Schreiben trotzdem weiterschreiben — der Text
+ * änderte sich, der Vermerk blieb, und aus dem Beleg wurde eine Behauptung.
+ * Gesperrt war nur das Löschen; die Oberfläche liess damit eine
+ * Unveränderlichkeit vermuten, die es nicht gab.
+ */
+const VERSENDET =
+  'Dieses Schreiben ist als versendet vermerkt und deshalb geschlossen. ' +
+  'Nimm den Versandvermerk zurück, wenn es noch geändert werden soll.'
+
+/** Ob das Schreiben geschlossen ist. Gibt die Meldung zurück, oder null. */
+async function istVersendet(stellungnahmeId: string): Promise<string | null> {
+  const [zeile] = await db
+    .select({ versendetAm: stellungnahme.versendetAm })
+    .from(stellungnahme)
+    .where(eq(stellungnahme.id, stellungnahmeId))
+    .limit(1)
+  if (!zeile) return 'Diese Stellungnahme gibt es nicht mehr.'
+  return zeile.versendetAm ? VERSENDET : null
+}
+
+/** Dasselbe, ausgehend von einer Position. */
+async function istVersendetUeberPosition(positionId: string): Promise<string | null> {
+  const [zeile] = await db
+    .select({ versendetAm: stellungnahme.versendetAm })
+    .from(position)
+    .innerJoin(stellungnahme, eq(position.stellungnahmeId, stellungnahme.id))
+    .where(eq(position.id, positionId))
+    .limit(1)
+  if (!zeile) return 'Diese Position gibt es nicht mehr.'
+  return zeile.versendetAm ? VERSENDET : null
+}
+
+/**
  * Nimmt eine Fassung des Schreibens entgegen.
  *
  * Der Editor speichert nach kurzer Ruhe von selbst. Passt der Stand nicht,
@@ -38,6 +75,9 @@ export async function speichereDokument(
   stand: number,
 ): Promise<SpeicherErgebnis> {
   await verlangeBenutzer()
+
+  const geschlossen = await istVersendet(stellungnahmeId)
+  if (geschlossen) return { fehler: geschlossen }
 
   if (!istDokument(dokument)) return { fehler: 'Das übergebene Dokument ist unbrauchbar.' }
   if (!abschnitteVollstaendig(dokument)) {
@@ -197,6 +237,9 @@ export async function setzeBehandlung(
   behandlung: 'offen' | 'bestritten' | 'anerkannt' | 'nicht_bestreiten',
 ): Promise<{ fehler?: string }> {
   await verlangeBenutzer()
+  const geschlossen = await istVersendetUeberPosition(positionId)
+  if (geschlossen) return { fehler: geschlossen }
+
   await db.update(position).set({ behandlung }).where(eq(position.id, positionId))
   return {}
 }
@@ -216,6 +259,9 @@ export async function setzeBehandlung(
  */
 export async function entfernePosition(positionId: string): Promise<{ fehler?: string }> {
   await verlangeBenutzer()
+  const geschlossen = await istVersendetUeberPosition(positionId)
+  if (geschlossen) return { fehler: geschlossen }
+
   await db.delete(position).where(eq(position.id, positionId))
   return {}
 }

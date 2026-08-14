@@ -26,7 +26,28 @@ export async function markiereVersendet(stellungnahmeId: string): Promise<Export
     .set({ versendetAm: new Date() })
     .where(eq(stellungnahme.id, stellungnahmeId))
   revalidatePath('/stellungnahmen')
-  return { hinweis: 'Als versendet vermerkt.' }
+  revalidatePath(`/stellungnahmen/${stellungnahmeId}`)
+  return { hinweis: 'Als versendet vermerkt. Das Schreiben ist ab jetzt geschlossen.' }
+}
+
+/**
+ * Nimmt den Versandvermerk zurück.
+ *
+ * Ohne diesen Weg war „Versendet" eine Einbahnstrasse: der Knopf
+ * verschwand, das Löschen verwies auf einen Vermerk, den niemand
+ * zurücknehmen konnte, und ein versehentlicher Klick liess sich nicht
+ * berichtigen. Ein Versandvermerk ist eine Notiz über die Wirklichkeit,
+ * kein Zustand der Anwendung — und Notizen dürfen berichtigt werden.
+ */
+export async function nimmVersandZurueck(stellungnahmeId: string): Promise<ExportErgebnis> {
+  await verlangeBenutzer()
+  await db
+    .update(stellungnahme)
+    .set({ versendetAm: null })
+    .where(eq(stellungnahme.id, stellungnahmeId))
+  revalidatePath('/stellungnahmen')
+  revalidatePath(`/stellungnahmen/${stellungnahmeId}`)
+  return { hinweis: 'Der Versandvermerk ist zurückgenommen — das Schreiben lässt sich wieder ändern.' }
 }
 
 /** Kopfdaten der Stellungnahme ändern. */

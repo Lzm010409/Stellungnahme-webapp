@@ -106,7 +106,7 @@ async function anmelden(seite: Page) {
   await seite.fill('#email', EMAIL)
   await seite.fill('#passwort', PASSWORT)
   await Promise.all([
-    seite.waitForURL('**/bibliothek', { timeout: 20000 }),
+    seite.waitForURL('**/stellungnahmen', { timeout: 20000 }),
     seite.locator('form button[type=submit]').click(),
   ])
 }

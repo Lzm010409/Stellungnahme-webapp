@@ -48,7 +48,7 @@ import {
   speichereDokument,
   uebernehmeAbschnittInBibliothek,
 } from '@/stellungnahme/editor-aktionen'
-import { markiereVersendet } from '@/stellungnahme/export-aktionen'
+import { markiereVersendet, nimmVersandZurueck } from '@/stellungnahme/export-aktionen'
 import type { Pruefergebnis } from '@/export/waechter'
 import type { Befund } from '@/export/waechter'
 import { Blase, type PositionAnzeige, type Vorschlag } from './blase'
@@ -135,6 +135,15 @@ export function Schreibtisch({
     extensions: briefErweiterungen(),
     content: dokument as never,
     immediatelyRender: false,
+    /*
+      Ein versendetes Schreiben ist ein Beleg: was dort steht, ist das, was
+      der Versicherer bekommen hat. Bisher liess es sich weiterschreiben —
+      der Text änderte sich, der Versandvermerk blieb, und aus dem Beleg
+      wurde eine Behauptung. Die Aktion weist das jetzt ab; hier steht die
+      Sperre noch einmal sichtbar, damit niemand erst nach dem Tippen
+      erfährt, dass nichts davon ankommt.
+    */
+    editable: !versendet,
     editorProps: {
       attributes: { class: 'brief-flaeche', spellcheck: 'true' },
 
@@ -682,6 +691,19 @@ export function Schreibtisch({
 
   return (
     <div className="werkbank">
+      {/*
+        Ohne diesen Satz war der geschlossene Zustand unsichtbar: der Brief
+        sah aus wie immer, nur nahm er keine Eingabe mehr an — und wer
+        tippte, erfuhr den Grund nirgends.
+      */}
+      {versendet ? (
+        <div className="hinweis warn" style={{ marginBottom: 12 }} role="status">
+          Dieses Schreiben ist als versendet vermerkt und deshalb geschlossen: der Text lässt sich
+          nicht mehr ändern, Positionen nicht mehr entfernen. So bleibt nachvollziehbar, was das
+          Haus verlassen hat. Mit „Versandvermerk zurücknehmen" unten steht es wieder offen.
+        </div>
+      ) : null}
+
       <div className="werkbank-leiste">
         <div className="werkzeuge">
           <button
@@ -846,12 +868,33 @@ export function Schreibtisch({
                 starte(async () => {
                   const e = await markiereVersendet(stellungnahmeId)
                   setzeMeldung(e.hinweis ?? null)
+                  router.refresh()
                 })
               }
             >
               {laeuft ? <Kreisel text="Versendet" /> : 'Versendet'}
             </button>
-          ) : null}
+          ) : (
+            /*
+              Der Rückweg. Ohne ihn war „Versendet" eine Einbahnstrasse: der
+              Knopf verschwand, das Löschen verwies auf einen Vermerk, den
+              niemand zurücknehmen konnte, und ein versehentlicher Klick
+              liess sich nicht berichtigen.
+            */
+            <button
+              type="button"
+              disabled={laeuft}
+              onClick={() =>
+                starte(async () => {
+                  const e = await nimmVersandZurueck(stellungnahmeId)
+                  setzeMeldung(e.hinweis ?? null)
+                  router.refresh()
+                })
+              }
+            >
+              {laeuft ? <Kreisel text="Versandvermerk zurücknehmen" /> : 'Versandvermerk zurücknehmen'}
+            </button>
+          )}
         </div>
       </div>
 

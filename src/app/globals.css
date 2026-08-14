@@ -680,6 +680,33 @@ button.haupt:disabled:hover {
   background: var(--surface-alt);
 }
 
+/*
+  Auf dem Telefon kehrt sich der Vorteil um: eine mitwachsende erste Spalte
+  nahm dem Aktenzeichen zuliebe 101 von 296 nutzbaren Pixeln, und für den
+  Titel blieb kaum etwas. Dort ist die Spalte wieder schmal — das
+  Aktenzeichen bricht dann um (`overflow-wrap: anywhere`), was auf einem
+  schmalen Schirm die richtige Wahl ist.
+*/
+@media (max-width: 640px) {
+  .zeile {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  /* Statuspille und Knöpfe stehen darunter statt daneben. Nebeneinander
+     nahmen sie dem Titel über hundert der knapp dreihundert nutzbaren
+     Pixel; auf einem Telefon liest man lieber untereinander als in einer
+     Spalte von neunzig Pixeln. */
+  .zeile-rechts {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+}
+
 .zeile-nummer {
   font-family: var(--mono);
   font-size: 12px;

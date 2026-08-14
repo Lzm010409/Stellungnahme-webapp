@@ -119,13 +119,24 @@ export function Kopfbereich(props: {
             value={nachIso(werte.einleitungDatum)}
             onChange={(e) => setze('einleitungDatum', nachDeutsch(e.target.value))}
           />
-          {/* Wie der Datumswähler aussieht, bestimmt der Browser — mal
-              TT.MM.JJJJ, mal MM/TT/JJJJ. Was im Brief steht, bestimmt das
-              Büro. Deshalb steht es hier ausgeschrieben daneben. */}
+          {/*
+            Wie der Datumswähler aussieht, bestimmt der Browser — mal
+            TT.MM.JJJJ, mal MM/TT/JJJJ. Was im Brief steht, bestimmt das
+            Büro. Deshalb steht es hier ausgeschrieben daneben.
+
+            Und zwar als das, was es ist. Hier stand „Im Brief: …" — eine
+            Zusage, die diese Felder nicht einhalten: der Einleitungssatz
+            wird beim **Anlegen** des Schreibens einmal aus Datum und
+            Übermittlungsweg gebaut (`erzeugen.ts`) und ist danach
+            gewöhnlicher Fliesstext. Wer hier das Datum ändert, ändert die
+            Aktennotiz — im Brief steht weiter der alte Satz, und auch die
+            Word-Ausgabe nimmt ihn von dort. Ein Feld, das etwas anderes
+            verspricht, führt genau in den Fehler, den es verhüten soll.
+          */}
           <span className="unterzeile" style={{ margin: '4px 0 0' }}>
             {werte.einleitungDatum
-              ? `Im Brief: „mit ${werte.einleitungMedium === 'mail' ? 'der Mail' : 'dem Schreiben'} vom ${werte.einleitungDatum} …"`
-              : 'Noch kein Datum — ohne es beginnt der Brief ohne Einleitungssatz.'}
+              ? `Einleitungssatz beim Anlegen: „mit ${werte.einleitungMedium === 'mail' ? 'der Mail' : 'dem Schreiben'} vom ${werte.einleitungDatum} …" — im schon geschriebenen Brief steht der Satz im Text und wird dort geändert.`
+              : 'Noch kein Datum — ein neu angelegtes Schreiben beginnt dann ohne Einleitungssatz.'}
           </span>
         </div>
         <div className="feld">

@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { benutzer } from '@/db/schema'
 import { leseEntraKonfiguration, tauscheCodeGegenKonto } from '@/auth/entra'
 import { raeumeAbgelaufeneSitzungen, starteSitzung } from '@/auth/sitzung'
+import { STARTSEITE } from '@/auth/startseite'
 
 function zurueck(grund: string): NextResponse {
   const basis = process.env.APP_BASIS_URL ?? 'http://localhost:3000'
@@ -96,5 +97,5 @@ export async function GET(anfrage: NextRequest) {
     .where(eq(benutzer.id, konto_.id))
 
   const basis = process.env.APP_BASIS_URL ?? 'http://localhost:3000'
-  return NextResponse.redirect(new URL('/bibliothek', basis))
+  return NextResponse.redirect(new URL(STARTSEITE, basis))
 }

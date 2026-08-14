@@ -148,7 +148,23 @@ export function Blase({
   const [bildtreffer, setzeBildtreffer] = useState<Bibliotheksbild[]>([])
   const [suchtBilder, starteBildsuche] = useTransition()
   const [treffer, setzeTreffer] = useState<
-    { id: string; nummer: string; titel: string; abschnitt: string; gegenargument: string | null }[]
+    {
+      id: string
+      nummer: string
+      titel: string
+      abschnitt: string
+      /**
+       * Der Stand des Eintrags gehört mit in die Trefferliste.
+       *
+       * Die Suche liest ihn ohnehin mit; ohne ihn liesse sich hier ein
+       * Entwurf übernehmen, ohne dass es jemand sagt — während derselbe
+       * Eintrag als Vorschlag darüber ausdrücklich als „noch nicht
+       * freigegeben" gekennzeichnet ist. Zwei Wege in denselben Brief
+       * dürfen nicht verschieden viel verschweigen.
+       */
+      status: string
+      gegenargument: string | null
+    }[]
   >([])
   const [sucht, starteSuche] = useTransition()
 
@@ -182,16 +198,44 @@ export function Blase({
       <button type="button" className={`blase zu ${imBrief ? '' : 'draussen'}`} onClick={aufAktivieren}>
         <span className="blase-nummer">{nummer ?? '—'}</span>
         <span className="blase-titel">{position.bezeichnung}</span>
+        {/*
+          Drei nackte Zahlen nebeneinander, jede in einer anderen Farbe: rot
+          die sperrenden Befunde, orange die zu prüfenden, blau die Zahl der
+          Vorschläge. Wer die Farben nicht auswendig kennt, liest an einer
+          geschlossenen Anmerkung „4" und weiss nicht, ob vier Dinge zu tun
+          sind oder vier Bausteine bereitliegen. Jede Zahl sagt jetzt, was
+          sie zählt — im `title` und für die Vorlesehilfe.
+        */}
         <span className="blase-marken">
-          {sperrend > 0 ? <span className="marke-pille m-zurueckgezogen">{sperrend}</span> : null}
-          {warnend > 0 ? <span className="marke-pille m-warn">{warnend}</span> : null}
+          {sperrend > 0 ? (
+            <span
+              className="marke-pille m-zurueckgezogen"
+              title={`${sperrend} sperrende${sperrend === 1 ? 'r' : ''} Befund${sperrend === 1 ? '' : 'e'} — sie halten die Ausgabe auf`}
+            >
+              {sperrend}
+              <span className="nur-vorlesen"> sperrend</span>
+            </span>
+          ) : null}
+          {warnend > 0 ? (
+            <span
+              className="marke-pille m-warn"
+              title={`${warnend} Befund${warnend === 1 ? '' : 'e'} zu prüfen`}
+            >
+              {warnend}
+              <span className="nur-vorlesen"> zu prüfen</span>
+            </span>
+          ) : null}
           {!imBrief ? (
             <span className="marke-pille m-entwurf">nicht im Schreiben</span>
           ) : hatText ? (
             <span className="marke-pille m-freigegeben">Text</span>
           ) : vorschlag && vorschlag.besteGuete !== 'kein' ? (
-            <span className={`marke-pille b-${vorschlag.besteGuete}`}>
+            <span
+              className={`marke-pille b-${vorschlag.besteGuete}`}
+              title={`${vorschlag.kandidaten.length} Vorschl${vorschlag.kandidaten.length === 1 ? 'ag' : 'äge'} aus der Bibliothek — ${GUETE_TEXT[vorschlag.besteGuete]}`}
+            >
               {vorschlag.kandidaten.length}
+              <span className="nur-vorlesen"> Vorschläge</span>
             </span>
           ) : (
             <span className="marke-pille m-entwurf">leer</span>
@@ -435,12 +479,23 @@ export function Blase({
                 </button>
                 {offenerKandidat === t.id ? (
                   <div className="blase-entwurf">
+                    {t.status !== 'freigegeben' ? (
+                      <p className="hinweis warn" style={{ margin: '0 0 8px' }}>
+                        Dieser Eintrag ist noch nicht freigegeben.
+                      </p>
+                    ) : null}
                     <textarea
                       value={entwurf}
                       onChange={(e) => setzeEntwurf(e.target.value)}
                       style={{ minHeight: 150 }}
                       aria-label="Text vor dem Einfügen bearbeiten"
                     />
+                    {offenePlatzhalter.length > 0 ? (
+                      <p className="hinweis warn" style={{ margin: '8px 0 0' }}>
+                        Noch offen: {offenePlatzhalter.map((o) => `[${o}]`).join(', ')} — der Export
+                        bleibt gesperrt, solange sie stehen.
+                      </p>
+                    ) : null}
                     <div className="blase-knoepfe">
                       <button
                         type="button"

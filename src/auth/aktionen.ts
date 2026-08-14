@@ -6,6 +6,7 @@ import { db } from '@/db'
 import { benutzer } from '@/db/schema'
 import { pruefePasswort } from './passwort'
 import { beendeSitzung, raeumeAbgelaufeneSitzungen, starteSitzung } from './sitzung'
+import { STARTSEITE } from '@/auth/startseite'
 
 export interface AnmeldeZustand {
   fehler?: string
@@ -46,7 +47,7 @@ export async function meldeAn(
   await starteSitzung(konto.id)
   await db.update(benutzer).set({ letzteAnmeldung: new Date() }).where(eq(benutzer.id, konto.id))
 
-  redirect('/bibliothek')
+  redirect(STARTSEITE)
 }
 
 export async function meldeAb(): Promise<void> {
