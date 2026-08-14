@@ -779,17 +779,25 @@ async function zustandDerAnmerkung(seite: Page): Promise<string> {
 }
 
 /**
- * Sorgt dafür, dass eine Anmerkung offen ist.
+ * Sorgt dafür, dass die Anmerkung einer bestrittenen Position offen ist.
+ *
+ * Zwei Stolpersteine stecken darin, beide aus Fehlmeldungen gelernt:
  *
  * Die Randspalte klappt die Anmerkung des Abschnitts auf, in dem die
  * Schreibmarke steht — ein Klick in den Brief schliesst also die vorherige.
- * Prüfungen, die eine offene Anmerkung brauchen, dürfen sich deshalb nicht
- * darauf verlassen, dass die vorige sie offen gelassen hat; sonst melden
- * sie „fehlt", wo nur nichts offen war.
+ * Wer eine offene Anmerkung braucht, darf sich nicht darauf verlassen, dass
+ * die vorige Prüfung eine offen gelassen hat.
+ *
+ * Und die Anmerkung einer Position, die **nicht bestritten** wird, sieht
+ * anders aus: sie trägt `draussen` und bietet folgerichtig weder
+ * Bibliothekssuche noch eigenen Text, sondern „Doch bestreiten" und
+ * „Entfernen". Das ist richtig so — für eine Position, gegen die nichts
+ * vorgebracht wird, schreibt man auch nichts. Die Probe hielt das
+ * zweimal für ein fehlendes Feld.
  */
 async function sorgeFuerOffeneAnmerkung(seite: Page) {
-  if ((await seite.locator('.blase.auf').count()) > 0) return
-  const zu = seite.locator('.blase.zu')
+  if ((await seite.locator('.blase.auf:not(.draussen)').count()) > 0) return
+  const zu = seite.locator('.blase.zu:not(.draussen)')
   if ((await zu.count()) === 0) return
   await zu.first().click()
   await seite.waitForTimeout(600)
@@ -1043,7 +1051,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
 
   await pruefe('Bibliothekssuche in der Anmerkung', async (durchgang) => {
     await sorgeFuerOffeneAnmerkung(seite)
-    const feld = seite.locator('.blase.auf input[aria-label="Bibliothek durchsuchen"]')
+    const feld = seite.locator('.blase.auf:not(.draussen) input[aria-label="Bibliothek durchsuchen"]')
     if ((await feld.count()) === 0) {
       // Mit Beleg statt bloss „fehlt": ohne die Klassen und die Beschriftungen
       // der offenen Anmerkung liess sich nicht unterscheiden, ob das Feld
@@ -1066,7 +1074,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
 
   await pruefe('Eigenen Text einfügen', async (durchgang) => {
     await sorgeFuerOffeneAnmerkung(seite)
-    const feld = seite.locator('.blase.auf textarea[placeholder^="Eigene Argumentation"]')
+    const feld = seite.locator('.blase.auf:not(.draussen) textarea[placeholder^="Eigene Argumentation"]')
     if ((await feld.count()) === 0) {
       melde('unschoen', `In der Anmerkung fehlt das Feld für eigenen Text. ${await zustandDerAnmerkung(seite)}`)
       return
