@@ -740,7 +740,7 @@ async function teilStellungnahmenliste(seite: Page) {
 
   await pruefe('Zeile öffnet den Schreibtisch, Rückweg führt zurück', async () => {
     await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-    await seite.locator('.zeile').first().click()
+    await offeneZeile(seite).click()
     await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
     const zurueck = seite.locator('.brief-kopfzeile a.zurueck')
     if ((await zurueck.count()) === 0) {
@@ -769,6 +769,22 @@ async function teilStellungnahmenliste(seite: Page) {
   })
 }
 
+/**
+ * Die erste Stellungnahme, die noch offen ist.
+ *
+ * `.zeile` ohne Auswahl trifft die neueste — und das kann eine als
+ * versendet vermerkte sein. Die ist absichtlich geschlossen: der Editor
+ * nimmt keine Eingabe mehr an. Alle Handgriffe am Schreibtisch schlügen
+ * dann fehl und meldeten einen Fehler, wo die Anwendung genau das tut,
+ * was sie soll.
+ */
+function offeneZeile(seite: Page) {
+  return seite
+    .locator('.zeile')
+    .filter({ hasNot: seite.locator('.marke-pille', { hasText: 'versendet' }) })
+    .first()
+}
+
 /* ---------------- Schreibtisch ---------------- */
 
 async function teilSchreibtisch(seite: Page, bildPfad: string) {
@@ -776,7 +792,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
 
   const oeffne = async () => {
     await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-    await seite.locator('.zeile').first().click()
+    await offeneZeile(seite).click()
     await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
     await seite.waitForTimeout(900)
   }
