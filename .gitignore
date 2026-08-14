@@ -14,3 +14,6 @@ next-env.d.ts
 # Von "next dev" erzeugte Hinweise für Agenten
 /AGENTS.md
 /CLAUDE.md
+
+# Wegwerf-Prüfskripte der Bedienproben (entstehen beim Prüfen, gehören nicht ins Verzeichnis)
+probe-*.mts

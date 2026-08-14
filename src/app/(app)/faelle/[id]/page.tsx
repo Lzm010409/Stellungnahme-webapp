@@ -11,8 +11,14 @@ const HERKUNFT: Record<string, string> = {
   werkstatt: 'Werkstatt aus dem Gutachten',
 }
 
+/** Nur eine UUID kann eine Fall-Id sein; alles andere ist eine tote Adresse. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function FallSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  // Ohne diese Prüfung ginge eine Adresse wie /faelle/unfug als Abfrage an die
+  // Datenbank und endete in einer Serverfehlerseite statt in „nicht gefunden".
+  if (!UUID.test(id)) notFound()
   const f = await ladeFall(id)
   if (!f) notFound()
 
@@ -23,8 +29,33 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
         <p style={{ margin: '0 0 14px', fontSize: 13 }}>
           <Link href="/faelle">← Fälle</Link>
         </p>
+
+        <div className="seiten-kopf">
+          <div>
+            <p
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 12,
+                color: 'var(--accent)',
+                margin: '0 0 4px',
+                fontWeight: 600,
+              }}
+            >
+              {f.aktenzeichen ?? 'ohne Aktenzeichen'}
+            </p>
+            <h1>Falldaten nicht lesbar</h1>
+            <p className="unterzeile">autoiXpert-ID {f.autoixpertId ?? '—'}</p>
+          </div>
+          {/* Der Knopf muss hier stehen bleiben: der Hinweistext verlangt genau
+              diesen Handgriff, und sonst gäbe es keinen Weg, ihn auszuführen. */}
+          <Aktualisieren fallId={f.id} />
+        </div>
+
         <div className="hinweis fehler">
-          Die gespeicherten Falldaten lassen sich nicht lesen. Bitte den Fall neu laden.
+          Die gespeicherten Falldaten haben nicht die Form, die autoiXpert liefert — sie
+          lassen sich deshalb nicht anzeigen. Mit „Aus autoiXpert neu laden" oben rechts
+          lässt sich der Fall erneut holen. Bleibt der Fehler, stimmt etwas mit dem
+          Gutachten in autoiXpert nicht; dann bitte den Fall dort prüfen.
         </div>
       </>
     )
@@ -33,6 +64,23 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
   const d = leseFalldaten(geprueft.data)
   const werte = platzhalterWerte(d)
   const vorschlag = schlageEmpfaengerVor(d)
+
+  // Leere Kästen ohne Text lassen offen, ob nichts da ist oder etwas fehlschlug.
+  const fahrzeugLeer = ![
+    d.fahrzeug.hersteller,
+    d.fahrzeug.modell,
+    d.fahrzeug.kennzeichen,
+    d.fahrzeug.vin,
+    d.fahrzeug.erstzulassung,
+    d.fahrzeug.laufleistung,
+    d.fahrzeug.letzterService,
+  ].some(Boolean) && d.fahrzeug.scheckheftGepflegt === null
+  const unfallLeer = ![
+    d.unfall.datum,
+    d.unfall.ort,
+    d.unfall.hergang,
+    d.fahrzeug.schadenbeschreibung,
+  ].some(Boolean)
 
   return (
     <>
@@ -51,7 +99,10 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
               fontWeight: 600,
             }}
           >
-            {d.aktenzeichen ?? 'ohne Aktenzeichen'}
+            {/* Das Aktenzeichen aus dem Gutachten hat Vorrang; fehlt es dort,
+                gilt das beim Import gespeicherte — sonst widerspräche die
+                Detailseite der Liste, die genau dieses anzeigt. */}
+            {d.aktenzeichen ?? f.aktenzeichen ?? 'ohne Aktenzeichen'}
           </p>
           <h1>{d.anspruchsteller?.name ?? 'Fall ohne Anspruchsteller'}</h1>
           <p className="unterzeile">
@@ -78,7 +129,9 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
                   label="Laufleistung"
                   wert={
                     d.fahrzeug.laufleistung
-                      ? `${d.fahrzeug.laufleistung.toLocaleString('de-DE')} ${d.fahrzeug.laufleistungEinheit}`
+                      ? // Eine leere Einheit ergäbe eine nackte Zahl — bei
+                        // Laufleistungen ist das nicht harmlos.
+                        `${d.fahrzeug.laufleistung.toLocaleString('de-DE')} ${d.fahrzeug.laufleistungEinheit || 'km'}`
                       : null
                   }
                 />
@@ -94,6 +147,7 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
                 />
                 <Zeile label="Letzter Service" wert={formatiereDatum(d.fahrzeug.letzterService)} />
               </dl>
+              {fahrzeugLeer ? <Ohne was="Fahrzeugangaben" /> : null}
             </div>
           </div>
 
@@ -135,6 +189,7 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
                   {d.fahrzeug.schadenbeschreibung}
                 </p>
               ) : null}
+              {unfallLeer ? <Ohne was="Angaben zum Unfall" /> : null}
             </div>
           </div>
 
@@ -239,6 +294,15 @@ function Zeile({ label, wert }: { label: string; wert: string | null | undefined
       <dt>{label}</dt>
       <dd style={{ textAlign: 'left' }}>{wert}</dd>
     </>
+  )
+}
+
+/** Sagt an, dass ein Kasten leer ist, weil das Gutachten nichts hergibt. */
+function Ohne({ was }: { was: string }) {
+  return (
+    <p className="unterzeile" style={{ margin: 0 }}>
+      Das Gutachten enthält keine {was}.
+    </p>
   )
 }
 

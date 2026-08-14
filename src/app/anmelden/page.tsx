@@ -5,7 +5,7 @@ import { AnmeldeFormular } from './formular'
 
 const FEHLERTEXTE: Record<string, string> = {
   'kein-konto':
-    'Für dieses Microsoft-Konto ist hier noch kein Zugang eingerichtet. Bitte an die Bürovewaltung wenden.',
+    'Für dieses Microsoft-Konto ist hier noch kein Zugang eingerichtet. Bitte an die Büroverwaltung wenden.',
   'konto-gesperrt': 'Dieser Zugang ist deaktiviert.',
   'entra-nicht-konfiguriert': 'Die Microsoft-Anmeldung ist auf diesem Server nicht eingerichtet.',
   'entra-sitzung-abgelaufen': 'Der Anmeldevorgang hat zu lange gedauert. Bitte erneut versuchen.',

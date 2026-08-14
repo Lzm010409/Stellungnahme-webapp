@@ -27,8 +27,21 @@ export function Suchleiste({ abschnitte, bereichsnamen, trefferzahl }: Eigenscha
   }, [suche, parameter, router])
 
   const setze = (schluessel: string, wert: string) => {
-    starte(() => router.replace(`/bibliothek?${baue(parameter, { [schluessel]: wert })}`))
+    // Ein Abschnitt gehört immer zu genau einem Bereich. Bleibt er beim
+    // Bereichswechsel stehen, filtert die Liste auf einen Abschnitt, den es
+    // im neuen Bereich nicht gibt: null Treffer, und das Auswahlfeld zeigt
+    // trotzdem „Alle Abschnitte" — der wirksame Filter wäre unsichtbar.
+    const aenderungen =
+      schluessel === 'bereich' ? { bereich: wert, abschnitt: '' } : { [schluessel]: wert }
+    starte(() => router.replace(`/bibliothek?${baue(parameter, aenderungen)}`))
   }
+
+  // Steht in der Adresse ein Abschnitt, den die Liste der Optionen nicht
+  // kennt (etwa aus einem Lesezeichen), wird er trotzdem angezeigt. Sonst
+  // stünde das Feld auf „Alle Abschnitte", während gefiltert wird.
+  const abschnittWert = parameter.get('abschnitt') ?? ''
+  const abschnittFremd =
+    abschnittWert !== '' && !abschnitte.some((a) => a.abschnitt === abschnittWert)
 
   const hatFilter = ['q', 'bereich', 'status', 'abschnitt'].some((k) => parameter.get(k))
 
@@ -56,11 +69,12 @@ export function Suchleiste({ abschnitte, bereichsnamen, trefferzahl }: Eigenscha
       </select>
 
       <select
-        value={parameter.get('abschnitt') ?? ''}
+        value={abschnittWert}
         onChange={(e) => setze('abschnitt', e.target.value)}
         aria-label="Abschnitt"
       >
         <option value="">Alle Abschnitte</option>
+        {abschnittFremd ? <option value={abschnittWert}>{abschnittWert} (0)</option> : null}
         {abschnitte.map((a) => (
           <option key={a.abschnitt} value={a.abschnitt}>
             {a.abschnitt} ({a.anzahl})

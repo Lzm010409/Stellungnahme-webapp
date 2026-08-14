@@ -52,7 +52,10 @@ export default async function BibliothekSeite({
     zaehleNachStatus(),
   ])
 
-  const offen = nachStatus.entwurf ?? 0
+  // Auf Freigabe warten Entwürfe *und* was schon in Prüfung liegt. Zählte man
+  // nur die Entwürfe, verschwände ein Eintrag aus der Zahl, sobald ihn jemand
+  // in die Prüfung schiebt — obwohl er genau dann erst recht wartet.
+  const offen = (nachStatus.entwurf ?? 0) + (nachStatus.pruefung ?? 0)
 
   return (
     <>
@@ -80,7 +83,10 @@ export default async function BibliothekSeite({
       ) : (
         <div className="liste">
           {eintraege.map((e) => {
-            const text = e.gegenargument ?? e.vorgehen
+            // `||` statt `??`: ein Eintrag ohne Gegenargument trägt dort oft
+            // eine leere Zeichenkette statt NULL. Mit `??` bliebe die Zeile
+            // dann ohne Auszug, obwohl ein Vorgehen hinterlegt ist.
+            const text = e.gegenargument || e.vorgehen
             return (
               <Link key={e.id} href={`/bibliothek/${e.id}`} className="zeile">
                 <span className="zeile-nummer">{e.nummer}</span>
@@ -117,9 +123,9 @@ export default async function BibliothekSeite({
                     {e.belegeUnverifiziert > 0 ? (
                       <span
                         className="marke-pille m-warn"
-                        title="Fundstellen noch nicht bestätigt — sperrt den Export"
+                        title="Fundstellen noch nicht bestätigt — sperrt die Freigabe"
                       >
-                        {e.belegeUnverifiziert} Beleg
+                        {e.belegeUnverifiziert} Beleg{e.belegeUnverifiziert === 1 ? '' : 'e'}
                       </span>
                     ) : null}
                   </span>

@@ -22,12 +22,21 @@ export function BelegPruefung({ eintragId, belege }: { eintragId: string; belege
 
   if (belege.length === 0) return null
 
+  const offen = belege.filter((b) => !b.verifiziertAm).length
+
   return (
     <div className="karte">
       <h2>Fundstellen ({belege.length})</h2>
+      {/*
+        Der Einleitungssatz sprach von „noch nicht bestätigt" — auch dann
+        noch, wenn jede einzelne Fundstelle darunter die Marke „bestätigt"
+        trug. Ein Satz, der der Liste unter ihm widerspricht, ist schlimmer
+        als keiner.
+      */}
       <p className="unterzeile" style={{ marginTop: 0 }}>
-        Aus dem Text erkannt und noch nicht bestätigt. Unbestätigte Fundstellen sperren die
-        Freigabe.
+        {offen === 0
+          ? 'Aus dem Text erkannt. Alle bestätigt — die Freigabe ist von hier aus frei.'
+          : `Aus dem Text erkannt. ${offen} von ${belege.length} noch nicht bestätigt; unbestätigte Fundstellen sperren die Freigabe.`}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

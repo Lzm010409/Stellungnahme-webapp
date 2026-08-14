@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ladeEintrag } from '@/bibliothek/abfragen'
 import { aktuellerBenutzer } from '@/auth/sitzung'
+import { setzeWerteEin } from '@/dokument/platzhalter'
 import { StatusPille } from '../status-pille'
 import { Freigabeleiste } from './freigabeleiste'
 import { BelegPruefung } from './beleg-pruefung'
@@ -14,8 +15,18 @@ const BEREICHSNAMEN: Record<string, string> = {
   sonderfall: 'Sonderfälle',
 }
 
+/**
+ * Die Kennung kommt roh aus der Adresszeile. Ohne diese Prüfung ginge ein
+ * `/bibliothek/unfug` als UUID-Vergleich an Postgres und käme als
+ * Serverfehler (HTTP 500) zurück — eine vertippte Adresse ist aber kein
+ * Fehler der Anwendung, sondern schlicht nicht gefunden.
+ */
+const UUID_MUSTER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function EintragSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  if (!UUID_MUSTER.test(id)) notFound()
+
   const [e, benutzer] = await Promise.all([ladeEintrag(id), aktuellerBenutzer()])
   if (!e) notFound()
 
@@ -23,6 +34,26 @@ export default async function EintragSeite({ params }: { params: Promise<{ id: s
   const werte = e.platzhalter.filter((p) => p.art === 'wert')
   const regie = e.platzhalter.filter((p) => p.art === 'regieanweisung')
   const unbestaetigt = e.belege.filter((b) => !b.verifiziertAm)
+
+  /*
+    Was in eckigen Klammern im Text steht, muss vor dem Versand ersetzt
+    werden — unabhängig davon, ob die Migration dafür eine Zeile in
+    `eintrag_platzhalter` angelegt hat. Wird nur die Tabelle gelesen, meldet
+    die Randspalte „Keine — der Text ist ohne Anpassung verwendbar", während
+    zwei Klammern im Gegenargument stehen. Deshalb wird der sichtbare Text
+    hier zusätzlich selbst abgesucht.
+  */
+  const sichtbarerText = [
+    e.typischeBegruendung,
+    e.gegenargument,
+    e.vorgehen,
+    ...e.varianten.map((v) => v.text),
+    ...e.ergaenzungen.map((x) => x.text),
+  ]
+    .filter(Boolean)
+    .join('\n')
+  const bekannt = new Set(e.platzhalter.map((p) => p.schluessel))
+  const nurImText = setzeWerteEin(sichtbarerText, {}).offen.filter((s) => !bekannt.has(s))
 
   return (
     <>
@@ -62,12 +93,27 @@ export default async function EintragSeite({ params }: { params: Promise<{ id: s
             </div>
           ) : null}
 
-          {e.gegenargument ? (
+          {e.gegenargument?.trim() ? (
             <div className="block">
               <div className="block-label">Gegenargument</div>
               <div className="zitat fliesstext">{e.gegenargument}</div>
             </div>
-          ) : null}
+          ) : (
+            /*
+              Ein leeres Gegenargument darf nicht einfach als Lücke
+              erscheinen: sonst sieht der Leser nur, dass etwas fehlt, aber
+              nicht, ob es fehlt oder nie da war.
+            */
+            <div className="block">
+              <div className="block-label">Gegenargument</div>
+              <div className="hinweis warn">
+                Kein ausformulierter Text hinterlegt.
+                {e.vorgehen?.trim()
+                  ? ' Es gibt nur das Vorgehen unten — daraus ist im Einzelfall selbst zu formulieren.'
+                  : ' Dieser Eintrag liefert nichts, was sich übernehmen liesse.'}
+              </div>
+            </div>
+          )}
 
           {e.vorgehen ? (
             <div className="block">
@@ -136,16 +182,24 @@ export default async function EintragSeite({ params }: { params: Promise<{ id: s
 
           <div className="karte">
             <h2>Einzusetzende Werte</h2>
-            {werte.length === 0 ? (
+            {werte.length === 0 && nurImText.length === 0 ? (
               <p className="unterzeile" style={{ margin: 0 }}>
                 Keine — der Text ist ohne Anpassung verwendbar.
               </p>
             ) : (
-              <div className="marker-liste">
-                {werte.map((p) => (
-                  <code key={p.id}>[{p.schluessel}]</code>
-                ))}
-              </div>
+              <>
+                <div className="marker-liste">
+                  {werte.map((p) => (
+                    <code key={p.id}>[{p.schluessel}]</code>
+                  ))}
+                  {nurImText.map((s) => (
+                    <code key={`text-${s}`}>[{s}]</code>
+                  ))}
+                </div>
+                <p className="unterzeile" style={{ marginBottom: 0 }}>
+                  Bleiben sie stehen, sperren sie später den Export.
+                </p>
+              </>
             )}
           </div>
 

@@ -48,7 +48,11 @@ export default async function FaelleSeite() {
                 <span className="zeile-nummer">{f.aktenzeichen ?? '—'}</span>
                 <span>
                   <span className="zeile-titel">
-                    {d?.anspruchsteller?.name ?? 'Ohne Anspruchsteller'}
+                    {/* Bei unlesbaren Daten wäre „Ohne Anspruchsteller" eine
+                        Behauptung über etwas, das gar nicht gelesen wurde. */}
+                    {geprueft.success
+                      ? (d?.anspruchsteller?.name ?? 'Ohne Anspruchsteller')
+                      : 'Falldaten nicht lesbar'}
                     {d?.fahrzeug.kennzeichen ? ` · ${d.fahrzeug.kennzeichen}` : ''}
                   </span>
                   <span className="zeile-meta">
@@ -62,7 +66,9 @@ export default async function FaelleSeite() {
                   </span>
                 </span>
                 <span className="zeile-rechts">
-                  {d?.zustand ? (
+                  {!geprueft.success ? (
+                    <span className="marke-pille m-warn">unlesbar</span>
+                  ) : d?.zustand ? (
                     <span
                       className={`marke-pille ${
                         d.zustand === 'abgeschlossen' ? 'm-freigegeben' : 'm-entwurf'
