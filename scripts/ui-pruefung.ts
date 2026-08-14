@@ -985,7 +985,10 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Anmerkung aufklappen', async (durchgang) => {
-    const zu = seite.locator('.blase.zu')
+    // Ohne `:not(.draussen)` erwischt der Griff mal die Anmerkung einer
+    // nicht bestrittenen Position — die sieht anders aus und hat weder
+    // Vorschläge noch Textfelder. Die folgenden Prüfungen bauen darauf auf.
+    const zu = seite.locator('.blase.zu:not(.draussen)')
     const anzahl = await zu.count()
     if (anzahl === 0) return
     await zu.nth(Math.min(durchgang - 1, anzahl - 1)).click()
@@ -996,7 +999,8 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Vorschlag wählen, bearbeiten, einfügen', async (durchgang) => {
-    const kopf = seite.locator('.blase.auf .blase-vorschlag-kopf').first()
+    await sorgeFuerOffeneAnmerkung(seite)
+    const kopf = seite.locator('.blase.auf:not(.draussen) .blase-vorschlag-kopf').first()
     if ((await kopf.count()) === 0) {
       /*
         Ob hier ein Vorschlag steht, hängt am Datenbestand: die Randspalte
@@ -1034,7 +1038,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Variante wählen', async () => {
-    const kopf = seite.locator('.blase.auf .blase-vorschlag-kopf').first()
+    const kopf = seite.locator('.blase.auf:not(.draussen) .blase-vorschlag-kopf').first()
     if ((await kopf.count()) === 0) return
     await kopf.click()
     await seite.waitForTimeout(500)
@@ -1061,10 +1065,10 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     }
     await feld.fill('ab')
     await seite.waitForTimeout(900)
-    const beiZwei = await seite.locator('.blase.auf .blase-vorschlag-kopf').count()
+    const beiZwei = await seite.locator('.blase.auf:not(.draussen) .blase-vorschlag-kopf').count()
     await feld.fill(durchgang === 1 ? 'Verbringung' : 'Referenz')
     await seite.waitForTimeout(1800)
-    const beiVielen = await seite.locator('.blase.auf .blase-vorschlag-kopf').count()
+    const beiVielen = await seite.locator('.blase.auf:not(.draussen) .blase-vorschlag-kopf').count()
     if (beiVielen <= beiZwei) {
       melde('unschoen', 'Die Suche in der Anmerkung findet zu einem gängigen Wort nichts.')
     }
@@ -1305,7 +1309,8 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Baustein in den Brief ziehen', async () => {
-    const griff = seite.locator('.blase.auf .blase-vorschlag-kopf.ziehbar').first()
+    await sorgeFuerOffeneAnmerkung(seite)
+    const griff = seite.locator('.blase.auf:not(.draussen) .blase-vorschlag-kopf.ziehbar').first()
     if ((await griff.count()) === 0) {
       melde('unschoen', 'Kein ziehbarer Vorschlag in der offenen Anmerkung.')
       return
