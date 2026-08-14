@@ -248,7 +248,19 @@ async function main() {
       differenz: String((i + 1) * 37.5),
       betragGutachten: String((i + 1) * 100),
       betragGekuerzt: String((i + 1) * 62.5),
-      begruendungVersicherer: `Die Position ${i + 1} sei nach Auffassung des Prüfdienstleisters zu kürzen.`,
+      /*
+        Die Begründung des Prüfdienstleisters ist der Schlüssel, über den
+        die Randspalte einen Baustein vorschlägt (sie sucht über
+        `typischeBegruendung`). Stand hier ein Allgemeinplatz, fand sie
+        nichts — und die Bedienprobe meldete „Zur offenen Anmerkung gibt es
+        keinen Vorschlag", ohne dass an der Anwendung etwas fehlte. Deshalb
+        die Wortlaute der eigenen Bibliothekseinträge.
+      */
+      begruendungVersicherer: [
+        'Die Halterung sei zerstörungsfrei zu demontieren.',
+        'Eine Beilackierung sei nicht erforderlich.',
+        'Eine Wertminderung sei nicht anzusetzen.',
+      ][i % 3]!,
       behandlung: (i % 3 === 2 ? 'nicht_bestreiten' : 'offen') as 'offen' | 'nicht_bestreiten',
       seite: (i % 4) + 1,
       reihenfolge: i,
