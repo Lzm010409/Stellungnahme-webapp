@@ -43,7 +43,13 @@ export function BelegPruefung({ eintragId, belege }: { eintragId: string; belege
         {belege.map((b) => {
           const bezeichnung = [b.gericht, b.aktenzeichen].filter(Boolean).join(' ')
           const suche = `https://www.google.com/search?q=${encodeURIComponent(bezeichnung)}`
-          const dejure = `https://dejure.org/dienste/lexsuche?Suchbegriff=${encodeURIComponent(bezeichnung)}`
+          /*
+            `lexsuche` ist die Normensuche von dejure — sie sucht in
+            Gesetzestexten. Ein Aktenzeichen findet sie folgerichtig nie;
+            der Verweis führte zuverlässig ins Leere. Für Entscheidungen ist
+            `vernetzung/rechtsprechung` zuständig.
+          */
+          const dejure = `https://dejure.org/dienste/vernetzung/rechtsprechung?Text=${encodeURIComponent(bezeichnung)}`
 
           return (
             <div
@@ -84,12 +90,24 @@ export function BelegPruefung({ eintragId, belege }: { eintragId: string; belege
                     >
                       Bestätigen
                     </button>
+                    {/*
+                      „Entfernen" löscht die Fundstelle endgültig — und
+                      nimmt nebenbei die Sperre von der Freigabe, denn
+                      gesperrt wird über die Zahl der unbestätigten
+                      Fundstellen. Ein Fehlklick sah damit aus wie ein
+                      Fortschritt. Deshalb die Rückfrage.
+                    */}
                     <button
                       type="button"
                       className="gefahr"
                       disabled={laeuft}
                       style={{ padding: '4px 10px', fontSize: 12.5 }}
-                      onClick={() => starte(async () => void (await verwerfeBeleg(b.id, eintragId)))}
+                      onClick={() => {
+                        const wen = bezeichnung || 'diese Fundstelle'
+                        if (!window.confirm(`${wen} endgültig entfernen? Das lässt sich nicht rückgängig machen.`))
+                          return
+                        starte(async () => void (await verwerfeBeleg(b.id, eintragId)))
+                      }}
                     >
                       Entfernen
                     </button>

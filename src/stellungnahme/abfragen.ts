@@ -124,6 +124,31 @@ export async function ladeStellungnahmen() {
     .limit(100)
 }
 
+/**
+ * Die Schreiben zu einem Fall.
+ *
+ * Der Weg führte bisher nur in eine Richtung: von der Stellungnahme zum
+ * Fall. Wer einen Fall aufschlug, sah nicht, ob dazu schon geschrieben
+ * wurde — und legte im Zweifel ein zweites Schreiben an.
+ */
+export async function ladeStellungnahmenZumFall(fallId: string) {
+  return db
+    .select({
+      id: stellungnahme.id,
+      betreff: stellungnahme.betreff,
+      modus: stellungnahme.modus,
+      erstelltAm: stellungnahme.erstelltAm,
+      versendetAm: stellungnahme.versendetAm,
+      positionen: sql<number>`(
+        select count(*) from ${position} p
+        where p.stellungnahme_id = ${sql.identifier('stellungnahme')}.${sql.identifier('id')}
+      )`.mapWith(Number),
+    })
+    .from(stellungnahme)
+    .where(eq(stellungnahme.fallId, fallId))
+    .orderBy(desc(stellungnahme.erstelltAm))
+}
+
 /** Lädt eine Stellungnahme mit Positionen und deren Bausteinen. */
 export async function ladeStellungnahme(id: string) {
   const zeilen = await db.select().from(stellungnahme).where(eq(stellungnahme.id, id)).limit(1)

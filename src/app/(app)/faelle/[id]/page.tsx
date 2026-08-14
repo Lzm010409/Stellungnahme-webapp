@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ladeFall } from '@/autoixpert/aktionen'
 import { leseFalldaten, platzhalterWerte, schlageEmpfaengerVor, formatiereDatum } from '@/autoixpert/felder'
 import { gutachtenSchema } from '@/autoixpert/typen'
+import { ladeStellungnahmenZumFall } from '@/stellungnahme/abfragen'
 import { Aktualisieren } from './aktualisieren'
 
 const HERKUNFT: Record<string, string> = {
@@ -21,6 +22,12 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
   if (!UUID.test(id)) notFound()
   const f = await ladeFall(id)
   if (!f) notFound()
+
+  // Der Rückweg vom Fall zu den Schreiben. Ohne ihn war die Verknüpfung
+  // einseitig: die Stellungnahme kannte ihren Fall, der Fall seine
+  // Stellungnahmen nicht — und wer hier landete, legte im Zweifel ein
+  // zweites Schreiben zum selben Vorgang an.
+  const schreiben = await ladeStellungnahmenZumFall(f.id)
 
   const geprueft = gutachtenSchema.safeParse(f.daten)
   if (!geprueft.success) {
@@ -57,6 +64,8 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
           lässt sich der Fall erneut holen. Bleibt der Fehler, stimmt etwas mit dem
           Gutachten in autoiXpert nicht; dann bitte den Fall dort prüfen.
         </div>
+
+        <Schreiben liste={schreiben} />
       </>
     )
   }
@@ -259,6 +268,8 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
             )}
           </div>
 
+          <Schreiben liste={schreiben} />
+
           <div className="karte">
             <h2>Herkunft</h2>
             <dl className="kv">
@@ -284,6 +295,60 @@ export default async function FallSeite({ params }: { params: Promise<{ id: stri
         </aside>
       </div>
     </>
+  )
+}
+
+/**
+ * Die Schreiben, die zu diesem Fall schon angelegt wurden.
+ *
+ * Bewusst mit Zahl der Positionen und Versanddatum: das sind die zwei
+ * Angaben, an denen sich entscheidet, ob man ein vorhandenes Schreiben
+ * weiterführt oder ein neues braucht.
+ */
+function Schreiben({
+  liste,
+}: {
+  liste: {
+    id: string
+    betreff: string | null
+    erstelltAm: Date | null
+    versendetAm: Date | null
+    positionen: number
+  }[]
+}) {
+  return (
+    <div className="karte">
+      <h2>Stellungnahmen ({liste.length})</h2>
+      {liste.length === 0 ? (
+        <p className="unterzeile" style={{ margin: 0 }}>
+          Zu diesem Fall ist noch kein Schreiben angelegt.{' '}
+          <Link href="/stellungnahmen">In der Übersicht</Link> lässt sich eins beginnen.
+        </p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {liste.map((s) => (
+            <Link key={s.id} href={`/stellungnahmen/${s.id}`} style={{ textDecoration: 'none' }}>
+              <span className="zeile-titel">{s.betreff || 'ohne Betreff'}</span>
+              <span className="zeile-meta">
+                <span>
+                  {s.positionen} {s.positionen === 1 ? 'Position' : 'Positionen'}
+                </span>
+                {s.erstelltAm ? (
+                  <span>angelegt {new Date(s.erstelltAm).toLocaleDateString('de-DE')}</span>
+                ) : null}
+                {s.versendetAm ? (
+                  <span className="marke-pille m-freigegeben">
+                    versendet {new Date(s.versendetAm).toLocaleDateString('de-DE')}
+                  </span>
+                ) : (
+                  <span className="marke-pille m-entwurf">Entwurf</span>
+                )}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 

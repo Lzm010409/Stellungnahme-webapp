@@ -1,4 +1,4 @@
-import { verlangeBenutzer } from '@/auth/sitzung'
+import { benutzerOderAntwort } from '@/app/api/wache'
 import { ladeBild } from '@/bilder/ablage'
 
 /**
@@ -12,7 +12,8 @@ export async function GET(
   _anfrage: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  await verlangeBenutzer()
+  const wache = await benutzerOderAntwort()
+  if (wache instanceof Response) return wache
   const { id } = await params
 
   const gefunden = await ladeBild(id)

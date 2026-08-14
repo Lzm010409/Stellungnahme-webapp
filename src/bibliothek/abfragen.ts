@@ -39,33 +39,75 @@ export interface Suchfilter {
  * liefert vorhersagbare Treffer. Die semantische Suche kommt dazu, wenn die
  * Bibliothek dafür groß genug ist — das Feld dafür ist im Schema angelegt.
  */
-export async function sucheEintraege(filter: Suchfilter) {
-  const bedingungen: SQL[] = []
+/**
+ * Macht aus einem eingetippten Begriff ein ILIKE-Muster.
+ *
+ * `%` und `_` sind für ILIKE Jokerzeichen. Ungeprüft übernommen hiess das:
+ * die Suche nach „%" lieferte die ganze Bibliothek, „Aufschlag_neu" fand
+ * „Aufschlag neu". Beides sieht nicht nach einem Fehler aus, sondern nach
+ * einem unverständlichen Ergebnis — und „30 %" ist ein Begriff, nach dem in
+ * dieser Bibliothek durchaus jemand sucht. Der Backslash ist in Postgres das
+ * vorgegebene Fluchtzeichen von LIKE; er muss deshalb selbst mit.
+ */
+function musterFuerSuche(begriff: string): string {
+  return `%${begriff.replace(/[\\%_]/g, (z) => `\\${z}`)}%`
+}
 
+/**
+ * Die Bedingung „irgendwo in diesem Eintrag steht der Begriff".
+ *
+ * Ausgelagert, weil `ladeAbschnitte` dieselbe Bedingung braucht: sonst
+ * versprechen die Zahlen in den Abschnitts-Optionen etwas anderes, als die
+ * Liste danach zeigt.
+ */
+function volltextBedingung(begriff: string): SQL | undefined {
+  const muster = musterFuerSuche(begriff)
+  return or(
+    ilike(eintrag.titel, muster),
+    ilike(eintrag.nummer, muster),
+    ilike(eintrag.gegenargument, muster),
+    ilike(eintrag.typischeBegruendung, muster),
+    ilike(eintrag.vorgehen, muster),
+    ilike(eintrag.abschnitt, muster),
+    // Die Hinweise gehörten von Anfang an dazu — dort steht, worauf im
+    // Einzelfall zu achten ist („Farbmessprotokoll anfordern"). Wer sich
+    // daran erinnert, fand den Eintrag bisher nicht.
+    ilike(eintrag.hinweise, muster),
+    // Auch Varianten durchsuchen — dort stecken die Bauteilbezeichnungen,
+    // nach denen man am ehesten sucht.
+    sql`exists (
+      select 1 from ${eintragVariante} v
+      where v.eintrag_id = ${EINTRAG_ID}
+        and (v.bezeichnung ilike ${muster} or v.text ilike ${muster})
+    )`,
+    // Und die Fundstellen: „LG Musterstadt" oder ein Aktenzeichen ist oft
+    // das Einzige, was vom Argument im Gedächtnis geblieben ist.
+    sql`exists (
+      select 1 from ${beleg} b
+      where b.eintrag_id = ${EINTRAG_ID}
+        and (b.gericht ilike ${muster} or b.aktenzeichen ilike ${muster}
+             or b.fundstelle ilike ${muster} or b.kernaussage ilike ${muster})
+    )`,
+  )
+}
+
+/** Die Filterbedingungen ohne den Abschnitt — den setzt der Aufrufer dazu. */
+function grundbedingungen(filter: Suchfilter): SQL[] {
+  const bedingungen: SQL[] = []
   if (filter.bereich) bedingungen.push(eq(eintrag.bereich, filter.bereich))
   if (filter.status) bedingungen.push(eq(eintrag.status, filter.status))
-  if (filter.abschnitt) bedingungen.push(eq(eintrag.abschnitt, filter.abschnitt))
 
   const suche = filter.suche?.trim()
   if (suche) {
-    const muster = `%${suche}%`
-    const treffer = or(
-      ilike(eintrag.titel, muster),
-      ilike(eintrag.nummer, muster),
-      ilike(eintrag.gegenargument, muster),
-      ilike(eintrag.typischeBegruendung, muster),
-      ilike(eintrag.vorgehen, muster),
-      ilike(eintrag.abschnitt, muster),
-      // Auch Varianten durchsuchen — dort stecken die Bauteilbezeichnungen,
-      // nach denen man am ehesten sucht.
-      sql`exists (
-        select 1 from ${eintragVariante} v
-        where v.eintrag_id = ${EINTRAG_ID}
-          and (v.bezeichnung ilike ${muster} or v.text ilike ${muster})
-      )`,
-    )
+    const treffer = volltextBedingung(suche)
     if (treffer) bedingungen.push(treffer)
   }
+  return bedingungen
+}
+
+export async function sucheEintraege(filter: Suchfilter) {
+  const bedingungen = grundbedingungen(filter)
+  if (filter.abschnitt) bedingungen.push(eq(eintrag.abschnitt, filter.abschnitt))
 
   const wo = bedingungen.length > 0 ? and(...bedingungen) : undefined
 
@@ -112,11 +154,21 @@ function sortierSchluessel(): SQL {
   )`
 }
 
-export async function ladeAbschnitte(bereich?: Bereich) {
+/**
+ * Die Abschnitte für das Auswahlfeld, mit der Zahl der Einträge dahinter.
+ *
+ * Die Zahl zählte früher nur über den Bereich. Standen daneben eine Suche
+ * oder ein Status, versprach die Option „(18)" und die Liste zeigte danach
+ * 16 — bei einer Suche auch schon mal 1. Eine Zahl, die nicht sagt, was die
+ * Wahl bringt, ist schlimmer als gar keine; deshalb bekommt die Abfrage
+ * jetzt denselben Filter wie die Liste, nur ohne den Abschnitt selbst.
+ */
+export async function ladeAbschnitte(filter: Suchfilter = {}) {
+  const bedingungen = grundbedingungen(filter)
   const zeilen = await db
     .select({ abschnitt: eintrag.abschnitt, anzahl: count() })
     .from(eintrag)
-    .where(bereich ? eq(eintrag.bereich, bereich) : undefined)
+    .where(bedingungen.length > 0 ? and(...bedingungen) : undefined)
     .groupBy(eintrag.abschnitt)
     .orderBy(asc(eintrag.abschnitt))
   return zeilen

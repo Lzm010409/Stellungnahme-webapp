@@ -1,4 +1,4 @@
-import { verlangeBenutzer } from '@/auth/sitzung'
+import { benutzerOderAntwort } from '@/app/api/wache'
 import { MAX_BYTES, werteBerichtAus } from '@/stellungnahme/auswertung'
 import { alsStrom } from '@/app/api/strom'
 
@@ -10,7 +10,8 @@ import { alsStrom } from '@/app/api/strom'
  * es ist der einzige Unterschied.
  */
 export async function POST(anfrage: Request): Promise<Response> {
-  const benutzer = await verlangeBenutzer()
+  const benutzer = await benutzerOderAntwort()
+  if (benutzer instanceof Response) return benutzer
 
   const formular = await anfrage.formData()
   const datei = formular.get('pruefbericht')

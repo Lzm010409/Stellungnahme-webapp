@@ -94,7 +94,7 @@ export class AutoixpertClient {
     }
     if (antwort.status === 401 || antwort.status === 403) {
       throw new AutoixpertFehler(
-        'Der API-Zugang wurde abgelehnt. Bitte den Token in den Einstellungen prüfen.',
+        'Der API-Zugang wurde abgelehnt. Bitte AUTOIXPERT_API_TOKEN in den Umgebungsvariablen prüfen — eine Einstellungsseite gibt es dafür nicht.',
         antwort.status,
       )
     }

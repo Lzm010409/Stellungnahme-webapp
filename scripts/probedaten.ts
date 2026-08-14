@@ -20,12 +20,14 @@ import {
   beleg,
   bild,
   eintrag,
+  eintragPlatzhalter,
   eintragVariante,
   fall,
   position,
   stellungnahme,
 } from '../src/db/schema'
 import { erzeugeDokument } from '../src/dokument/erzeugen'
+import { findePlatzhalter } from '../src/bibliothek/parser'
 
 const praefix = process.argv[2] ?? 'PROBE'
 const weg = process.argv.includes('--weg')
@@ -53,24 +55,67 @@ async function main() {
   const faelle = [
     {
       aktenzeichen: `${praefix}-0726/2011TG`,
+      /*
+        Die Schlüssel folgen der Schreibweise von autoiXpert und damit dem,
+        was `src/autoixpert/felder.ts` tatsächlich liest — `license_plate`,
+        nicht `licensePlate`; `mileage_meter`, nicht `mileage: {value}`;
+        `accident.circumstances`, nicht `accident.description`. Mit den
+        vorherigen Namen fielen sechs von zehn Angaben still durch das
+        `.loose()`-Schema, und die Probe zeigte einen Fall ohne Fahrzeug —
+        ein Bild, das mit der Anwendung nichts zu tun hatte.
+
+        Und: das Aktenzeichen steht in `token`.
+      */
       daten: {
         id: `${praefix}-f1`,
-        aktenzeichen: `${praefix}-0726/2011TG`,
+        token: `${praefix}-0726/2011TG`,
+        external_id: `${praefix}-extern-1`,
+        type: 'liability',
+        state: 'done',
+        order_date: '2026-05-20',
+        completion_date: '2026-05-28',
         car: {
           make: 'Volkswagen',
           model: 'Passat Variant 2.0 TDI',
-          licensePlate: 'OL-AB 1234',
+          license_plate: 'OL-AB 1234',
           vin: 'WVWZZZ3CZME000001',
-          firstRegistration: '2019-04-01',
-          mileage: { value: 84000, unit: 'km' },
+          first_registration_date: '2019-04-01',
+          mileage_meter: 84000,
+          mileage_unit: 'km',
+          service_book_complete: true,
+          last_service_date: '2025-11-03',
+          repaired_previous_damage: 'Heckstossfänger 2023 fachgerecht instandgesetzt',
+          damage_description: 'Beschädigung Front links, Kotflügel und Scheinwerferhalterung',
         },
-        claimant: { contactPerson: { organization: 'Autohaus Muster GmbH', lastName: 'Meier' } },
-        accident: { date: '2026-05-14', description: 'Auffahrunfall auf der B401' },
+        claimant: {
+          organization_name: 'Autohaus Muster GmbH',
+          last_name: 'Meier',
+          street_and_housenumber_or_lockbox: 'Musterweg 3',
+          zip: '26123',
+          city: 'Oldenburg',
+          email: 'kontakt@example.invalid',
+          phone: '0441 000000',
+        },
+        insurance: {
+          organization_name: 'Beispiel Versicherung AG',
+          zip: '30159',
+          city: 'Hannover',
+          case_number: `${praefix}-SN-4711`,
+        },
+        garage: { organization_name: 'Karosseriewerk Beispiel', zip: '26135', city: 'Oldenburg' },
+        author_of_damage: { last_name: 'Schulz', license_plate: 'WHV-XY 99', zip: '26382', city: 'Wilhelmshaven' },
+        accident: {
+          date: '2026-05-14',
+          location: 'B401 Höhe Abfahrt Wittmund',
+          circumstances: 'Auffahrunfall auf der B401',
+        },
       },
     },
     {
       aktenzeichen: `${praefix}-ohne-Angaben`,
-      daten: { id: `${praefix}-f2`, aktenzeichen: `${praefix}-ohne-Angaben` },
+      // Nur die Kennung, sonst nichts: die Detailseite muss leere Kästen
+      // erklären statt sie leer zu lassen.
+      daten: { id: `${praefix}-f2`, token: `${praefix}-ohne-Angaben` },
     },
     {
       // Absichtlich unbrauchbar: die Detailseite muss das aushalten.
@@ -154,6 +199,23 @@ async function main() {
       })
       .returning({ id: eintrag.id })
     eintragIds.push(neu!.id)
+
+    /*
+      Die Marke „N Platzh." in der Liste speist sich aus `eintrag_platzhalter`,
+      und diese Tabelle füllte bisher allein der Markdown-Import. Ein über
+      dieses Skript angelegter Eintrag zeigte deshalb keine Marke, obwohl
+      `[Kennzeichen]` und `[Bauteil]` sichtbar im Auszug danebenstanden — die
+      Probe bildete den Normalfall nicht ab. Dieselbe Erkennung wie der
+      Import, damit die Marke zum Text passt.
+    */
+    for (const p of findePlatzhalter(e.gegenargument, e.vorgehen ?? '', e.hinweise ?? '')) {
+      await db.insert(eintragPlatzhalter).values({
+        eintragId: neu!.id,
+        schluessel: p.schluessel,
+        art: p.art,
+        quelle: 'manuell',
+      })
+    }
 
     for (const [i, bezeichnung] of e.varianten.entries()) {
       await db.insert(eintragVariante).values({

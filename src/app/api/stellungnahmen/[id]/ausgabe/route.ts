@@ -1,4 +1,4 @@
-import { verlangeBenutzer } from '@/auth/sitzung'
+import { benutzerOderAntwort } from '@/app/api/wache'
 import { erzeugeAusgabe } from '@/stellungnahme/ausgabe'
 import { alsStrom } from '@/app/api/strom'
 
@@ -13,7 +13,8 @@ export async function POST(
   anfrage: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  await verlangeBenutzer()
+  const wache = await benutzerOderAntwort()
+  if (wache instanceof Response) return wache
   const { id } = await params
 
   let fassung: unknown = undefined

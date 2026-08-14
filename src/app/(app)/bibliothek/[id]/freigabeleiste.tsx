@@ -87,9 +87,20 @@ export function Freigabeleiste({ id, status, darfFreigeben, offeneBelege }: Eige
             Freigeben
           </button>
         ) : (
+          /*
+            Zurücknehmen entwertet die Prüfung eines anderen und verlangt
+            deshalb dieselbe Rolle wie das Erteilen. Der Knopf stand hier
+            früher offen für jeden — die Aktion hätte ihn ohnehin
+            abgewiesen, aber erst nach dem Klick.
+          */
           <button
             type="button"
-            disabled={laeuft}
+            disabled={laeuft || !darfFreigeben}
+            title={
+              !darfFreigeben
+                ? 'Eine Freigabe zurücknehmen darf nur, wer die Rolle „Freigeber" oder „Administrator" hat.'
+                : undefined
+            }
             onClick={() => fuehreAus(() => setzeStatus(id, 'entwurf'))}
           >
             Freigabe zurücknehmen

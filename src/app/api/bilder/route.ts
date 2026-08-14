@@ -1,4 +1,4 @@
-import { verlangeBenutzer } from '@/auth/sitzung'
+import { benutzerOderAntwort } from '@/app/api/wache'
 import { speichereBild } from '@/bilder/ablage'
 import { Bildfehler } from '@/bilder/lesen'
 
@@ -10,7 +10,8 @@ import { Bildfehler } from '@/bilder/lesen'
  * Vergleichsfoto zweier Lackierbereiche.
  */
 export async function POST(anfrage: Request): Promise<Response> {
-  const benutzer = await verlangeBenutzer()
+  const benutzer = await benutzerOderAntwort()
+  if (benutzer instanceof Response) return benutzer
 
   const formular = await anfrage.formData()
   const dateien = formular.getAll('bild').filter((d): d is File => d instanceof File && d.size > 0)

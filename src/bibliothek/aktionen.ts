@@ -61,15 +61,64 @@ export async function gebeFrei(id: string): Promise<AktionsErgebnis> {
   return { erfolg: 'Eintrag freigegeben.' }
 }
 
+/**
+ * Alle Statuswechsel ausser der Freigabe selbst.
+ *
+ * Zwei Dinge standen hier schief:
+ *
+ * Erstens durfte jeder Angemeldete einen freigegebenen Eintrag auf
+ * „Entwurf" zurücksetzen. Das ist der Weg an `gebeFrei` vorbei: Freigeben
+ * verlangt die Rolle, Zurücknehmen verlangte nichts — und wer zurücknimmt,
+ * entwertet die Prüfung eines anderen. Das Zurücknehmen einer Freigabe
+ * verlangt jetzt dieselbe Rolle wie das Erteilen. Die Wege, die von einem
+ * ungeprüften Eintrag ausgehen (Entwurf → Prüfung, Zurückziehen, zurück auf
+ * Entwurf), stehen weiterhin jedem offen.
+ *
+ * Zweitens löschte jeder Wechsel `freigegebenVon` und `freigegebenAm` —
+ * auch der von „Entwurf" nach „In Prüfung", wo gar keine Freigabe im Spiel
+ * ist. Bei einem Eintrag, der schon einmal freigegeben und dann wegen einer
+ * Textänderung auf Entwurf zurückgefallen war, verschwand damit beim
+ * nächsten harmlosen Wechsel die Spur, wer ihn seinerzeit gesichtet hatte.
+ * Gelöscht wird jetzt nur noch, was tatsächlich entwertet wird.
+ */
 export async function setzeStatus(
   id: string,
   status: 'entwurf' | 'pruefung' | 'zurueckgezogen',
 ): Promise<AktionsErgebnis> {
-  await verlangeBenutzer()
+  const zeilen = await db
+    .select({ status: eintrag.status })
+    .from(eintrag)
+    .where(eq(eintrag.id, id))
+    .limit(1)
+  const vorher = zeilen[0]
+  if (!vorher) return { fehler: 'Eintrag nicht gefunden.' }
+
+  const nimmtFreigabeZurueck = vorher.status === 'freigegeben'
+
+  try {
+    if (nimmtFreigabeZurueck) await verlangeFreigeber()
+    else await verlangeBenutzer()
+  } catch {
+    return {
+      fehler: nimmtFreigabeZurueck
+        ? 'Eine Freigabe zurücknehmen darf nur, wer die Rolle „Freigeber" oder „Administrator" hat.'
+        : 'Dafür fehlt die Anmeldung.',
+    }
+  }
+
+  if (vorher.status === status) {
+    return { erfolg: 'Der Eintrag stand schon auf diesem Status.' }
+  }
+
   await db
     .update(eintrag)
-    .set({ status, geaendertAm: new Date(), freigegebenVon: null, freigegebenAm: null })
+    .set({
+      status,
+      geaendertAm: new Date(),
+      ...(nimmtFreigabeZurueck ? { freigegebenVon: null, freigegebenAm: null } : {}),
+    })
     .where(eq(eintrag.id, id))
+
   revalidatePath('/bibliothek')
   revalidatePath(`/bibliothek/${id}`)
   return { erfolg: 'Status geändert.' }

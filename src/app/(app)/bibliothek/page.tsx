@@ -48,7 +48,10 @@ export default async function BibliothekSeite({
 
   const [eintraege, abschnitte, nachStatus] = await Promise.all([
     sucheEintraege(filter),
-    ladeAbschnitte(filter.bereich),
+    // Ohne den Abschnitt selbst: sonst bliebe in der Auswahlliste nur der
+    // gerade gewählte Abschnitt übrig, und ein Wechsel wäre nicht mehr
+    // möglich.
+    ladeAbschnitte({ suche: filter.suche, bereich: filter.bereich, status: filter.status }),
     zaehleNachStatus(),
   ])
 

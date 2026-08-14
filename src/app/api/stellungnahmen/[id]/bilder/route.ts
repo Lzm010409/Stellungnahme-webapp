@@ -1,4 +1,4 @@
-import { verlangeBenutzer } from '@/auth/sitzung'
+import { benutzerOderAntwort } from '@/app/api/wache'
 import { speichereBild } from '@/bilder/ablage'
 import { Bildfehler } from '@/bilder/lesen'
 
@@ -13,7 +13,8 @@ export async function POST(
   anfrage: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const benutzer = await verlangeBenutzer()
+  const benutzer = await benutzerOderAntwort()
+  if (benutzer instanceof Response) return benutzer
   const { id } = await params
 
   const formular = await anfrage.formData()

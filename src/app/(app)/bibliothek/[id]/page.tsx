@@ -15,6 +15,18 @@ const BEREICHSNAMEN: Record<string, string> = {
   sonderfall: 'Sonderfälle',
 }
 
+/*
+  Nur `migration` war übersetzt; alles andere fiel roh aus der Datenbank in
+  die Randspalte — „manuell", „ki_vorschlag", „aus_stellungnahme". Und
+  „Angelegt" liest sich wie ein Datum, steht aber für die Herkunft.
+*/
+const HERKUNFTSNAMEN: Record<string, string> = {
+  migration: 'Migration aus dem Altbestand',
+  manuell: 'von Hand angelegt',
+  ki_vorschlag: 'KI-Vorschlag',
+  aus_stellungnahme: 'aus einer Stellungnahme übernommen',
+}
+
 /**
  * Die Kennung kommt roh aus der Adresszeile. Ohne diese Prüfung ginge ein
  * `/bibliothek/unfug` als UUID-Vergleich an Postgres und käme als
@@ -242,8 +254,8 @@ export default async function EintragSeite({ params }: { params: Promise<{ id: s
             <dl className="kv">
               <dt>Quelle</dt>
               <dd>{e.quelldatei ?? '—'}</dd>
-              <dt>Angelegt</dt>
-              <dd>{e.herkunft === 'migration' ? 'Migration' : e.herkunft}</dd>
+              <dt>Angelegt durch</dt>
+              <dd>{HERKUNFTSNAMEN[e.herkunft] ?? e.herkunft}</dd>
               <dt>Fassung</dt>
               <dd>{e.version}</dd>
               {e.haeufigkeitText ? (
