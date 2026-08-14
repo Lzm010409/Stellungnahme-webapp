@@ -9,9 +9,13 @@ import { Kreisel } from '@/app/teile/anzeigen'
  * Wirft eine Stellungnahme weg.
  *
  * Mit Rückfrage, und die Rückfrage nennt den Betreff: „Löschen?" allein
- * beantwortet niemand richtig, wenn zehn Zeilen untereinander stehen. Was
- * die Aktion ablehnt — ein versendetes Schreiben —, steht danach als
- * Meldung da und nicht als stilles Nichts.
+ * beantwortet niemand richtig, wenn zehn Zeilen untereinander stehen.
+ *
+ * Was die Aktion ablehnt, steht als Meldung neben dem Knopf. Der eine Fall,
+ * den `loescheStellungnahme` ablehnt — ein versendetes Schreiben —, kommt
+ * hier allerdings nicht an: Liste und Detailseite zeigen den Knopf dort
+ * erst gar nicht. Wer wissen will, warum ein versendetes Schreiben sich
+ * nicht wegräumen lässt, erfährt es an dieser Stelle nicht.
  */
 export function Loeschknopf({
   stellungnahmeId,
@@ -45,6 +49,12 @@ export function Loeschknopf({
             const e = await loescheStellungnahme(stellungnahmeId)
             if (e.fehler) {
               setzeFehler(e.fehler)
+              // Auch der Fehlschlag ist eine Nachricht über den Stand der
+              // Dinge: „gibt es nicht mehr" heisst, dass diese Ansicht
+              // veraltet ist — etwa weil ein zweiter Tab dasselbe Schreiben
+              // schon gelöscht hat. Ohne das Auffrischen bliebe die
+              // Geisterzeile stehen und führte beim Anklicken ins Leere.
+              router.refresh()
               return
             }
             if (danach) router.push(danach)

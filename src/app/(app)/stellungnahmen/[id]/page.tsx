@@ -26,12 +26,25 @@ function falldatenWerte(daten: unknown): Record<string, string> {
   return platzhalterWerte(leseFalldaten(geprueft.data))
 }
 
+/**
+ * Eine Adresse wie `/stellungnahmen/unfug` ist keine Kennung.
+ *
+ * Ohne diese Prüfung geht der Text als Kennung an die Datenbank, und
+ * Postgres bricht die Abfrage mit „invalid input syntax for type uuid" ab:
+ * die Seite antwortete mit HTTP 500 und der allgemeinen Fehlerseite. Ein
+ * Tippfehler in der Adresse ist aber kein Störfall, sondern eine Seite, die
+ * es nicht gibt — und dafür steht die deutsche „nicht gefunden"-Seite.
+ */
+const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function StellungnahmeSeite({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  if (!KENNUNG.test(id)) notFound()
+
   const s = await ladeStellungnahme(id)
   if (!s) notFound()
 

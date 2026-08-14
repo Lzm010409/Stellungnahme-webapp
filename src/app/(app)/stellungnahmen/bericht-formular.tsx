@@ -25,13 +25,23 @@ export function BerichtFormular({
   const [stand, setzeStand] = useState<Fortschrittsstand | null>(null)
   const [meldung, setzeMeldung] = useState<{ text: string; fehler: boolean } | null>(null)
   const formularRef = useRef<HTMLFormElement>(null)
+  /**
+   * Die Sperre gegen den zweiten Klick.
+   *
+   * `laeuft` allein reicht dafür nicht: es hängt an `stand`, und der wird
+   * erst beim nächsten Rendern wirksam. Zwei Klicks kurz hintereinander
+   * liefen beide durch — gemessen: zwei POST auf `/auswerten` aus einem
+   * Doppelklick. Da die Stellungnahme erst am Ende des Vorgangs angelegt
+   * wird, entstünden daraus zwei Schreiben aus einem Prüfbericht, dazu zwei
+   * Modellaufrufe. Eine Ref wirkt sofort und ist deshalb die richtige
+   * Sperre.
+   */
+  const inArbeit = useRef(false)
 
   const laeuft = stand !== null && !stand.fehler
 
-  const werteAus = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formular = new FormData(e.currentTarget)
-
+  /** Gibt `true` zurück, wenn eine Stellungnahme entstanden ist. */
+  const fuehreAus = async (formular: FormData): Promise<boolean> => {
     setzeMeldung(null)
     const verlauf: string[] = []
     setzeStand({ anteil: 0.02, text: 'Datei wird übertragen …', verlauf })
@@ -42,14 +52,14 @@ export function BerichtFormular({
     } catch {
       setzeStand(null)
       setzeMeldung({ text: 'Die Verbindung ist abgerissen.', fehler: true })
-      return
+      return false
     }
 
     if (!antwort.ok && antwort.headers.get('content-type')?.includes('json')) {
       const { fehler } = (await antwort.json()) as { fehler?: string }
       setzeStand(null)
       setzeMeldung({ text: fehler ?? 'Die Auswertung ist gescheitert.', fehler: true })
-      return
+      return false
     }
 
     for await (const ereignis of leseEreignisse<Auswertungsereignis>(antwort)) {
@@ -68,19 +78,37 @@ export function BerichtFormular({
       if (ereignis.art === 'fehler') {
         setzeStand(null)
         setzeMeldung({ text: ereignis.fehler, fehler: true })
-        return
+        return false
       }
 
       setzeStand({ anteil: 1, text: 'Fertig — die Stellungnahme wird geöffnet …', verlauf: [] })
       if (ereignis.hinweis) setzeMeldung({ text: ereignis.hinweis, fehler: false })
       formularRef.current?.reset()
       router.push(`/stellungnahmen/${ereignis.stellungnahmeId}`)
-      return
+      return true
     }
 
     // Der Strom endete ohne Abschluss — das ist ein Abbruch, kein Erfolg.
     setzeStand(null)
     setzeMeldung({ text: 'Der Vorgang ist unterwegs abgebrochen.', fehler: true })
+    return false
+  }
+
+  const werteAus = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (inArbeit.current) return
+    inArbeit.current = true
+    const formular = new FormData(e.currentTarget)
+    let fertig = false
+    try {
+      fertig = await fuehreAus(formular)
+    } finally {
+      // Nach einem Fehlschlag darf sofort wieder abgeschickt werden — nach
+      // einem Erfolg nicht: dort läuft der Wechsel in den Schreibtisch
+      // noch, und ein Klick in diese Lücke legte ein zweites Schreiben aus
+      // demselben Prüfbericht an.
+      if (!fertig) inArbeit.current = false
+    }
   }
 
   return (
