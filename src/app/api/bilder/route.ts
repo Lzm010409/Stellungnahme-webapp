@@ -17,7 +17,15 @@ export async function POST(anfrage: Request): Promise<Response> {
   const dateien = formular.getAll('bild').filter((d): d is File => d instanceof File && d.size > 0)
 
   if (dateien.length === 0) {
-    return Response.json({ fehler: 'Keine Bilddatei erhalten.' }, { status: 400 })
+    return Response.json(
+      {
+        fehler:
+          formular.getAll('bild').length > 0
+            ? 'Die ausgewählte Datei ist leer.'
+            : 'Keine Bilddatei erhalten.',
+      },
+      { status: 400 },
+    )
   }
 
   const angelegt: string[] = []

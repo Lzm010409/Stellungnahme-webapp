@@ -21,7 +21,15 @@ export async function POST(
   const datei = formular.get('bild')
 
   if (!(datei instanceof File) || datei.size === 0) {
-    return Response.json({ fehler: 'Keine Bilddatei erhalten.' }, { status: 400 })
+    return Response.json(
+      {
+        fehler:
+          datei instanceof File
+            ? 'Die ausgewählte Datei ist leer.'
+            : 'Keine Bilddatei erhalten.',
+      },
+      { status: 400 },
+    )
   }
 
   try {

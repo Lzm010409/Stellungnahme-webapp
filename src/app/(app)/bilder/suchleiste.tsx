@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 /**
@@ -22,7 +22,25 @@ export function Suchleiste({
   const [laeuft, starte] = useTransition()
   const [suche, setzeSuche] = useState(begriff)
 
+  /**
+   * Das Feld muss der Adresse folgen, wenn diese sich von aussen ändert —
+   * Zurück-Taste, ein Verweis mit `?q=`, ein Aufruf aus der Kopfleiste.
+   * Sonst zeigte das Feld dauerhaft etwas anderes an als die Liste darunter.
+   *
+   * Die eigene Adressänderung aus der Entprellung unten ist davon
+   * ausgenommen: sie hinkt dem Feld naturgemäss hinterher, und sie zu
+   * übernehmen hiesse, in schnelles Tippen die zuletzt gesendete Fassung
+   * zurückzuschreiben.
+   */
+  const eigenesZiel = useRef(begriff)
+  const zuletztGesehen = useRef(begriff)
+  if (begriff !== zuletztGesehen.current) {
+    zuletztGesehen.current = begriff
+    if (begriff !== eigenesZiel.current) setzeSuche(begriff)
+  }
+
   const ziel = (q: string, t: string) => {
+    eigenesZiel.current = q
     const p = new URLSearchParams()
     if (q) p.set('q', q)
     if (t) p.set('thema', t)
@@ -36,6 +54,7 @@ export function Suchleiste({
     if (suche === begriff) return
     const zeit = setTimeout(() => starte(() => router.replace(ziel(suche, thema))), 250)
     return () => clearTimeout(zeit)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suche, begriff, thema, router])
 
   return (
@@ -69,7 +88,7 @@ export function Suchleiste({
             // Verzögerung oben die eben weggeräumte Suche sofort wieder her
             // — der Knopf machte sich selbst rückgängig.
             setzeSuche('')
-            starte(() => router.replace('/bilder'))
+            starte(() => router.replace(ziel('', '')))
           }}
         >
           Filter zurücksetzen

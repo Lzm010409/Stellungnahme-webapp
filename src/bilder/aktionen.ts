@@ -49,9 +49,32 @@ export async function uebernehmeInBildbibliothek(bildId: string): Promise<BildEr
   return { hinweis: 'In die Bildbibliothek übernommen — jetzt noch beschriften.' }
 }
 
-/** Nimmt ein Bild wieder aus der Bibliothek, ohne es zu löschen. */
+/**
+ * Nimmt ein Bild wieder aus der Bibliothek, ohne es zu löschen.
+ *
+ * Mit derselben Sperre wie beim Löschen — und aus demselben Grund, auch
+ * wenn der Knopf harmloser klingt. `ladeBilder` findet ein Bild nur, wenn es
+ * entweder zu genau diesem Schreiben gehört *oder* in der Bibliothek steht
+ * (`src/bilder/ablage.ts:104`). Ein Bibliotheksbild, das in einen Brief
+ * eingesetzt wurde, gehört zu keinem Schreiben; nimmt man es aus der
+ * Bibliothek, erfüllt es beide Bedingungen nicht mehr. Die Kennung steht
+ * dann weiter im Dokument, das Bild fällt aber aus dem Word-Dokument — und
+ * auf `/bilder` ist es nicht mehr zu finden, also auch nicht mehr
+ * zurückzuholen. Ein stiller Verlust, gegen den weder Meldung noch
+ * Rückgängig half.
+ */
 export async function ausBibliothekNehmen(bildId: string): Promise<BildErgebnis> {
   await verlangeBenutzer()
+
+  const anzahl = await wirdVerwendet(bildId)
+  if (anzahl > 0) {
+    return {
+      fehler:
+        `Dieses Bild steht in ${anzahl} ${anzahl === 1 ? 'Schreiben' : 'Schreiben'} — ` +
+        'aus der Bibliothek genommen fiele es dort aus dem Dokument. Nimm es dort zuerst heraus.',
+    }
+  }
+
   await db.update(bild).set({ inBibliothek: false }).where(eq(bild.id, bildId))
   revalidatePath('/bilder')
   return { hinweis: 'Aus der Bibliothek genommen. Das Bild selbst bleibt erhalten.' }
