@@ -33,7 +33,7 @@ export function Loeschknopf({
     <>
       <button
         type="button"
-        className="loeschknopf"
+        className="loeschknopf gefahr"
         disabled={laeuft}
         title={`„${betreff}" löschen`}
         aria-label={`„${betreff}" löschen`}

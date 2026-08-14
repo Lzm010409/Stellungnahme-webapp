@@ -45,7 +45,7 @@ export function Freigabeleiste({ id, status, darfFreigeben, offeneBelege }: Eige
         {status !== 'freigegeben' ? (
           <button
             type="button"
-            className="haupt"
+            className="haupt freigabe"
             disabled={laeuft || !darfFreigeben || gesperrt}
             onClick={() => fuehreAus(() => gebeFrei(id))}
             title={

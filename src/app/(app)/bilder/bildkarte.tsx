@@ -138,6 +138,7 @@ export function Bildkarte({ bild }: { bild: Bibliotheksbild }) {
             ) : null}
             <button
               type="button"
+              className="gefahr"
               disabled={laeuft}
               onClick={() => {
                 if (confirm('Dieses Bild endgültig löschen?')) {

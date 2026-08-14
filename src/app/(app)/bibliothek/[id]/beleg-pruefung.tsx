@@ -68,6 +68,7 @@ export function BelegPruefung({ eintragId, belege }: { eintragId: string; belege
                   <div style={{ display: 'flex', gap: 7 }}>
                     <button
                       type="button"
+                      className="freigabe"
                       disabled={laeuft}
                       style={{ padding: '4px 10px', fontSize: 12.5 }}
                       onClick={() => starte(async () => void (await bestaetigeBeleg(b.id, eintragId)))}
@@ -76,6 +77,7 @@ export function BelegPruefung({ eintragId, belege }: { eintragId: string; belege
                     </button>
                     <button
                       type="button"
+                      className="gefahr"
                       disabled={laeuft}
                       style={{ padding: '4px 10px', fontSize: 12.5 }}
                       onClick={() => starte(async () => void (await verwerfeBeleg(b.id, eintragId)))}

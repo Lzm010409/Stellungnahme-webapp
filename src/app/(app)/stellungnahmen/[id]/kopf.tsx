@@ -144,6 +144,7 @@ export function Kopfbereich(props: {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
         <button
           type="button"
+          className="haupt"
           disabled={laeuft}
           onClick={() =>
             starte(async () => {

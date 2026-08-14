@@ -243,7 +243,7 @@ export function Blase({
             nicht mitgedruckt.
           </p>
           <div className="blase-knoepfe">
-            <button type="button" disabled={laeuft} onClick={aufAufnehmen}>
+            <button type="button" className="freigabe" disabled={laeuft} onClick={aufAufnehmen}>
               Doch bestreiten
             </button>
             {/* Der Weg für eine Zeile, die gar keine Kürzung ist: dann soll
@@ -251,6 +251,7 @@ export function Blase({
                 aus dem Brief, aus dieser Leiste und aus dem Fall. */}
             <button
               type="button"
+              className="gefahr"
               disabled={laeuft}
               title="Die Position gehört nicht in diesen Fall — sie verschwindet ganz"
               onClick={aufEntfernen}
@@ -555,6 +556,7 @@ export function Blase({
             <div className="blase-knoepfe">
               <button
                 type="button"
+                className="haupt"
                 disabled={!eigenerText.trim()}
                 onClick={() => {
                   aufEinfuegen(eigenerText, {
@@ -601,6 +603,7 @@ export function Blase({
             {hatText ? (
               <button
                 type="button"
+                className="freigabe"
                 disabled={laeuft}
                 title="Aus diesem selbst geschriebenen Abschnitt einen Bibliotheks-Entwurf machen"
                 onClick={aufInBibliothek}

@@ -840,6 +840,7 @@ export function Schreibtisch({
           {!versendet ? (
             <button
               type="button"
+              className="freigabe"
               disabled={laeuft}
               onClick={() =>
                 starte(async () => {

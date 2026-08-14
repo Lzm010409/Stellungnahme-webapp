@@ -32,6 +32,22 @@
   --good: #0a6a49;
   --good-soft: #cfefe4;
 
+  /*
+   * Die Farben der Handlungen.
+   *
+   * Drei Bedeutungen, sonst nichts: blau trägt die Arbeit voran, grün gibt
+   * frei, rot löscht endgültig. Alles Übrige bleibt grau. Ausgemalt wird
+   * nur der Umriss — gefüllt wird erst unter dem Zeiger, im Augenblick vor
+   * dem Klick. So bleibt je Fläche genau ein lauter Knopf: der, der
+   * weiterführt.
+   */
+  --gefahr: #b23c17;
+  --gefahr-fest: #c1441c;
+  --gefahr-ink: #ffffff;
+  --freigabe: #0a6a49;
+  --freigabe-fest: #0a6a49;
+  --freigabe-ink: #ffffff;
+
   --schiene: #1e2f50;
   --schiene-ink: #869bc3;
   --menue: #f7f7f9;
@@ -76,6 +92,13 @@
     --good: #70d0af;
     --good-soft: #032318;
 
+    --gefahr: #f0a589;
+    --gefahr-fest: #b23c17;
+    --gefahr-ink: #ffffff;
+    --freigabe: #70d0af;
+    --freigabe-fest: #0d7a55;
+    --freigabe-ink: #ffffff;
+
     --schiene: #16203a;
     --schiene-ink: #6d80a6;
     --menue: #212529;
@@ -108,6 +131,13 @@
   --crit-soft: #2e150c;
   --good: #70d0af;
   --good-soft: #032318;
+
+  --gefahr: #f0a589;
+  --gefahr-fest: #b23c17;
+  --gefahr-ink: #ffffff;
+  --freigabe: #70d0af;
+  --freigabe-fest: #0d7a55;
+  --freigabe-ink: #ffffff;
 
   --schiene: #16203a;
   --schiene-ink: #6d80a6;
@@ -466,9 +496,70 @@ button.haupt:hover,
   color: var(--accent-ink);
 }
 
+/*
+ * Zerstörend: rot im Umriss, gefüllt erst unter dem Zeiger.
+ *
+ * Die Farbe ist nie das einzige Zeichen — jeder dieser Knöpfe sagt in
+ * Worten, was er tut, und fragt vor dem Vollzug nach. Rot steht
+ * ausschliesslich dort, wo etwas endgültig verschwindet; was sich
+ * zurücknehmen lässt (nicht bestreiten, aus der Bibliothek nehmen,
+ * zurückziehen), bleibt grau.
+ */
+button.gefahr,
+.knopf.gefahr {
+  border-color: var(--gefahr);
+  color: var(--gefahr);
+}
+
+button.gefahr:hover:not(:disabled),
+button.gefahr:focus-visible,
+.knopf.gefahr:hover {
+  background: var(--gefahr-fest);
+  border-color: var(--gefahr-fest);
+  color: var(--gefahr-ink);
+}
+
+/* Freigeben und bestätigen: dasselbe in Grün. */
+button.freigabe,
+.knopf.freigabe {
+  border-color: var(--freigabe);
+  color: var(--freigabe);
+}
+
+button.freigabe:hover:not(:disabled),
+button.freigabe:focus-visible,
+.knopf.freigabe:hover {
+  background: var(--freigabe-fest);
+  border-color: var(--freigabe-fest);
+  color: var(--freigabe-ink);
+}
+
 button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+/*
+ * Wo die Freigabe selbst die Handlung der Fläche ist — auf der Karte
+ * „Freigabe" —, ist sie gefüllt wie ein Hauptknopf, nur in Grün.
+ */
+button.haupt.freigabe,
+.knopf.haupt.freigabe {
+  background: var(--freigabe-fest);
+  border-color: var(--freigabe-fest);
+  color: var(--freigabe-ink);
+}
+
+button.haupt.freigabe:hover:not(:disabled) {
+  filter: brightness(1.12);
+  color: var(--freigabe-ink);
+}
+
+/* Ein gesperrter Knopf droht nicht. Die Farbe weicht dem Grau. */
+button.gefahr:not(.haupt):disabled,
+button.freigabe:not(.haupt):disabled {
+  border-color: var(--line);
+  color: var(--ink-soft);
 }
 
 button:disabled:hover {
@@ -557,13 +648,6 @@ button.haupt:disabled:hover {
 .loeschknopf {
   padding: 4px 9px;
   font-size: 12.5px;
-  color: var(--ink-soft);
-  background: var(--surface);
-}
-
-.loeschknopf:hover:not(:disabled) {
-  color: var(--crit);
-  border-color: currentColor;
 }
 
 .zeile {

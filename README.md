@@ -277,6 +277,31 @@ läge sonst vielfach in der Datenbank, und eine berichtigte Beschreibung
 erreichte nur eine der Kopien. Deshalb lässt sich ein Bild auch nicht
 löschen, solange es in einem Schreiben steht.
 
+## Die Farbe einer Schaltfläche
+
+Drei Bedeutungen, sonst nichts:
+
+| Farbe | Bedeutung | Beispiele |
+| --- | --- | --- |
+| **Blau, gefüllt** | trägt die Arbeit voran — je Fläche genau eine | Dokument erzeugen · Prüfbericht auswerten · In den Brief einfügen · Speichern |
+| **Grün** | gibt frei, bestätigt, meldet Vollzug | Freigeben (gefüllt) · Bestätigen · Versendet · Doch bestreiten · In die Bibliothek |
+| **Rot** | löscht endgültig | Löschen · Position entfernen · Entfernen (Fundstelle) |
+| Grau | alles Übrige | Fett, Kursiv, Fokus, Zurücksetzen, Nicht bestreiten, Aus der Bibliothek nehmen |
+
+Rot steht **nur dort, wo etwas endgültig verschwindet**. Was sich
+zurücknehmen lässt — „Nicht bestreiten", „Aus der Bibliothek nehmen",
+„Zurückziehen" — bleibt grau; sonst stumpft die Warnung ab, und der eine
+Knopf, der wirklich löscht, geht in der Menge unter.
+
+Gefärbt wird der **Umriss**, gefüllt erst unter dem Zeiger — im Augenblick
+vor dem Klick. So bleibt je Fläche genau ein lauter Knopf: der, der
+weiterführt. Ein gesperrter Knopf lässt seine Farbe fahren und wird grau:
+Er droht nicht mit etwas, das er gerade nicht tut.
+
+Die Farbe ist nie das einzige Zeichen. Jeder rote Knopf sagt in Worten, was
+er löscht, und fragt vorher nach; die Rückfrage nennt den Gegenstand beim
+Namen.
+
 ## Zwei Proben im Browser
 
 Zwei Skripte fahren die Anwendung in einem echten Browser:

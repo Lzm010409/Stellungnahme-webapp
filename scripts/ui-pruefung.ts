@@ -183,6 +183,7 @@ async function main() {
   await teilBibliothek(seite)
   await teilFaelle(seite)
   await teilBilder(seite, bild)
+  await teilFarben(seite)
   await teilStellungnahmenliste(seite)
   await teilSchreibtisch(seite, bild)
   await teilZerstoerend(seite, await legeWegwerfAn())
@@ -621,6 +622,71 @@ async function teilBilder(seite: Page, bildPfad: string) {
     const meldung = await seite.locator('.bildkarte .hinweis').first().innerText().catch(() => '')
     if ((await seite.locator('.bildkarte').count()) === vorher && !meldung.trim()) {
       melde('fehler', 'Löschen bleibt ohne Wirkung und ohne Meldung.')
+    }
+  })
+}
+
+/* ---------------- Farbe der Handlungen ---------------- */
+
+/**
+ * Trägt jede Schaltfläche die Farbe ihrer Bedeutung?
+ *
+ * Blau führt die Arbeit voran, grün gibt frei, rot löscht endgültig, grau
+ * ist alles Übrige. Geprüft wird die Klasse, nicht der Farbwert: die Farbe
+ * selbst steht in den Themenblöcken und wird dort geprüft.
+ */
+async function teilFarben(seite: Page) {
+  abschnitt('Farbe der Handlungen')
+
+  const hatKlasse = async (wahl: string, klasse: string) =>
+    seite
+      .locator(wahl)
+      .first()
+      .evaluate((e, k) => e.classList.contains(k), klasse)
+      .catch(() => false)
+
+  await pruefe('Löschen ist rot, Speichern blau, Herausnehmen grau', async () => {
+    await seite.goto(`${BASIS}/bilder`, { waitUntil: 'networkidle' })
+    const karte = seite.locator('.bildkarte').first()
+    if ((await karte.count()) === 0) return
+    if ((await karte.locator('.bildkarte-formular').count()) === 0) {
+      await karte.locator('button.bildkarte-bild').click()
+      await seite.waitForTimeout(400)
+    }
+    if (!(await hatKlasse('.bildkarte button:has-text("Löschen")', 'gefahr'))) {
+      melde('fehler', '„Löschen" an der Bildkarte trägt nicht die Farbe des Löschens.')
+    }
+    if (!(await hatKlasse('.bildkarte-knoepfe button:has-text("Speichern")', 'haupt'))) {
+      melde('unschoen', '„Speichern" an der Bildkarte ist nicht als Hauptknopf gezeichnet.')
+    }
+    if (await hatKlasse('.bildkarte button:has-text("Aus der Bibliothek nehmen")', 'gefahr')) {
+      melde(
+        'unschoen',
+        '„Aus der Bibliothek nehmen" trägt Rot, obwohl es sich zurücknehmen lässt.',
+      )
+    }
+  })
+
+  await pruefe('Freigeben ist grün, Zurückziehen grau', async () => {
+    await seite.goto(`${BASIS}/bibliothek`, { waitUntil: 'networkidle' })
+    await seite.locator('.zeile').first().click()
+    await seite.waitForURL(/\/bibliothek\/[0-9a-f-]{36}/, { timeout: 15000 }).catch(() => {})
+    await seite.waitForLoadState('networkidle')
+    const frei = seite.locator('button:has-text("Freigeben")')
+    if ((await frei.count()) > 0 && !(await hatKlasse('button:has-text("Freigeben")', 'freigabe'))) {
+      melde('fehler', '„Freigeben" trägt nicht die Farbe der Freigabe.')
+    }
+    const zurueck = seite.locator('button:has-text("Zurückziehen")')
+    if ((await zurueck.count()) > 0 && (await hatKlasse('button:has-text("Zurückziehen")', 'gefahr'))) {
+      melde('unschoen', '„Zurückziehen" trägt Rot, obwohl nichts gelöscht wird.')
+    }
+  })
+
+  await pruefe('Löschknopf der Liste ist rot', async () => {
+    await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
+    if ((await seite.locator('.loeschknopf').count()) === 0) return
+    if (!(await hatKlasse('.loeschknopf', 'gefahr'))) {
+      melde('fehler', 'Der Löschknopf in der Liste trägt nicht die Farbe des Löschens.')
     }
   })
 }
@@ -1072,6 +1138,21 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     await seite.waitForTimeout(1800)
     if ((await seite.locator('.brief-flaeche .d-abschnitt').count()) !== abschnitteVorher) {
       melde('fehler', 'Nach dem Wiederaufnehmen stimmt die Zahl der Abschnitte nicht.')
+    }
+  })
+
+  await pruefe('Farbe der Handlungen in der Anmerkung', async () => {
+    const nichtBestreiten = seite.locator('.blase.auf button:has-text("Nicht bestreiten")')
+    if ((await nichtBestreiten.count()) > 0) {
+      const rot = await nichtBestreiten.evaluate((e) => e.classList.contains('gefahr'))
+      if (rot) {
+        melde('unschoen', '„Nicht bestreiten" trägt Rot, obwohl der Abschnitt stehen bleibt.')
+      }
+    }
+    const entfernen = seite.locator('.blase.auf button:has-text("Position entfernen")')
+    if ((await entfernen.count()) > 0) {
+      const rot = await entfernen.evaluate((e) => e.classList.contains('gefahr'))
+      if (!rot) melde('fehler', '„Position entfernen" trägt nicht die Farbe des Löschens.')
     }
   })
 
