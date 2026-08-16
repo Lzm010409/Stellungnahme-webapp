@@ -769,6 +769,24 @@ async function teilStellungnahmenliste(seite: Page) {
   })
 }
 
+/**
+ * Die erste Zeile, in der zwei Fassungen auseinandergehen — als Beleg.
+ *
+ * Ein Unterschied ohne Fundstelle ist eine Behauptung: er zwingt dazu, den
+ * Zustand von Hand nachzubauen, und nach dreissig vorangegangenen
+ * Handgriffen gelingt das nicht.
+ */
+function erstesAbweichen(vorher: string, nachher: string): string {
+  const a = vorher.split('\n')
+  const b = nachher.split('\n')
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = (a[i] ?? '').trim()
+    const y = (b[i] ?? '').trim()
+    if (x !== y) return `(Zeile ${i + 1}: „${x.slice(0, 90)}" wurde zu „${y.slice(0, 90)}")`
+  }
+  return '(nur Leerraum unterscheidet sich)'
+}
+
 /** Was gerade offen ist — als Beleg für eine Meldung. */
 async function zustandDerAnmerkung(seite: Page): Promise<string> {
   const klassen = await seite
@@ -1433,7 +1451,10 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     await seite.waitForTimeout(1200)
     const nachher = await briefText()
     if (nachher.replace(/\s+/g, ' ') !== vorher.replace(/\s+/g, ' ')) {
-      melde('fehler', 'Nach dem Neuladen steht nicht mehr dasselbe im Brief.')
+      // Mit der Stelle, an der es auseinandergeht. „Steht nicht mehr
+      // dasselbe" allein zwingt zum Nachbauen von Hand — und der Nachbau
+      // trifft den Zustand nach dreissig vorangegangenen Handgriffen nie.
+      melde('fehler', `Nach dem Neuladen steht nicht mehr dasselbe im Brief. ${erstesAbweichen(vorher, nachher)}`)
     }
   })
 
