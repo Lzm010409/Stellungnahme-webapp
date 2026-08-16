@@ -657,7 +657,7 @@ async function teilBilder(seite: Page, bildPfad: string) {
       .first()
       .innerText()
       .catch(() => '')
-    if (/Schreiben/.test(abgewiesen)) {
+    if (/Schreiben/.test(abgewiesen) || /löschen/i.test(abgewiesen)) {
       await seite.screenshot({ path: `${ZIEL}/bild-in-verwendung.png` })
       return
     }

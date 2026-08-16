@@ -75,6 +75,35 @@ export async function ausBibliothekNehmen(bildId: string): Promise<BildErgebnis>
     }
   }
 
+  /*
+    Und die zweite Falle, dieselbe Sorte stiller Verlust.
+
+    Die Bildbibliothek zeigt zweierlei: was in ihr steht, und was aus einem
+    Schreiben stammt und noch nicht übernommen wurde. Ein Bild, das direkt
+    in die Bibliothek geladen wurde, gehört zu keinem Schreiben. Nimmt man
+    es aus der Bibliothek, erfüllt es keine der beiden Bedingungen mehr:
+    es verschwindet von der Seite, ist über nichts mehr zu finden und
+    lässt sich auch nicht zurückholen. Der Knopf verspricht „das Bild
+    selbst bleibt erhalten" — erhalten schon, auffindbar nicht.
+
+    Wer es wirklich loswerden will, hat den Löschknopf daneben. Der sagt,
+    was er tut.
+  */
+  const [zeile] = await db
+    .select({ stellungnahmeId: bild.stellungnahmeId })
+    .from(bild)
+    .where(eq(bild.id, bildId))
+    .limit(1)
+
+  if (!zeile) return { fehler: 'Dieses Bild gibt es nicht mehr.' }
+  if (!zeile.stellungnahmeId) {
+    return {
+      fehler:
+        'Dieses Bild gehört zu keinem Schreiben — aus der Bibliothek genommen wäre es ' +
+        'nirgends mehr zu finden und nicht zurückzuholen. Wenn es weg soll, dann löschen.',
+    }
+  }
+
   await db.update(bild).set({ inBibliothek: false }).where(eq(bild.id, bildId))
   revalidatePath('/bilder')
   return { hinweis: 'Aus der Bibliothek genommen. Das Bild selbst bleibt erhalten.' }
