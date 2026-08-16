@@ -52,6 +52,16 @@ export interface Abschnittsstand {
   hatText: boolean
   /** Nicht bestritten: steht im Dokument, aber nicht im Schreiben. */
   ausgelassen: boolean
+  /**
+   * Die Überschrift, wie sie im Brief steht — leer, solange keine
+   * geschrieben wurde.
+   *
+   * Sie ist der Name, den ein Mensch der Position gegeben hat, und geht
+   * darum überall dort vor, wo die Oberfläche die Position benennt. Der
+   * Name aus dem Prüfbericht bleibt daneben stehen, wo seine Herkunft
+   * etwas erklärt.
+   */
+  ueberschrift: string
 }
 
 /** Die Abschnitte in Dokumentreihenfolge — daraus entsteht die Nummerierung. */
@@ -69,6 +79,9 @@ export function abschnittsReihenfolge(editor: Editor): Abschnittsstand[] {
         positionId,
         hatText: text.trim().length > 0,
         ausgelassen: node.attrs.ausgelassen === true,
+        ueberschrift: node.firstChild?.type.name === KNOTEN.ueberschrift
+          ? node.firstChild.textContent.trim()
+          : '',
       })
     }
     return false

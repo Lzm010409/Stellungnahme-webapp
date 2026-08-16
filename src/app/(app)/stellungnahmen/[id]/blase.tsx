@@ -101,6 +101,7 @@ function euro(wert: string | null): string {
 
 export function Blase({
   position,
+  ueberschrift,
   vorschlag,
   befunde,
   nummer,
@@ -121,6 +122,15 @@ export function Blase({
   aufBildEinfuegen,
 }: {
   position: PositionAnzeige
+  /**
+   * Die Überschrift, wie sie im Brief steht.
+   *
+   * Sie geht dem Namen aus dem Prüfbericht vor: was der Verfasser
+   * geschrieben hat, ist der Name, unter dem er die Position kennt. Der
+   * Prüfbericht-Name bleibt darunter als Herkunft stehen, solange beide
+   * auseinandergehen — er ist die Brücke zum Papier des Versicherers.
+   */
+  ueberschrift: string
   vorschlag?: Vorschlag
   befunde: Befund[]
   nummer: number | null
@@ -197,7 +207,7 @@ export function Blase({
     return (
       <button type="button" className={`blase zu ${imBrief ? '' : 'draussen'}`} onClick={aufAktivieren}>
         <span className="blase-nummer">{nummer ?? '—'}</span>
-        <span className="blase-titel">{position.bezeichnung}</span>
+        <span className="blase-titel">{ueberschrift || position.bezeichnung}</span>
         {/*
           Drei nackte Zahlen nebeneinander, jede in einer anderen Farbe: rot
           die sperrenden Befunde, orange die zu prüfenden, blau die Zahl der
@@ -249,11 +259,23 @@ export function Blase({
     <div className={`blase auf ${imBrief ? '' : 'draussen'}`}>
       <div className="blase-kopf">
         <span className="blase-nummer">{nummer ?? '—'}</span>
-        <span className="blase-titel">{position.bezeichnung}</span>
+        <span className="blase-titel">{ueberschrift || position.bezeichnung}</span>
         <span className="blase-betrag">
           {position.differenz ? `−${euro(position.differenz)}` : ''}
         </span>
       </div>
+
+      {/*
+        Weicht die Überschrift im Brief vom Namen im Prüfbericht ab, steht
+        beides da. Der Prüfbericht-Name ist die Brücke zum Papier des
+        Versicherers: wer beim Telefonat „Position 3" nachschlägt, sucht
+        dort nach dessen Wortlaut, nicht nach unserem.
+      */}
+      {ueberschrift && ueberschrift !== position.bezeichnung ? (
+        <p className="unterzeile" style={{ margin: '0 0 8px' }}>
+          Im Prüfbericht: {position.bezeichnung}
+        </p>
+      ) : null}
 
       {position.begruendungVersicherer ? (
         <div className="blase-zitat">„{position.begruendungVersicherer}"</div>

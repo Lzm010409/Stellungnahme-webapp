@@ -23,6 +23,7 @@ export const KNOTEN = {
   ergebnis: 'ergebnis',
   signatur: 'signatur',
   bild: 'bild',
+  platzhalter: 'platzhalter',
 } as const
 
 /** Die Marke, die eingefügten Bibliothekstext als solchen erkennbar hält. */
@@ -204,8 +205,45 @@ export function* alleKnoten(wurzel: Knoten): Generator<Knoten> {
 }
 
 /** Sammelt den reinen Text eines Knotens. */
+/**
+ * Die Angaben eines Platzhalterknotens.
+ *
+ * `art` trennt zwei Dinge, die früher gleich aussahen: ein **Wert** ist
+ * etwas, das eingesetzt wird (`[Kennzeichen]`), eine **Regieanweisung** ist
+ * ein Arbeitsauftrag an den Schreibenden (`[Mit Screenshots belegen]`), der
+ * im fertigen Brief nichts zu suchen hat. Beide sperren den Export, aber
+ * aus verschiedenen Gründen — und man tut mit ihnen Verschiedenes.
+ */
+export interface Platzhalterattribute {
+  schluessel: string
+  art: 'wert' | 'regieanweisung'
+}
+
+export function platzhalterattribute(k: Elementknoten): Platzhalterattribute | null {
+  const a = k.attrs
+  if (!a || typeof a.schluessel !== 'string' || !a.schluessel.trim()) return null
+  return {
+    schluessel: a.schluessel.trim(),
+    art: a.art === 'regieanweisung' ? 'regieanweisung' : 'wert',
+  }
+}
+
+export function istPlatzhalter(k: Knoten): boolean {
+  return !istText(k) && k.type === KNOTEN.platzhalter
+}
+
 export function knotenText(k: Knoten): string {
   if (istText(k)) return k.text
+  /*
+    Ein Platzhalter trägt keinen Textinhalt — sein Schlüssel steckt in den
+    Angaben. Für alles, was den Baum als Text liest (Ausgabe, Wächter,
+    Suche), muss er trotzdem als `[Schlüssel]` erscheinen: R1 sperrt den
+    Export über genau diese Klammern, und das soll so bleiben.
+  */
+  if (istPlatzhalter(k)) {
+    const a = platzhalterattribute(k as Elementknoten)
+    return a ? `[${a.schluessel}]` : ''
+  }
   const teile = kinder(k).map(knotenText)
   // Absätze innerhalb eines Knotens trennen, sonst laufen sie zusammen.
   return k.type === KNOTEN.absatz || k.type === KNOTEN.ueberschrift

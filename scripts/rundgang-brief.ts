@@ -101,6 +101,26 @@ const ZIEL = process.argv[3] ?? '/tmp/rundgang-brief'
 const EMAIL = process.env.RUNDGANG_EMAIL ?? 'lgollenstede@gollenstede-sachverstand.de'
 const PASSWORT = process.env.RUNDGANG_PASSWORT ?? 'TestNurLokal!2026'
 
+/**
+ * Dieselbe Wahl wie beim Zurücksetzen: nicht versendet, mit Positionen.
+ *
+ * Ein versendetes Schreiben ist geschlossen und nimmt keine Eingabe an, ein
+ * Schreiben ohne Position hat keinen Abschnitt, in den sich schreiben
+ * liesse. In beiden Fällen scheiterte der Rundgang an der Wahl des
+ * Prüflings, nicht an der Anwendung.
+ */
+async function offeneZeile(seite: Page) {
+  const stelle = await seite.locator('.zeile').evaluateAll((zeilen) =>
+    zeilen.findIndex((z) => {
+      const text = (z as HTMLElement).innerText
+      if (/versendet/i.test(text)) return false
+      const treffer = text.match(/(\d+)\s+Position/)
+      return Boolean(treffer) && Number(treffer![1]) > 0
+    }),
+  )
+  return seite.locator('.zeile').nth(stelle >= 0 ? stelle : 0)
+}
+
 async function anmelden(seite: Page) {
   await seite.goto(`${BASIS}/anmelden`, { waitUntil: 'networkidle' })
   await seite.fill('#email', EMAIL)
@@ -111,8 +131,58 @@ async function anmelden(seite: Page) {
   ])
 }
 
+/**
+ * Setzt den Prüfling auf seinen Ausgangsstand zurück.
+ *
+ * Der Rundgang greift sich das oberste Schreiben der Übersicht und
+ * bearbeitet es — und zwar bei jedem Lauf dasselbe. Die Spuren blieben
+ * darin stehen: das Bild lag schon auf der kleinsten Breite, die
+ * Überschrift war vom letzten Mal gelöscht, im Brief stand die Ergänzung
+ * von vorgestern. Der Lauf beanstandete dann Dinge, die er selbst
+ * angerichtet hatte — „das Bild lässt sich nicht mehr schmaler ziehen"
+ * stimmte, war aber keine Aussage über die Anwendung.
+ *
+ * Das Dokument wird deshalb vor dem Lauf entfernt. Es wird beim nächsten
+ * Öffnen aus den Bausteinen der Positionen neu gebaut; die Stellungnahme
+ * selbst, ihre Positionen und ihr Fall bleiben unberührt.
+ *
+ * Ohne Datenbankzugang wird nichts zurückgesetzt — dann läuft der Rundgang
+ * wie bisher und sagt es an.
+ */
+async function setzePrueflingZurueck(): Promise<string> {
+  if (!process.env.DATABASE_URL) {
+    return 'ohne Datenbankzugang — der Prüfling behält die Spuren des letzten Laufs'
+  }
+
+  const { db } = await import('../src/db/index')
+  const { stellungnahme, position } = await import('../src/db/schema')
+  const { and, desc, eq, isNull, sql } = await import('drizzle-orm')
+
+  const [ziel] = await db
+    .select({ id: stellungnahme.id, betreff: stellungnahme.betreff })
+    .from(stellungnahme)
+    .where(
+      and(
+        isNull(stellungnahme.versendetAm),
+        sql`exists (select 1 from ${position} p where p.stellungnahme_id = ${sql.identifier('stellungnahme')}.${sql.identifier('id')})`,
+      ),
+    )
+    .orderBy(desc(stellungnahme.erstelltAm))
+    .limit(1)
+
+  if (!ziel) return 'kein geeigneter Prüfling gefunden'
+
+  await db
+    .update(stellungnahme)
+    .set({ dokument: null, dokumentStand: 0 })
+    .where(eq(stellungnahme.id, ziel.id))
+
+  return `„${ziel.betreff ?? 'ohne Betreff'}" auf den Ausgangsstand gesetzt`
+}
+
 async function main() {
   mkdirSync(ZIEL, { recursive: true })
+  console.log(`  Prüfling: ${await setzePrueflingZurueck()}`)
 
   const browser = await chromium.launch({
     executablePath:
@@ -175,7 +245,7 @@ async function main() {
   }
 
   await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-  await seite.locator('.zeile').first().click()
+  await (await offeneZeile(seite)).click()
   await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
   await seite.waitForTimeout(600)
   await schritt('1-schreibtisch')
@@ -474,7 +544,7 @@ async function main() {
   const seite2 = await dunkel.newPage()
   await anmelden(seite2)
   await seite2.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-  await seite2.locator('.zeile').first().click()
+  await (await offeneZeile(seite2)).click()
   await seite2.waitForSelector('.brief-flaeche', { timeout: 20000 })
   await seite2.waitForTimeout(600)
   await seite2.screenshot({ path: `${ZIEL}/10-schreibtisch-dunkel.png`, fullPage: true })

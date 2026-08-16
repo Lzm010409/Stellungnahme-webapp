@@ -20,6 +20,9 @@ import { Placeholder } from '@tiptap/extensions'
 import { ERGEBNIS_ABSAETZE, SIGNATUR } from '@/export/hausstil'
 import { BILD_BREITE_STANDARD, KNOTEN, MARKE_BIBLIOTHEK } from './typen'
 import { BildAnsicht } from '@/app/(app)/stellungnahmen/[id]/bild-ansicht'
+import { PlatzhalterKachel } from '@/app/(app)/stellungnahmen/[id]/platzhalter-kachel'
+import { zerlegeMitPlatzhaltern } from './platzhalter'
+import { klassifiziereKlammerausdruck } from '@/bibliothek/parser'
 
 /**
  * Der Rahmen des Schreibens ist fest.
@@ -260,6 +263,123 @@ export const Bild = Node.create({
   },
 })
 
+/**
+ * Ein Platzhalter — eine Angabe, die noch fehlt.
+ *
+ * `atom: true` ist der ganze Punkt: der Knoten hat keinen Textinhalt, in
+ * den die Schreibmarke hineinlaufen könnte, und er lässt sich nur ganz
+ * löschen. Vorher standen Platzhalter als gewöhnlicher Text im Brief; eine
+ * mitgelöschte Klammer brachte damit den Wächter R1 zum Schweigen, der über
+ * genau diese Klammern sucht.
+ *
+ * In der Ausgabe erscheint er wieder als `[Schlüssel]` — dafür sorgt
+ * `knotenText` in `typen.ts`. Nach aussen ändert sich damit nichts: die
+ * Word-Datei, die Klartextfassung und alle vier Wächter sehen denselben
+ * Text wie zuvor. Auch das `renderHTML` trägt die Klammern, damit ein
+ * Ausschneiden in eine fremde Anwendung nichts verschluckt.
+ */
+export const Platzhalter = Node.create({
+  name: KNOTEN.platzhalter,
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+
+  addOptions: () => ({ werte: {} as Record<string, string> }),
+
+  addAttributes: () => ({
+    schluessel: {
+      default: '',
+      parseHTML: (el: HTMLElement) => el.getAttribute('data-schluessel') ?? '',
+      renderHTML: (attrs: Record<string, unknown>) => ({
+        'data-schluessel': String(attrs.schluessel ?? ''),
+      }),
+    },
+    art: {
+      default: 'wert',
+      parseHTML: (el: HTMLElement) => el.getAttribute('data-art') ?? 'wert',
+      renderHTML: (attrs: Record<string, unknown>) => ({ 'data-art': String(attrs.art ?? 'wert') }),
+    },
+  }),
+
+  parseHTML: () => [{ tag: 'span[data-platzhalter]' }],
+  renderHTML: ({ HTMLAttributes, node }) => [
+    'span',
+    mergeAttributes(HTMLAttributes, { 'data-platzhalter': '', class: 'd-platzhalter' }),
+    `[${String(node.attrs.schluessel ?? '')}]`,
+  ],
+
+  addNodeView() {
+    return ReactNodeViewRenderer(PlatzhalterKachel)
+  },
+})
+
+/**
+ * Hält die Platzhalter nach, während geschrieben wird.
+ *
+ * Beim Öffnen eines Schreibens wandelt `wandlePlatzhalterInKnoten` die
+ * eckigen Klammern um. Hier passiert dasselbe für alles, was danach
+ * hineinkommt: getippt, eingefügt, aus der Bibliothek übernommen. Eine
+ * Regel an zwei Orten wäre zwei Regeln — beide benutzen deshalb
+ * `zerlegeMitPlatzhaltern`.
+ *
+ * Betreff und Anrede bleiben aussen vor: dort lässt das Schema nur Text zu.
+ * Und ausgelassen wird auch, was der Verfasser gerade tippt — solange die
+ * Schreibmarke in der Klammer steht, wäre eine Umwandlung mitten im Wort
+ * eine Bevormundung. Erst wenn er die Stelle verlässt, greift sie.
+ */
+export const Platzhalterwandler = Extension.create({
+  name: 'platzhalterwandler',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        appendTransaction(vorgaenge, _alt, neu) {
+          if (!vorgaenge.some((v) => v.docChanged)) return null
+
+          const schreibmarke = neu.selection.from
+          const aenderungen: { von: number; bis: number; stuecke: ReturnType<typeof zerlegeMitPlatzhaltern> }[] = []
+
+          neu.doc.descendants((knoten, pos, elternteil) => {
+            if (!knoten.isText || !knoten.text) return true
+            const eltern = elternteil?.type.name
+            if (eltern === KNOTEN.betreff || eltern === KNOTEN.anrede) return false
+
+            const stuecke = zerlegeMitPlatzhaltern(knoten.text)
+            if (stuecke.every((s) => s.art === 'text')) return true
+
+            // Steht die Schreibmarke in diesem Textstück, wird nichts
+            // angefasst: sonst schnappt die Klammer zu, während noch
+            // getippt wird.
+            if (schreibmarke > pos && schreibmarke < pos + knoten.nodeSize) return true
+
+            aenderungen.push({ von: pos, bis: pos + knoten.nodeSize, stuecke })
+            return true
+          })
+
+          if (aenderungen.length === 0) return null
+
+          const tr = neu.tr
+          // Von hinten nach vorn, damit die vorderen Stellen gültig bleiben.
+          for (const a of [...aenderungen].reverse()) {
+            const teile = a.stuecke.map((s) =>
+              s.art === 'text'
+                ? neu.schema.text(s.text)
+                : neu.schema.nodes[KNOTEN.platzhalter]!.create({
+                    schluessel: s.schluessel,
+                    art: klassifiziereKlammerausdruck(s.schluessel),
+                  }),
+            )
+            tr.replaceWith(a.von, a.bis, teile)
+          }
+          tr.setMeta('addToHistory', false)
+          return tr.docChanged ? tr : null
+        },
+      }),
+    ]
+  },
+})
+
 /** Das Ereignis, mit dem eine Marke im Brief ihre Position meldet. */
 export const EREIGNIS_MARKE = 'abschnittsmarke'
 
@@ -465,11 +585,34 @@ function einleitungsstrecke(doc: PmNode): { von: number; bis: number; leer: bool
   return { von, bis: bis ?? von, leer }
 }
 
-/** Ein leerer Abschnitt mit denselben Angaben wie der verlorene. */
-function leererAbschnitt(schema: PmSchema, attrs: Record<string, unknown>): PmNode {
-  const bezeichnung = typeof attrs.bezeichnung === 'string' ? attrs.bezeichnung : ''
-  return schema.nodes[KNOTEN.abschnitt]!.create(attrs, [
-    schema.nodes[KNOTEN.ueberschrift]!.create(null, bezeichnung ? schema.text(bezeichnung) : null),
+/**
+ * Ein leerer Abschnitt mit denselben Angaben wie der verlorene — und mit
+ * seiner Überschrift.
+ *
+ * Die Überschrift kommt aus dem Abschnitt, wie er eben noch dastand, nicht
+ * aus der Angabe `bezeichnung`. Der Unterschied ist der Punkt der Übung:
+ * `bezeichnung` trägt den Namen aus dem Prüfbericht, und wer die
+ * Überschrift im Brief umgeschrieben hatte, bekam beim Wiederherstellen den
+ * alten Namen zurück — seine Arbeit war weg, ohne dass es jemand ansagte.
+ *
+ * Der naheliegende Weg wäre gewesen, die Angabe bei jeder Änderung der
+ * Überschrift nachzuziehen. Das wäre ein teurer Fehler: `setNodeMarkup`
+ * zeichnet den Abschnitt neu, und dabei sterben die Kindansichten — die
+ * Bilder verlören ihre Ziehgriffe. Genau daran ist das schon einmal
+ * gescheitert. Der Wortlaut wird deshalb erst dann gelesen, wenn er
+ * gebraucht wird: beim Wiederherstellen.
+ */
+function leererAbschnitt(schema: PmSchema, verloren: PmNode): PmNode {
+  const kopf = verloren.firstChild
+  const wortlaut =
+    kopf?.type.name === KNOTEN.ueberschrift && kopf.textContent.trim()
+      ? kopf.textContent.trim()
+      : typeof verloren.attrs.bezeichnung === 'string'
+        ? verloren.attrs.bezeichnung
+        : ''
+
+  return schema.nodes[KNOTEN.abschnitt]!.create(verloren.attrs, [
+    schema.nodes[KNOTEN.ueberschrift]!.create(null, wortlaut ? schema.text(wortlaut) : null),
     schema.nodes.paragraph!.create(),
   ])
 }
@@ -589,7 +732,7 @@ export const Rahmen = Extension.create({
           for (const a of fehlend) {
             tr.insert(
               einfuegestelle(tr.doc, reihenfolge, a.id),
-              leererAbschnitt(neu.schema, a.node.attrs),
+              leererAbschnitt(neu.schema, a.node),
             )
           }
           ergaenzeErgebnis(tr, alt.doc, neu.schema)
@@ -756,7 +899,15 @@ export const AktiverAbschnitt = Extension.create({
  * Strenge, sondern weil die Word-Ausgabe sie nicht kennt und ein Editor,
  * der mehr anbietet als die Ausgabe kann, in die Irre führt.
  */
-export function briefErweiterungen() {
+/**
+ * Die Erweiterungen des Brief-Editors.
+ *
+ * `werte` sind die Angaben, die der Fall hergibt — dieselben, mit denen
+ * beim Einfügen eines Bausteins die Platzhalter gefüllt werden. Sie werden
+ * hier durchgereicht, damit die Kachel eines offenen Platzhalters den Wert
+ * gleich anbieten kann, statt ihn abzutippen zu verlangen.
+ */
+export function briefErweiterungen(werte: Record<string, string> = {}) {
   return [
     StarterKit.configure({
       document: false,
@@ -777,6 +928,8 @@ export function briefErweiterungen() {
     Ergebnis,
     Signatur,
     Bild,
+    Platzhalter.configure({ werte }),
+    Platzhalterwandler,
     Bibliothekstext,
     LeereAbschnitte,
     AktiverAbschnitt,
@@ -788,6 +941,7 @@ export function briefErweiterungen() {
         if (node.type.name === KNOTEN.betreff) return 'Betreff'
         if (node.type.name === KNOTEN.anrede) return 'Anrede'
         if (node.type.name === KNOTEN.bild) return 'Beschriftung (freiwillig)'
+        if (node.type.name === KNOTEN.platzhalter) return ''
         return 'Text — oder rechts einen Baustein wählen'
       },
     }),

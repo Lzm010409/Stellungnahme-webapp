@@ -18,6 +18,8 @@
 
 import { KNOTEN, abschnitt, istText, text, type Elementknoten, type Knoten } from './typen'
 import { ERGEBNIS_ABSAETZE } from '@/export/hausstil'
+import { zerlegeMitPlatzhaltern } from './platzhalter'
+import { klassifiziereKlammerausdruck } from '@/bibliothek/parser'
 
 export interface Positionsangabe {
   id: string
@@ -121,4 +123,70 @@ function einfuegestelle(inhalt: Knoten[], reihenfolge: string[], id: string): nu
     (k) => !istText(k) && (k.type === KNOTEN.ergebnis || k.type === KNOTEN.signatur),
   )
   return schluss >= 0 ? schluss : inhalt.length
+}
+
+/* ------------------------------------------------------------------ *
+ * Platzhalter aus eckigen Klammern in Knoten
+ * ------------------------------------------------------------------ */
+
+/**
+ * Macht aus `[Kennzeichen]` im Text einen Platzhalterknoten.
+ *
+ * Vor dieser Fassung war ein Platzhalter gewöhnlicher Text. Das hatte eine
+ * Folge, die weit über das Aussehen hinausging: wer die schliessende
+ * Klammer versehentlich mitlöschte, hatte im Brief `[Kennzeichen` stehen —
+ * und Wächter R1 sucht über genau diese Klammern. Die Sperre schwieg dann,
+ * obwohl der Brief kaputt war. Ein Knoten lässt sich nicht halb löschen.
+ *
+ * Läuft beim Öffnen eines Schreibens über den ganzen Baum; im Editor hält
+ * eine Erweiterung dasselbe beim Tippen und Einfügen nach. Beide benutzen
+ * `zerlegeMitPlatzhaltern`, damit es eine Regel bleibt und nicht zwei.
+ *
+ * Ausgenommen sind Betreff und Anrede: dort lässt das Schema nur Text zu.
+ */
+export function wandlePlatzhalterInKnoten(dokument: Elementknoten): {
+  dokument: Elementknoten
+  gewandelt: number
+} {
+  let gewandelt = 0
+
+  const gehe = (k: Knoten): Knoten => {
+    if (istText(k)) return k
+    const el = k as Elementknoten
+    if (!el.content) return el
+
+    // Betreff und Anrede führen `content: 'text*'` — dort hat kein Knoten Platz.
+    const nurText = el.type === KNOTEN.betreff || el.type === KNOTEN.anrede
+    const neu: Knoten[] = []
+
+    for (const kind of el.content) {
+      if (!istText(kind) || nurText) {
+        neu.push(gehe(kind))
+        continue
+      }
+
+      const stuecke = zerlegeMitPlatzhaltern(kind.text)
+      if (stuecke.every((s) => s.art === 'text')) {
+        neu.push(kind)
+        continue
+      }
+
+      for (const s of stuecke) {
+        if (s.art === 'text') {
+          if (s.text) neu.push({ ...kind, text: s.text })
+          continue
+        }
+        gewandelt++
+        neu.push({
+          type: KNOTEN.platzhalter,
+          attrs: { schluessel: s.schluessel, art: klassifiziereKlammerausdruck(s.schluessel) },
+        })
+      }
+    }
+
+    return { ...el, content: neu }
+  }
+
+  const ergebnis = gehe(dokument) as Elementknoten
+  return { dokument: ergebnis, gewandelt }
 }

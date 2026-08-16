@@ -5,7 +5,7 @@ import { eintrag, stellungnahme } from '@/db/schema'
 import type { Extraktion } from '@/pruefbericht/schema'
 import type { GeladeneStellungnahme } from '@/stellungnahme/abfragen'
 import { erzeugeDokument, type DokumentBaustein } from './erzeugen'
-import { ergaenzeFehlendeAbschnitte } from './reparatur'
+import { ergaenzeFehlendeAbschnitte, wandlePlatzhalterInKnoten } from './reparatur'
 import { istDokument, type Elementknoten } from './typen'
 
 /**
@@ -74,11 +74,20 @@ async function heileAbschnitte(
       behandlung: p.behandlung,
     })),
   )
-  if (repariert.ergaenzt.length === 0) return { dokument, stand }
 
-  const geschrieben = await schreibeDokument(s.id, repariert.dokument, stand)
+  /*
+    Und der zweite Handgriff beim Öffnen: aus `[Kennzeichen]` im Text wird
+    ein Platzhalterknoten. Ältere Schreiben tragen die Klammern noch als
+    gewöhnlichen Text — ein halb gelöschter Ausdruck brachte dort den
+    Wächter R1 zum Schweigen, obwohl der Brief eine offene Angabe enthielt.
+  */
+  const gewandelt = wandlePlatzhalterInKnoten(repariert.dokument)
+
+  if (repariert.ergaenzt.length === 0 && gewandelt.gewandelt === 0) return { dokument, stand }
+
+  const geschrieben = await schreibeDokument(s.id, gewandelt.dokument, stand)
   return {
-    dokument: repariert.dokument,
+    dokument: gewandelt.dokument,
     stand: 'stand' in geschrieben ? geschrieben.stand : stand,
   }
 }

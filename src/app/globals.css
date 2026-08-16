@@ -2288,3 +2288,143 @@ body.zieht-baustein .brief-flaeche .d-abschnitt[data-ausgelassen] {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* ---------- Platzhalter im Brief ---------- */
+
+/*
+  Ein Platzhalter war bis eben gewöhnlicher Text in eckigen Klammern. Er
+  sieht jetzt aus wie das, was er ist: eine offene Stelle, die noch etwas
+  verlangt — und keine Textstelle, in die man versehentlich hineinschreibt.
+
+  Zwei Farben für zwei Dinge, die vorher gleich aussahen: ein einzusetzender
+  Wert trägt die Akzentfarbe, ein Arbeitsauftrag die Warnfarbe. Rot ist
+  bewusst nicht dabei — hier verschwindet nichts, hier fehlt etwas.
+
+  Alle Farben kommen aus vorhandenen Merkmalen; die Kachel folgt damit dem
+  Erscheinungsbild, ohne dass ein neues Merkmal in allen drei Blöcken
+  nachgeführt werden müsste.
+*/
+
+.platzhalter-huelle {
+  position: relative;
+  display: inline;
+  white-space: normal;
+}
+
+.platzhalter {
+  display: inline;
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin: 0 1px;
+  font-size: 0.94em;
+  font-weight: 600;
+  line-height: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  /* Ein Platzhalter ist ein Ding, kein Wort: er darf nicht umbrechen. */
+  white-space: nowrap;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.platzhalter.wert {
+  background: var(--accent-soft);
+  border-color: var(--accent-rand);
+  color: var(--accent-stark);
+}
+
+.platzhalter.anweisung {
+  background: var(--warn-soft);
+  border-color: var(--warn);
+  color: var(--warn);
+  font-weight: 500;
+  font-style: italic;
+}
+
+.platzhalter:hover,
+.platzhalter.auf {
+  border-style: solid;
+  filter: brightness(0.97);
+}
+
+.platzhalter.auf {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Der Punkt sagt: zu dieser Angabe hat der Fall etwas anzubieten. */
+.platzhalter-punkt {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.platzhalter-kasten {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max(240px, 20vw);
+  max-width: min(340px, 90vw);
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.16);
+  font-size: 13px;
+  font-weight: 400;
+  font-style: normal;
+  white-space: normal;
+  cursor: auto;
+  text-align: left;
+}
+
+.platzhalter-titel {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.platzhalter-text {
+  display: block;
+  line-height: 1.5;
+}
+
+.platzhalter-vorschlag {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.platzhalter-knoepfe {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.platzhalter-knoepfe input {
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+  In der Ausgabe und beim Ausschneiden trägt der Knoten seine Klammern
+  wieder — dort darf nichts von der Kachel übrig bleiben.
+*/
+.d-platzhalter {
+  font: inherit;
+}

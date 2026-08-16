@@ -132,7 +132,7 @@ export function Schreibtisch({
   >(() => {})
 
   const editor = useEditor({
-    extensions: briefErweiterungen(),
+    extensions: briefErweiterungen(werte),
     content: dokument as never,
     immediatelyRender: false,
     /*
@@ -678,6 +678,22 @@ export function Schreibtisch({
   for (const a of reihenfolge) {
     if (a.hatText && !a.ausgelassen) nummerJePosition.set(a.positionId, ++laufend)
   }
+  /*
+    Der Name, unter dem eine Position in der Oberfläche erscheint.
+
+    Die Überschrift im Brief gewinnt: sie ist das, was ein Mensch der
+    Position gegeben hat. Der Name aus dem Prüfbericht springt ein, solange
+    keine Überschrift geschrieben wurde — und bleibt in der Anmerkung als
+    Herkunft sichtbar, wo er etwas erklärt. Vorher zeigten Anmerkung, Leiste
+    und Löschabfrage stur den Prüfbericht-Namen, auch wenn im Brief längst
+    etwas anderes stand: zwei Namen für dieselbe Sache.
+  */
+  const ueberschriftJePosition = new Map(
+    reihenfolge.filter((a) => a.ueberschrift).map((a) => [a.positionId, a.ueberschrift]),
+  )
+  const benenne = (p: { id: string; bezeichnung: string }) =>
+    ueberschriftJePosition.get(p.id) || p.bezeichnung
+
   const imBrief = new Set(reihenfolge.filter((a) => !a.ausgelassen).map((a) => a.positionId))
   const mitText = new Set(
     reihenfolge.filter((a) => a.hatText && !a.ausgelassen).map((a) => a.positionId),
@@ -808,7 +824,7 @@ export function Schreibtisch({
                   type="button"
                   className={`positionsmarke ${zustandsname} ${aktiv === p.id ? 'aktiv' : ''}`}
                   title={
-                    `Position ${i + 1} des Prüfberichts: ${p.bezeichnung}` +
+                    `Position ${i + 1} des Prüfberichts: ${benenne(p)}` +
                     `${p.differenz ? ` · −${p.differenz} €` : ''} — ${stand}`
                   }
                   onClick={() => {
@@ -957,6 +973,7 @@ export function Schreibtisch({
             >
               <Blase
                 position={p}
+                ueberschrift={ueberschriftJePosition.get(p.id) ?? ''}
                 vorschlag={vorschlaege.find((v) => v.positionId === p.id)}
                 befunde={befundeJePosition.get(p.id) ?? []}
                 nummer={i + 1}
@@ -973,8 +990,8 @@ export function Schreibtisch({
                 aufEinfuegen={(text, marke) => einfuegen(p.id, text, marke)}
                 aufAusformulieren={() => ausformulieren(p.id)}
                 aufHerausnehmen={() => herausnehmen(p.id)}
-                aufAufnehmen={() => aufnehmen(p.id, p.bezeichnung)}
-                aufEntfernen={() => entfernen(p.id, p.bezeichnung)}
+                aufAufnehmen={() => aufnehmen(p.id, benenne(p))}
+                aufEntfernen={() => entfernen(p.id, benenne(p))}
                 aufFundstelle={springeZu}
                 aufInBibliothek={() => inBibliothek(p.id)}
                 aufBildEinfuegen={(gut) => setzeBibliotheksbild(gut)}
