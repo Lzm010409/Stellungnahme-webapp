@@ -111,6 +111,9 @@ export async function ladeStellungnahmen() {
       modus: stellungnahme.modus,
       erstelltAm: stellungnahme.erstelltAm,
       versendetAm: stellungnahme.versendetAm,
+      auswertungsstand: stellungnahme.auswertungsstand,
+      auswertungsschritt: stellungnahme.auswertungsschritt,
+      auswertungsProzent: stellungnahme.auswertungsProzent,
       pruefberichtDateiname: stellungnahme.pruefberichtDateiname,
       fallAktenzeichen: fall.aktenzeichen,
       positionen: sql<number>`(

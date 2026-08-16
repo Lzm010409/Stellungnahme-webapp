@@ -2,17 +2,21 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Fortschritt, type Fortschrittsstand } from '@/app/teile/anzeigen'
-import { leseEreignisse } from '@/app/teile/strom'
-import type { Auswertungsereignis } from '@/stellungnahme/auswertung'
+import { Kreisel } from '@/app/teile/anzeigen'
 
 /**
- * Prüfbericht hochladen und auswerten lassen.
+ * Prüfbericht hochladen.
  *
- * Der Vorgang meldet, woran er gerade arbeitet: Seite für Seite beim
- * Einlesen, dann Auslesen, Prüfliste, Anlegen. Bei einem gescannten Bericht
- * dauert das über eine Minute — ohne diese Meldungen sähe es aus, als sei
- * die Seite stehen geblieben.
+ * Der Upload dauert Sekunden, die Auswertung Minuten — deshalb sind das
+ * zwei Dinge. Diese Maske schickt die Datei ab und führt weiter zu der
+ * Stellungnahme, die dabei entsteht; die Auswertung läuft danach im
+ * Hintergrund, und ihren Stand zeigt die Detailseite.
+ *
+ * Vorher hing der ganze Vorgang an dieser Maske: der Balken stand
+ * minutenlang bei wenigen Prozent, weil das Auslesen der Positionen **ein**
+ * langer Aufruf an das Sprachmodell ist und dazwischen nichts meldet. Wer
+ * das Fenster wechselte oder die Verbindung verlor, hatte die Arbeit
+ * verloren.
  */
 export function BerichtFormular({
   faelle,
@@ -22,76 +26,50 @@ export function BerichtFormular({
   aktiv: boolean
 }) {
   const router = useRouter()
-  const [stand, setzeStand] = useState<Fortschrittsstand | null>(null)
+  const [laeuft, setzeLaeuft] = useState(false)
   const [meldung, setzeMeldung] = useState<{ text: string; fehler: boolean } | null>(null)
   const formularRef = useRef<HTMLFormElement>(null)
   /**
    * Die Sperre gegen den zweiten Klick.
    *
-   * `laeuft` allein reicht dafür nicht: es hängt an `stand`, und der wird
-   * erst beim nächsten Rendern wirksam. Zwei Klicks kurz hintereinander
-   * liefen beide durch — gemessen: zwei POST auf `/auswerten` aus einem
-   * Doppelklick. Da die Stellungnahme erst am Ende des Vorgangs angelegt
-   * wird, entstünden daraus zwei Schreiben aus einem Prüfbericht, dazu zwei
-   * Modellaufrufe. Eine Ref wirkt sofort und ist deshalb die richtige
-   * Sperre.
+   * Ein Zustand allein reicht dafür nicht: er wird erst beim nächsten
+   * Rendern wirksam. Zwei Klicks kurz hintereinander liefen beide durch —
+   * gemessen: zwei POST auf `/auswerten` aus einem Doppelklick, und daraus
+   * zwei Schreiben aus einem Prüfbericht. Eine Ref wirkt sofort.
    */
   const inArbeit = useRef(false)
-
-  const laeuft = stand !== null && !stand.fehler
 
   /** Gibt `true` zurück, wenn eine Stellungnahme entstanden ist. */
   const fuehreAus = async (formular: FormData): Promise<boolean> => {
     setzeMeldung(null)
-    const verlauf: string[] = []
-    setzeStand({ anteil: 0.02, text: 'Datei wird übertragen …', verlauf })
+    setzeLaeuft(true)
 
     let antwort: Response
     try {
       antwort = await fetch('/api/stellungnahmen/auswerten', { method: 'POST', body: formular })
     } catch {
-      setzeStand(null)
+      setzeLaeuft(false)
       setzeMeldung({ text: 'Die Verbindung ist abgerissen.', fehler: true })
       return false
     }
 
-    if (!antwort.ok && antwort.headers.get('content-type')?.includes('json')) {
-      const { fehler } = (await antwort.json()) as { fehler?: string }
-      setzeStand(null)
-      setzeMeldung({ text: fehler ?? 'Die Auswertung ist gescheitert.', fehler: true })
+    const rumpf = (await antwort.json().catch(() => null)) as {
+      stellungnahmeId?: string
+      fehler?: string
+    } | null
+
+    if (!antwort.ok || !rumpf?.stellungnahmeId) {
+      setzeLaeuft(false)
+      setzeMeldung({
+        text: rumpf?.fehler ?? 'Der Prüfbericht liess sich nicht entgegennehmen.',
+        fehler: true,
+      })
       return false
     }
 
-    for await (const ereignis of leseEreignisse<Auswertungsereignis>(antwort)) {
-      if (ereignis.art === 'fortschritt') {
-        verlauf.push(ereignis.text)
-        setzeStand({
-          anteil: ereignis.anteil,
-          text: ereignis.text,
-          // Nur die jüngsten Meldungen — die Liste soll den Blick nicht
-          // vom Balken wegziehen.
-          verlauf: verlauf.slice(-4),
-        })
-        continue
-      }
-
-      if (ereignis.art === 'fehler') {
-        setzeStand(null)
-        setzeMeldung({ text: ereignis.fehler, fehler: true })
-        return false
-      }
-
-      setzeStand({ anteil: 1, text: 'Fertig — die Stellungnahme wird geöffnet …', verlauf: [] })
-      if (ereignis.hinweis) setzeMeldung({ text: ereignis.hinweis, fehler: false })
-      formularRef.current?.reset()
-      router.push(`/stellungnahmen/${ereignis.stellungnahmeId}`)
-      return true
-    }
-
-    // Der Strom endete ohne Abschluss — das ist ein Abbruch, kein Erfolg.
-    setzeStand(null)
-    setzeMeldung({ text: 'Der Vorgang ist unterwegs abgebrochen.', fehler: true })
-    return false
+    formularRef.current?.reset()
+    router.push(`/stellungnahmen/${rumpf.stellungnahmeId}`)
+    return true
   }
 
   const werteAus = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -132,16 +110,10 @@ export function BerichtFormular({
           ))}
         </select>
         <button type="submit" className="haupt" disabled={!aktiv || laeuft}>
-          {laeuft ? 'Wird ausgewertet …' : 'Prüfbericht auswerten'}
+          {laeuft ? <Kreisel text="Wird übertragen" /> : 'Prüfbericht auswerten'}
         </button>
-        <span className="treffer-zahl">Gescannte Seiten werden mitgelesen</span>
+        <span className="treffer-zahl">Die Auswertung läuft danach im Hintergrund</span>
       </form>
-
-      {stand ? (
-        <div style={{ marginBottom: 18 }}>
-          <Fortschritt stand={stand} />
-        </div>
-      ) : null}
 
       {meldung ? (
         <div

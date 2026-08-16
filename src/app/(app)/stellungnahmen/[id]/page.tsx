@@ -12,6 +12,7 @@ import { Schreibtisch } from './schreiben'
 import { Kopfbereich } from './kopf'
 import { KlappenSchliesser } from './klappen'
 import { Loeschknopf } from '../loeschknopf'
+import { Auswertungslauf } from './auswertungslauf'
 
 function euro(wert: string | number | null | undefined): string {
   if (wert === null || wert === undefined) return '—'
@@ -47,6 +48,43 @@ export default async function StellungnahmeSeite({
 
   const s = await ladeStellungnahme(id)
   if (!s) notFound()
+
+  /*
+    Läuft die Auswertung noch, gibt es weder Positionen noch einen Brief —
+    und es wäre falsch, jetzt einen aus dem Nichts zu bauen: `stelleDokumentBereit`
+    legte ein leeres Dokument an, das die fertige Auswertung gleich wieder
+    überschreiben müsste. Solange steht hier der Stand der Verarbeitung.
+  */
+  if (s.auswertungsstand === 'laeuft' || s.auswertungsstand === 'fehler') {
+    return (
+      <>
+        <p style={{ margin: '0 0 14px', fontSize: 13 }}>
+          <Link href="/stellungnahmen">← Stellungnahmen</Link>
+        </p>
+
+        <div className="seiten-kopf">
+          <div>
+            <h1>{s.betreff ?? 'Neue Stellungnahme'}</h1>
+            <p className="unterzeile">
+              {s.pruefberichtDateiname
+                ? `Prüfbericht „${s.pruefberichtDateiname}"`
+                : 'Prüfbericht in Arbeit'}
+            </p>
+          </div>
+        </div>
+
+        <Auswertungslauf
+          stellungnahmeId={s.id}
+          stand={s.auswertungsstand}
+          schritt={s.auswertungsschritt}
+          prozent={s.auswertungsProzent}
+          fehler={s.auswertungsfehler}
+          dateiname={s.pruefberichtDateiname}
+          aktualisiertAm={s.auswertungAktualisiertAm}
+        />
+      </>
+    )
+  }
 
   const [vorschlaege, brief] = await Promise.all([holeVorschlaege(id), stelleDokumentBereit(s)])
 

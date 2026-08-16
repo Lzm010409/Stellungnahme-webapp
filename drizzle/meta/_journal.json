@@ -36,6 +36,13 @@
       "when": 1786559823819,
       "tag": "0004_complete_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786875243275,
+      "tag": "0005_aromatic_silverclaw",
+      "breakpoints": true
     }
   ]
 }

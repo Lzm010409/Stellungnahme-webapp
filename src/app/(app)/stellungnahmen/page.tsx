@@ -131,16 +131,48 @@ export default async function StellungnahmenSeite() {
                       das Schreiben angelegt wurde.
                     */}
                     <span>angelegt {tagesdatum(s.erstelltAm)}</span>
+                    {s.auswertungsstand === 'laeuft' && s.auswertungsschritt ? (
+                      <span>{s.auswertungsschritt}</span>
+                    ) : null}
                     {s.versendetAm ? <span>versendet {tagesdatum(s.versendetAm)}</span> : null}
                   </span>
                 </span>
                 <span className="zeile-rechts">
-                  <span className={`marke-pille ${s.versendetAm ? 'm-freigegeben' : 'm-entwurf'}`}>
-                    {s.versendetAm ? 'versendet' : 'in Arbeit'}
+                  {/*
+                    Drei Zustände statt zwei. „wird ausgewertet" ist neu und
+                    nötig, seit die Auswertung im Hintergrund läuft: die
+                    Zeile steht sofort in der Übersicht, hat aber noch keine
+                    Positionen. Ohne dieses Wort sähe sie aus wie ein leeres
+                    Schreiben, das jemand vergessen hat.
+                  */}
+                  <span
+                    className={`marke-pille ${
+                      s.auswertungsstand === 'laeuft'
+                        ? 'm-akzent'
+                        : s.auswertungsstand === 'fehler'
+                          ? 'm-warn'
+                          : s.versendetAm
+                            ? 'm-freigegeben'
+                            : 'm-entwurf'
+                    }`}
+                  >
+                    {s.auswertungsstand === 'laeuft'
+                      ? `wird ausgewertet · ${s.auswertungsProzent} %`
+                      : s.auswertungsstand === 'fehler'
+                        ? 'Auswertung gescheitert'
+                        : s.versendetAm
+                          ? 'versendet'
+                          : 'in Arbeit'}
                   </span>
                 </span>
               </Link>
-              {!s.versendetAm ? (
+              {/*
+                Während der Auswertung nicht löschen: die Verarbeitung läuft
+                noch und schriebe gleich in eine Zeile, die es nicht mehr
+                gibt. Gescheitert darf gelöscht werden — dort ist nichts mehr
+                unterwegs.
+              */}
+              {!s.versendetAm && s.auswertungsstand !== 'laeuft' ? (
                 <Loeschknopf stellungnahmeId={s.id} betreff={beschriftung(s.betreff)} />
               ) : null}
             </div>

@@ -372,6 +372,41 @@ export const stellungnahme = pgTable(
     vorbemerkungEinfuegen: boolean().notNull().default(false),
     ergebnisAbsatz: text(),
 
+    /* ---------------- Auswertung des Prüfberichts ---------------- */
+
+    /*
+      Die Auswertung läuft im Hintergrund, nicht mehr in der Anfrage.
+
+      Ein Prüfbericht mit vierzig Seiten braucht Minuten: das PDF wird
+      Seite für Seite gelesen, gescannte Seiten durch die Texterkennung
+      geschickt, und danach liest ein Sprachmodell in **einem** langen
+      Aufruf die Kürzungspositionen heraus. Solange das lief, stand der
+      Fortschrittsbalken bei wenigen Prozent still, das Fenster musste offen
+      bleiben, und ein Verbindungsabbruch warf alles weg.
+
+      Jetzt entsteht die Stellungnahme sofort, und die Verarbeitung schreibt
+      ihren Stand hierher. Die Detailseite liest ihn und zeigt ihn an —
+      wer will, arbeitet inzwischen woanders weiter.
+    */
+    /** `laeuft`, `fertig` oder `fehler`; leer bei Schreiben ohne Prüfbericht. */
+    auswertungsstand: text(),
+    /** Woran gerade gearbeitet wird, im Klartext. */
+    auswertungsschritt: text(),
+    /** Fortschritt in Prozent, 0 bis 100. */
+    auswertungsProzent: integer().notNull().default(0),
+    auswertungsfehler: text(),
+    auswertungAktualisiertAm: timestamp({ withTimezone: true }),
+    /*
+      Der Prüfbericht selbst, als Base64.
+
+      Die Verarbeitung läuft nach der Antwort weiter — die hochgeladene
+      Datei ist dann längst fort. Sie muss also irgendwo liegen, und die
+      Datenbank ist der einzige Ort, den diese Anwendung hat. Nebenbei
+      bleibt der Bericht damit beim Schreiben und lässt sich später wieder
+      ansehen.
+    */
+    pruefberichtDaten: text(),
+
     erstelltVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
     erstelltAm: timestamp({ withTimezone: true }).notNull().defaultNow(),
     versendetAm: timestamp({ withTimezone: true }),

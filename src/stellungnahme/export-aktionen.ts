@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { bild, stellungnahme } from '@/db/schema'
 import { verlangeBenutzer } from '@/auth/sitzung'
+import { verarbeiteImHintergrund } from './auswertung'
 
 /**
  * Die kurzen Wege rund um die Ausgabe.
@@ -96,12 +97,29 @@ export async function loescheStellungnahme(stellungnahmeId: string): Promise<Exp
   await verlangeBenutzer()
 
   const [vorhanden] = await db
-    .select({ versendetAm: stellungnahme.versendetAm, betreff: stellungnahme.betreff })
+    .select({
+      versendetAm: stellungnahme.versendetAm,
+      betreff: stellungnahme.betreff,
+      auswertungsstand: stellungnahme.auswertungsstand,
+    })
     .from(stellungnahme)
     .where(eq(stellungnahme.id, stellungnahmeId))
     .limit(1)
 
   if (!vorhanden) return { fehler: 'Diese Stellungnahme gibt es nicht mehr.' }
+
+  /*
+    Während die Auswertung läuft, wird nicht gelöscht: die Verarbeitung
+    schriebe gleich in eine Zeile, die es nicht mehr gibt. Ist sie
+    gescheitert, ist nichts mehr unterwegs — dann darf gelöscht werden.
+  */
+  if (vorhanden.auswertungsstand === 'laeuft') {
+    return {
+      fehler:
+        'Der Prüfbericht wird gerade ausgewertet. Bitte warten, bis das durch ist — ' +
+        'danach lässt sich das Schreiben löschen.',
+    }
+  }
   if (vorhanden.versendetAm) {
     return {
       fehler:
@@ -131,4 +149,87 @@ export async function ladeFallId(stellungnahmeId: string): Promise<string | null
     .where(eq(stellungnahme.id, stellungnahmeId))
     .limit(1)
   return zeilen[0]?.fallId ?? null
+}
+
+/* ------------------------------------------------------------------ *
+ * Auswertung im Hintergrund
+ * ------------------------------------------------------------------ */
+
+export interface Auswertungsstand {
+  stand: string
+  schritt: string | null
+  prozent: number
+  fehler: string | null
+}
+
+/**
+ * Der Stand der laufenden Auswertung.
+ *
+ * Die Detailseite fragt im Takt danach. Bewusst eine gewöhnliche Aktion und
+ * kein offener Strom: der Stand steht in der Datenbank und überlebt damit
+ * den Weg auf eine andere Seite und zurück, das Schliessen des Fensters und
+ * den Neustart des Behälters. Genau daran ist die Fassung gescheitert, die
+ * alles an einer einzigen offenen Verbindung hängen hatte.
+ */
+export async function holeAuswertungsstand(
+  stellungnahmeId: string,
+): Promise<Auswertungsstand | null> {
+  await verlangeBenutzer()
+
+  const [zeile] = await db
+    .select({
+      stand: stellungnahme.auswertungsstand,
+      schritt: stellungnahme.auswertungsschritt,
+      prozent: stellungnahme.auswertungsProzent,
+      fehler: stellungnahme.auswertungsfehler,
+    })
+    .from(stellungnahme)
+    .where(eq(stellungnahme.id, stellungnahmeId))
+    .limit(1)
+
+  if (!zeile) return null
+  return {
+    stand: zeile.stand ?? 'fertig',
+    schritt: zeile.schritt,
+    prozent: zeile.prozent,
+    fehler: zeile.fehler,
+  }
+}
+
+/**
+ * Stösst die Auswertung erneut an.
+ *
+ * Möglich, weil der Prüfbericht bei der Stellungnahme liegt — ein neuer
+ * Anlauf kostet nichts als Zeit. Gebraucht wird er in zwei Fällen: die
+ * Verarbeitung ist gescheitert, oder der Behälter ist mitten im Lauf neu
+ * gestartet und die Zeile steht seither ohne Regung auf „läuft".
+ */
+export async function starteAuswertungNeu(stellungnahmeId: string): Promise<ExportErgebnis> {
+  await verlangeBenutzer()
+
+  const [zeile] = await db
+    .select({ daten: stellungnahme.pruefberichtDaten })
+    .from(stellungnahme)
+    .where(eq(stellungnahme.id, stellungnahmeId))
+    .limit(1)
+
+  if (!zeile?.daten) {
+    return { fehler: 'Zu dieser Stellungnahme liegt kein Prüfbericht mehr vor.' }
+  }
+
+  await db
+    .update(stellungnahme)
+    .set({
+      auswertungsstand: 'laeuft',
+      auswertungsschritt: 'Wartet auf die Verarbeitung …',
+      auswertungsProzent: 0,
+      auswertungsfehler: null,
+      auswertungAktualisiertAm: new Date(),
+    })
+    .where(eq(stellungnahme.id, stellungnahmeId))
+
+  void verarbeiteImHintergrund(stellungnahmeId)
+
+  revalidatePath(`/stellungnahmen/${stellungnahmeId}`)
+  return { hinweis: 'Die Auswertung läuft erneut.' }
 }
