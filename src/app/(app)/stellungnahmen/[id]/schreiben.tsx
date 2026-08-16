@@ -343,11 +343,16 @@ export function Schreibtisch({
    * Anrede blieb „Sehr geehrte Damen und Herren,", auch wenn im Feld
    * daneben längst eine Rechtsanwältin stand.
    *
-   * Überschrieben wird nur, was noch aus der Vorlage stammt. Was der
-   * Verfasser selbst geschrieben hat, bleibt stehen — der Rahmen gehört dem
-   * Fall, der Text dem Verfasser. Und die Änderung geht als gewöhnliche
-   * Änderung durch: sie landet in der Rückgängig-Kette und wird gespeichert
-   * wie jede andere.
+   * Überschrieben wird nur, was noch aus der Vorlage stammt: eine leere
+   * oder die allgemeine Anrede, ein leerer oder ein früher gebauter
+   * Einleitungssatz. Eine Anrede, die auf einen Namen lautet, gilt
+   * ausdrücklich als selbst geschrieben und bleibt stehen — auch wenn der
+   * Empfänger wechselt. Das ist nicht die bequemste Regel, aber die
+   * einzige, die niemandem seine Eingabe wegnimmt: die weite Fassung hat
+   * genau das getan, und die Anwendung meldete dabei „gespeichert".
+   *
+   * Die Änderung geht als gewöhnliche Änderung durch: sie landet in der
+   * Rückgängig-Kette und wird gespeichert wie jede andere.
    */
   useEffect(() => {
     if (!editor) return

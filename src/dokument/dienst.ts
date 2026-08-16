@@ -98,14 +98,20 @@ async function heileAbschnitte(
     Hier geschieht es beim Öffnen, damit auch ein Schreiben von gestern in
     Ordnung kommt, ohne dass jemand den Kopfbereich anfassen muss.
   */
-  const kopf = traegeKopfsaetzeNach(gewandelt.dokument, {
-    anrede: baueAnrede(s.empfaengerName) ?? (s.anrede?.trim() || STANDARD_ANREDE),
-    einleitung: baueEinleitung({
-      einleitungDatum: s.einleitungDatum,
-      einleitungMedium: s.einleitungMedium === 'mail' ? 'mail' : 'schreiben',
-      pruefdienstleister: (s.extraktion as Extraktion | null)?.pruefdienstleister ?? null,
-    } as Parameters<typeof baueEinleitung>[0]),
-  })
+  const kopf = traegeKopfsaetzeNach(
+    gewandelt.dokument,
+    {
+      anrede: baueAnrede(s.empfaengerName) ?? (s.anrede?.trim() || STANDARD_ANREDE),
+      einleitung: baueEinleitung({
+        einleitungDatum: s.einleitungDatum,
+        einleitungMedium: s.einleitungMedium === 'mail' ? 'mail' : 'schreiben',
+        pruefdienstleister: (s.extraktion as Extraktion | null)?.pruefdienstleister ?? null,
+      } as Parameters<typeof baueEinleitung>[0]),
+    },
+    // Beim Öffnen wird nur gefüllt, was leer ist. Was dasteht, hat jemand
+    // dorthin geschrieben — und sei es, indem er die Vorlage stehen liess.
+    'nur-leeres',
+  )
 
   const etwasGetan =
     repariert.ergaenzt.length > 0 || gewandelt.gewandelt > 0 || kopf.nachgetragen.length > 0

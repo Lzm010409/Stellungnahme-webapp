@@ -125,6 +125,12 @@ export function Kopfbereich(props: {
             TT.MM.JJJJ, mal MM/TT/JJJJ. Was im Brief steht, bestimmt das
             Büro. Deshalb steht es hier ausgeschrieben daneben.
 
+            Und mit der Einschränkung, die dazugehört: eine Anrede, die
+            schon auf einen Namen lautet, wird nicht angerührt — auch nicht
+            beim Wechsel des Empfängers. Sie gilt als selbst geschrieben,
+            und was jemand selbst geschrieben hat, nimmt ihm keine
+            Automatik wieder weg.
+
             Lange stand hier eine Zusage, die die Felder nicht einhielten:
             der Einleitungssatz wurde beim **Anlegen** einmal gebaut und
             danach nie wieder. Wer das Datum später nachtrug — und beim

@@ -42,16 +42,22 @@ describe('baueAnrede', () => {
 })
 
 describe('istVorlagenAnrede', () => {
-  it('erkennt die Standardanrede und die gebauten Formen', () => {
+  it('erkennt nur die unbeschriebene Vorlage', () => {
     expect(istVorlagenAnrede('Sehr geehrte Damen und Herren,')).toBe(true)
-    expect(istVorlagenAnrede('Sehr geehrte Frau Busch,')).toBe(true)
-    expect(istVorlagenAnrede('Sehr geehrter Herr Müller,')).toBe(true)
     expect(istVorlagenAnrede('')).toBe(true)
+    expect(istVorlagenAnrede('   ')).toBe(true)
   })
 
-  it('lässt Selbstgeschriebenes in Ruhe', () => {
+  /*
+    Der teuer bezahlte Fall. Eine Anrede auf einen Namen sieht aus wie
+    etwas Gebautes — und ist doch meistens von Hand gesetzt. Wer sie
+    ersetzt, nimmt jemandem seine Eingabe weg, nachdem die Anwendung
+    „gespeichert" gemeldet hat.
+  */
+  it('hält eine Anrede auf einen Namen für Selbstgeschriebenes', () => {
+    expect(istVorlagenAnrede('Sehr geehrter Herr Schmidt,')).toBe(false)
+    expect(istVorlagenAnrede('Sehr geehrte Frau Busch,')).toBe(false)
     expect(istVorlagenAnrede('Liebe Frau Busch,')).toBe(false)
-    expect(istVorlagenAnrede('Sehr geehrte Frau Busch, sehr geehrter Herr Klein,')).toBe(false)
   })
 })
 

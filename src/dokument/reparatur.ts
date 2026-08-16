@@ -216,27 +216,41 @@ export interface Kopfsaetze {
 }
 
 /**
+ * Wie beharrlich nachgetragen wird.
+ *
+ * `nur-leeres` ist die Regel beim Öffnen eines Schreibens: gefüllt wird
+ * ausschliesslich, was leer ist. Alles andere hat ein Mensch geschrieben —
+ * und sei es, indem er die Vorlage stehen liess.
+ *
+ * `auch-vorlage` gilt, wenn jemand den Kopfbereich ausdrücklich speichert.
+ * Dann darf zusätzlich ersetzt werden, was erkennbar aus der Vorlage
+ * stammt: die allgemeine Anrede und ein früher gebauter Einleitungssatz.
+ * Das ist eine Handlung des Benutzers, sie ist sofort zu sehen und steht in
+ * der Rückgängig-Kette.
+ *
+ * Der Unterschied ist teuer bezahlt. Zuerst galt überall `auch-vorlage` —
+ * mit der Folge, dass eine von Hand geänderte Anrede („Sehr geehrter Herr
+ * Schmidt,") beim nächsten Öffnen stillschweigend durch die aus dem
+ * Empfänger abgeleitete ersetzt wurde. Gespeichert war sie, angezeigt wurde
+ * sie nicht mehr: der schlimmste Fall, weil die Anwendung „gespeichert"
+ * meldete und trotzdem etwas anderes zeigte.
+ */
+export type Beharrlichkeit = 'nur-leeres' | 'auch-vorlage'
+
+/**
  * Trägt Anrede und Einleitungssatz im Dokument nach.
  *
- * Beide sind feste Bausteine des Hausstils und wurden bisher **einmal**
+ * Beide sind feste Bausteine des Hausstils und wurden früher **einmal**
  * beim Anlegen gebaut. Das Datum des Anschreibens ist zu diesem Zeitpunkt
  * aber oft noch nicht bekannt, und der Empfänger wird häufig später
  * nachgetragen. Das Ergebnis stand im versandten Schreiben: keine
  * Einleitung, und „Sehr geehrte Damen und Herren," an eine namentlich
  * bekannte Rechtsanwältin.
- *
- * Läuft beim Öffnen, damit auch ein Schreiben von gestern in Ordnung kommt,
- * ohne dass jemand den Kopfbereich anfassen muss. Beim Speichern des Kopfes
- * macht der Schreibtisch dasselbe an der laufenden Fassung.
- *
- * Angefasst wird nur, was noch aus der Vorlage stammt — geprüft über
- * `istVorlagenAnrede` und `istVorlagenEinleitung`. Selbst geschriebenes
- * bleibt stehen, auch wenn es dann nicht mehr zum Empfängerfeld passt: der
- * Rahmen gehört dem Fall, der Text dem Verfasser.
  */
 export function traegeKopfsaetzeNach(
   dokument: Elementknoten,
   kopf: Kopfsaetze,
+  beharrlichkeit: Beharrlichkeit = 'nur-leeres',
 ): { dokument: Elementknoten; nachgetragen: string[] } {
   const inhalt = [...(dokument.content ?? [])]
   const nachgetragen: string[] = []
@@ -246,7 +260,10 @@ export function traegeKopfsaetzeNach(
 
   const anredeKnoten = inhalt[anredeStelle] as Elementknoten
   const anredeText = knotenText(anredeKnoten).trim()
-  if (istVorlagenAnrede(anredeText) && anredeText !== kopf.anrede) {
+  const anredeFrei =
+    !anredeText || (beharrlichkeit === 'auch-vorlage' && istVorlagenAnrede(anredeText))
+
+  if (anredeFrei && anredeText !== kopf.anrede) {
     inhalt[anredeStelle] = { ...anredeKnoten, content: [text(kopf.anrede)] }
     nachgetragen.push('anrede')
   }
@@ -267,8 +284,10 @@ export function traegeKopfsaetzeNach(
     .join(' ')
     .trim()
   const neueEinleitung = kopf.einleitung?.trim() ?? ''
+  const einleitungFrei =
+    !alteEinleitung || (beharrlichkeit === 'auch-vorlage' && istVorlagenEinleitung(alteEinleitung))
 
-  if (istVorlagenEinleitung(alteEinleitung) && alteEinleitung !== neueEinleitung) {
+  if (einleitungFrei && alteEinleitung !== neueEinleitung) {
     inhalt.splice(
       anredeStelle + 1,
       bis - anredeStelle - 1,

@@ -77,18 +77,25 @@ export function baueAnrede(empfaengerName: string | null | undefined): string | 
 }
 
 /**
- * Ob eine Anrede offensichtlich aus der Vorlage stammt und nicht von Hand
- * geschrieben wurde.
+ * Ob eine Anrede noch die unbeschriebene Vorlage ist.
  *
- * Nur eine solche darf ersetzt werden, wenn sich der Empfänger ändert. Was
- * jemand selbst formuliert hat, bleibt stehen — auch wenn es dann nicht
- * mehr zum Empfängerfeld passt.
+ * Nur eine solche darf ersetzt werden. Absichtlich eng gefasst: leer oder
+ * wortgleich die allgemeine Anrede — sonst nichts.
+ *
+ * Die weite Fassung („alles, was aussieht wie `Sehr geehrte Frau X,`") war
+ * ein Fehler mit Ansage. Wer die Anrede von Hand auf „Sehr geehrter Herr
+ * Schmidt," setzte, bekam beim nächsten Öffnen die aus dem Empfänger
+ * abgeleitete zurück — gespeichert war seine Fassung, angezeigt wurde sie
+ * nicht mehr. Eine Anwendung, die „gespeichert" meldet und etwas anderes
+ * zeigt, ist schlimmer als eine, die gar nichts nachträgt.
+ *
+ * Der Preis: wechselt der Empfänger, nachdem die Anrede schon auf einen
+ * Namen lautet, zieht sie nicht mehr von selbst nach. Das ist der richtige
+ * Preis — im Zweifel gehört der Text dem Verfasser.
  */
 export function istVorlagenAnrede(anrede: string): boolean {
   const t = anrede.trim()
-  if (!t) return true
-  if (t === STANDARD_ANREDE) return true
-  return /^Sehr geehrter? (Frau|Herr) \S+,$/.test(t)
+  return !t || t === STANDARD_ANREDE
 }
 
 /**
