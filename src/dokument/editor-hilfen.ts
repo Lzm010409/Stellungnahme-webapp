@@ -463,9 +463,28 @@ export function zeigeFundstelle(
   const von = bereich ? bereich.pos : 0
   const bis = bereich ? bereich.pos + bereich.node.nodeSize : editor.state.doc.content.size
 
+  /*
+    Ein Platzhalter ist kein Text mehr, sondern ein Knoten. Wächter R1 nennt
+    als Fundstelle aber weiterhin `[Schlüssel]` — im Textbestand des
+    Dokuments kommt diese Zeichenkette also gar nicht mehr vor, und der
+    Klick auf die Beanstandung lief ins Leere. Deshalb zwei Wege: der Text
+    wie bisher, und der Platzhalter über seinen Schlüssel.
+  */
+  const klammer = fundstelle.match(/^\[([^\][]+)\]$/)
+  const gesuchterSchluessel = klammer ? klammer[1]!.trim() : null
+
   let treffer: { from: number; to: number } | null = null
   editor.state.doc.nodesBetween(von, bis, (node, pos) => {
-    if (treffer || !node.isText || !node.text) return true
+    if (treffer) return false
+
+    if (gesuchterSchluessel && node.type.name === KNOTEN.platzhalter) {
+      if (String(node.attrs.schluessel ?? '').trim() === gesuchterSchluessel) {
+        treffer = { from: pos, to: pos + node.nodeSize }
+      }
+      return false
+    }
+
+    if (!node.isText || !node.text) return true
     const index = node.text.indexOf(fundstelle)
     if (index >= 0) treffer = { from: pos + index, to: pos + index + fundstelle.length }
     return true

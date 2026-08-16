@@ -14,7 +14,12 @@ import { Extension, Mark, Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import { Plugin, PluginKey, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import type { Fragment, Node as PmNode, Schema as PmSchema } from '@tiptap/pm/model'
+import type {
+  Fragment,
+  Mark as PmMark,
+  Node as PmNode,
+  Schema as PmSchema,
+} from '@tiptap/pm/model'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
 import { ERGEBNIS_ABSAETZE, SIGNATUR } from '@/export/hausstil'
@@ -338,7 +343,12 @@ export const Platzhalterwandler = Extension.create({
           if (!vorgaenge.some((v) => v.docChanged)) return null
 
           const schreibmarke = neu.selection.from
-          const aenderungen: { von: number; bis: number; stuecke: ReturnType<typeof zerlegeMitPlatzhaltern> }[] = []
+          const aenderungen: {
+            von: number
+            bis: number
+            stuecke: ReturnType<typeof zerlegeMitPlatzhaltern>
+            marken: readonly PmMark[]
+          }[] = []
 
           neu.doc.descendants((knoten, pos, elternteil) => {
             if (!knoten.isText || !knoten.text) return true
@@ -353,7 +363,12 @@ export const Platzhalterwandler = Extension.create({
             // getippt wird.
             if (schreibmarke > pos && schreibmarke < pos + knoten.nodeSize) return true
 
-            aenderungen.push({ von: pos, bis: pos + knoten.nodeSize, stuecke })
+            aenderungen.push({
+              von: pos,
+              bis: pos + knoten.nodeSize,
+              stuecke,
+              marken: knoten.marks,
+            })
             return true
           })
 
@@ -362,13 +377,26 @@ export const Platzhalterwandler = Extension.create({
           const tr = neu.tr
           // Von hinten nach vorn, damit die vorderen Stellen gültig bleiben.
           for (const a of [...aenderungen].reverse()) {
+            /*
+              Die Marken des ursprünglichen Textes gehen mit — an die Stücke
+              wie an den Platzhalter selbst. Ohne sie verlor ein
+              eingefügter Baustein beim Umwandeln seine Herkunftsmarke: der
+              Text stand im Brief, aber die Spur zum Bibliothekseintrag war
+              fort, und mit ihr die Grundlage von Wächter R4 und der
+              Wirkungsstatistik. Bemerkt hat das die Bedienprobe, nicht das
+              Auge — im Brief sah alles richtig aus.
+            */
             const teile = a.stuecke.map((s) =>
               s.art === 'text'
-                ? neu.schema.text(s.text)
-                : neu.schema.nodes[KNOTEN.platzhalter]!.create({
-                    schluessel: s.schluessel,
-                    art: klassifiziereKlammerausdruck(s.schluessel),
-                  }),
+                ? neu.schema.text(s.text, a.marken as PmMark[])
+                : neu.schema.nodes[KNOTEN.platzhalter]!.create(
+                    {
+                      schluessel: s.schluessel,
+                      art: klassifiziereKlammerausdruck(s.schluessel),
+                    },
+                    null,
+                    a.marken as PmMark[],
+                  ),
             )
             tr.replaceWith(a.von, a.bis, teile)
           }

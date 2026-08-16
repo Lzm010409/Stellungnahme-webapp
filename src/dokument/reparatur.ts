@@ -177,9 +177,12 @@ export function wandlePlatzhalterInKnoten(dokument: Elementknoten): {
           continue
         }
         gewandelt++
+        // Die Marken des Textes gehen mit — sonst verlöre ein Platzhalter
+        // mitten in einem Baustein dessen Herkunftsspur.
         neu.push({
           type: KNOTEN.platzhalter,
           attrs: { schluessel: s.schluessel, art: klassifiziereKlammerausdruck(s.schluessel) },
+          ...(kind.marks ? { marks: kind.marks } : {}),
         })
       }
     }

@@ -44,6 +44,14 @@ export interface Elementknoten {
   type: string
   attrs?: Record<string, unknown>
   content?: Knoten[]
+  /**
+   * Nur bei Knoten im Fliesstext — heute allein der Platzhalter.
+   *
+   * Ein Platzhalter mitten in einem eingefügten Baustein trägt dessen
+   * Herkunftsmarke wie der Text drumherum; ohne sie risse die Spur zum
+   * Bibliothekseintrag genau dort, wo noch eine Angabe fehlt.
+   */
+  marks?: Marke[]
 }
 
 export type Knoten = Textknoten | Elementknoten
