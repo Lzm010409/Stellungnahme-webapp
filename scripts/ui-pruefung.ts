@@ -811,7 +811,7 @@ async function teilStellungnahmenliste(seite: Page) {
  * in der Ablage der alte Wortlaut) oder beim Laden verändert (dann steht
  * dort der neue).
  */
-async function standInDerAblage(id: string | null, angezeigt: string): Promise<string> {
+async function standInDerAblage(id: string | null, merkmal: string): Promise<string> {
   if (!id || !process.env.DATABASE_URL) return '(ohne Datenbankzugang keine Gegenprobe)'
   const { db } = await import('../src/db/index')
   const { stellungnahme } = await import('../src/db/schema')
@@ -822,12 +822,14 @@ async function standInDerAblage(id: string | null, angezeigt: string): Promise<s
     .where(eq(stellungnahme.id, id))
     .limit(1)
   const roh = JSON.stringify(zeile?.dokument ?? null)
-  // Eine kennzeichnende Zeile des angezeigten Textes in der Ablage suchen.
-  const merkmal = angezeigt
-    .split('\n')
-    .map((z) => z.trim())
-    .filter((z) => z.length > 25)[0]
-  if (!merkmal) return '(kein Merkmal für die Gegenprobe)'
+  /*
+    Gesucht wird ausdrücklich die **abweichende** Zeile. Der erste Anlauf
+    nahm irgendeine lange Zeile des Briefes — und fand natürlich den
+    Betreff, der sich nie geändert hatte. Die Gegenprobe meldete deshalb
+    „steht schon drin", ohne etwas geprüft zu haben. Eine Prüfung, die
+    immer dasselbe sagt, ist keine.
+  */
+  if (!merkmal || merkmal.length < 12) return '(kein Merkmal für die Gegenprobe)'
   return roh.includes(merkmal)
     ? '(in der Ablage steht der neue Wortlaut — es liegt am Laden)'
     : '(in der Ablage steht der alte Wortlaut — es liegt am Speichern)'
@@ -840,15 +842,23 @@ async function standInDerAblage(id: string | null, angezeigt: string): Promise<s
  * Zustand von Hand nachzubauen, und nach dreissig vorangegangenen
  * Handgriffen gelingt das nicht.
  */
-function erstesAbweichen(vorher: string, nachher: string): string {
+function erstesAbweichen(
+  vorher: string,
+  nachher: string,
+): { text: string; vorher: string } {
   const a = vorher.split('\n')
   const b = nachher.split('\n')
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     const x = (a[i] ?? '').trim()
     const y = (b[i] ?? '').trim()
-    if (x !== y) return `(Zeile ${i + 1}: „${x.slice(0, 90)}" wurde zu „${y.slice(0, 90)}")`
+    if (x !== y) {
+      return {
+        text: `(Zeile ${i + 1}: „${x.slice(0, 90)}" wurde zu „${y.slice(0, 90)}")`,
+        vorher: x,
+      }
+    }
   }
-  return '(nur Leerraum unterscheidet sich)'
+  return { text: '(nur Leerraum unterscheidet sich)', vorher: '' }
 }
 
 /** Was gerade offen ist — als Beleg für eine Meldung. */
@@ -1470,9 +1480,16 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
     if ((await seite.locator('.brief-flaeche .d-quelle').count()) <= vorher) {
       const spur = ((await seite.evaluate(`window.ziehspur`)) as string[]) ?? []
       const offen = await seite.locator('.brief-flaeche').getAttribute('contenteditable')
+      const unterDemPunkt = await seite.evaluate(
+        `(() => {
+          var el = document.elementFromPoint(${nach.x + nach.width / 2}, ${nach.y + nach.height / 2})
+          if (!el) return 'nichts'
+          return el.tagName + (el.className ? '.' + String(el.className).trim() : '')
+        })()`,
+      )
       melde(
         'fehler',
-        `Ein gezogener Baustein landet nicht im Brief. (Ereignisse: ${spur.join(' → ') || 'keine'}; Brief beschreibbar: ${offen ?? '?'})`,
+        `Ein gezogener Baustein landet nicht im Brief. (Ereignisse: ${spur.join(' → ') || 'keine'}; Brief beschreibbar: ${offen ?? '?'}; unter dem Wurfpunkt: ${unterDemPunkt})`,
       )
     }
   })
@@ -1582,9 +1599,10 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
         liegt es am Laden. Ohne diese Unterscheidung ist der Befund nicht
         zu verfolgen.
       */
+      const stelle = erstesAbweichen(vorher, nachher)
       melde(
         'fehler',
-        `Nach dem Neuladen steht nicht mehr dasselbe im Brief. ${erstesAbweichen(vorher, nachher)} ${await standInDerAblage(prueflingId, vorher)}`,
+        `Nach dem Neuladen steht nicht mehr dasselbe im Brief. ${stelle.text} ${await standInDerAblage(prueflingId, stelle.vorher)}`,
       )
     }
   })
