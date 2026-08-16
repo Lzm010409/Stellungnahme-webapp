@@ -162,6 +162,30 @@ export function Schreibtisch({
       attributes: { class: 'brief-flaeche', spellcheck: 'true' },
 
       /**
+       * Über dem ganzen Brief darf abgelegt werden — auch über einem Bild.
+       *
+       * Ein Wurf kommt nur zustande, wenn beim Überfliegen jemand sagt
+       * „hier ist eine Ablagestelle". Für gewöhnlichen Text tut das
+       * ProseMirror selbst; über einem Bild, das als unteilbarer Knoten
+       * ohne bearbeitbaren Inhalt dasteht, tut es das nicht. Der Baustein
+       * fiel dort ins Leere: kein `drop`, keine Meldung, nichts. Gefunden
+       * hat das die Bedienprobe — mit der Mitschrift der Zieh-Ereignisse
+       * und der Angabe, was unter dem Wurfpunkt lag.
+       *
+       * Wohin der Baustein dann tatsächlich kommt, entscheidet weiterhin
+       * `fuegeAnStelleEin`: an den Absatz darunter, und nur innerhalb eines
+       * Positionsabschnitts.
+       */
+      handleDOMEvents: {
+        dragover: (_sicht, ereignis) => {
+          const arten = (ereignis as DragEvent).dataTransfer?.types ?? []
+          if (!arten.includes(MIME_BAUSTEIN) && !arten.includes(MIME_BILD)) return false
+          ereignis.preventDefault()
+          return false
+        },
+      },
+
+      /**
        * Ein fallen gelassener Baustein landet hinter dem Absatz, über dem
        * losgelassen wurde — und nur innerhalb eines Positionsabschnitts.
        * Der Rückgabewert `true` hält ProseMirror davon ab, zusätzlich noch
@@ -412,12 +436,23 @@ export function Schreibtisch({
       if (geaendert) {
         editor.view.dispatch(tr)
         setzeMeldung('Anrede und Einleitungssatz im Brief nachgetragen.')
+        /*
+          Und sofort sichern, nicht erst nach der Schreibruhe.
+
+          Diese Änderung kommt nicht vom Tippen, sondern aus einem Klick im
+          Kopfbereich — dort steht danach „Gespeichert", und der Blick geht
+          weiter. Wer in diesem Moment neu lädt, hätte den nachgetragenen
+          Satz verloren, während beide Anzeigen „gespeichert" sagten. Die
+          Bedienprobe hat genau das gefunden: in der Ablage stand noch der
+          alte Wortlaut.
+        */
+        void speichereJetzt()
       }
     }
 
     window.addEventListener(EREIGNIS_KOPF, hoere)
     return () => window.removeEventListener(EREIGNIS_KOPF, hoere)
-  }, [editor])
+  }, [editor, speichereJetzt])
 
   /**
    * Den Abschnitt zur offenen Anmerkung hervorheben.
