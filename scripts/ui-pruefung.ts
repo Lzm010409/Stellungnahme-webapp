@@ -1401,6 +1401,32 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
     if (!meldung.includes('espeichert')) {
       melde('unschoen', 'Nach dem Speichern der Empfängerangaben fehlt die Bestätigung.')
     }
+    /*
+      Und sofort nachsehen, ob der nachgetragene Einleitungssatz auch in
+      der Ablage steht. Er entsteht aus diesem Klick heraus, nicht aus dem
+      Tippen — und genau dort ging er verloren, während die Anzeige
+      „gespeichert" meldete.
+    */
+    await wartetAufSpeichern()
+    const satz = await seite.evaluate(`(() => {
+      var pm = document.querySelector('.brief-flaeche')
+      var a = pm.querySelector('p[data-anrede]')
+      var els = pm.querySelectorAll('p, section')
+      var nach = false
+      for (var i = 0; i < els.length; i++) {
+        if (els[i] === a) { nach = true; continue }
+        if (els[i].tagName === 'SECTION') break
+        if (nach && els[i].textContent.trim()) return els[i].textContent.trim()
+      }
+      return ''
+    })()`)
+    if (typeof satz === 'string' && satz.length > 20) {
+      const lage = await standInDerAblage(prueflingId, satz)
+      if (lage.includes('alte Wortlaut')) {
+        melde('fehler', `Der nachgetragene Einleitungssatz steht nicht in der Ablage. ${lage}`)
+      }
+    }
+
     await seite.locator('.brief-flaeche').click({ position: { x: 40, y: 40 } })
     await seite.waitForTimeout(400)
   })
@@ -1464,6 +1490,18 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
       der Griff verschwindet dem Zeiger unter der Hand. Mit ausdrücklichen
       Schritten und einer Pause dazwischen hält er still.
     */
+    /*
+      Erst in den Blick rollen, dann messen.
+
+      `dragTo` rollt von selbst; ausdrückliche Mausschritte tun das nicht.
+      Lag der Griff unterhalb des sichtbaren Bereichs, zeigten die
+      gemessenen Koordinaten ins Nichts — der Zug begann gar nicht, und die
+      Mitschrift blieb leer. Genau dieses Bild („Ereignisse: keine") stand
+      zweimal im Bericht.
+    */
+    await griff.scrollIntoViewIfNeeded()
+    await ziel.scrollIntoViewIfNeeded()
+    await seite.waitForTimeout(300)
     const von = await griff.boundingBox()
     const nach = await ziel.boundingBox()
     if (!von || !nach) {
