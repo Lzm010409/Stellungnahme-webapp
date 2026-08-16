@@ -805,6 +805,35 @@ async function teilStellungnahmenliste(seite: Page) {
 }
 
 /**
+ * Was in der Datenbank steht — die Gegenprobe zum Bild auf dem Schirm.
+ *
+ * Trennt zwei Ursachen, die gleich aussehen: nicht gespeichert (dann steht
+ * in der Ablage der alte Wortlaut) oder beim Laden verändert (dann steht
+ * dort der neue).
+ */
+async function standInDerAblage(id: string | null, angezeigt: string): Promise<string> {
+  if (!id || !process.env.DATABASE_URL) return '(ohne Datenbankzugang keine Gegenprobe)'
+  const { db } = await import('../src/db/index')
+  const { stellungnahme } = await import('../src/db/schema')
+  const { eq } = await import('drizzle-orm')
+  const [zeile] = await db
+    .select({ dokument: stellungnahme.dokument })
+    .from(stellungnahme)
+    .where(eq(stellungnahme.id, id))
+    .limit(1)
+  const roh = JSON.stringify(zeile?.dokument ?? null)
+  // Eine kennzeichnende Zeile des angezeigten Textes in der Ablage suchen.
+  const merkmal = angezeigt
+    .split('\n')
+    .map((z) => z.trim())
+    .filter((z) => z.length > 25)[0]
+  if (!merkmal) return '(kein Merkmal für die Gegenprobe)'
+  return roh.includes(merkmal)
+    ? '(in der Ablage steht der neue Wortlaut — es liegt am Laden)'
+    : '(in der Ablage steht der alte Wortlaut — es liegt am Speichern)'
+}
+
+/**
  * Die erste Zeile, in der zwei Fassungen auseinandergehen — als Beleg.
  *
  * Ein Unterschied ohne Fundstelle ist eine Behauptung: er zwingt dazu, den
@@ -1415,7 +1444,28 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
       document.addEventListener('drop', merke('wurf'), true)
     })()`)
 
-    await griff.dragTo(ziel)
+    /*
+      Von Hand statt mit `dragTo`.
+
+      `dragTo` löste hier gar keinen Zug aus — die Mitschrift blieb leer,
+      nicht einmal `dragstart` kam an, während derselbe Handgriff einzeln
+      nachgestellt jedes Mal durchlief. Der Grund liegt in der Randspalte:
+      sie zeichnet sich neu, sobald sich die Auswahl im Brief ändert, und
+      der Griff verschwindet dem Zeiger unter der Hand. Mit ausdrücklichen
+      Schritten und einer Pause dazwischen hält er still.
+    */
+    const von = await griff.boundingBox()
+    const nach = await ziel.boundingBox()
+    if (!von || !nach) {
+      melde('unschoen', 'Griff oder Ziel liegen nicht im sichtbaren Bereich.')
+      return
+    }
+    await seite.mouse.move(von.x + von.width / 2, von.y + von.height / 2)
+    await seite.mouse.down()
+    await seite.waitForTimeout(150)
+    await seite.mouse.move(nach.x + nach.width / 2, nach.y + nach.height / 2, { steps: 12 })
+    await seite.waitForTimeout(150)
+    await seite.mouse.up()
     await seite.waitForTimeout(1800)
     if ((await seite.locator('.brief-flaeche .d-quelle').count()) <= vorher) {
       const spur = ((await seite.evaluate(`window.ziehspur`)) as string[]) ?? []
@@ -1525,7 +1575,17 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
       // Mit der Stelle, an der es auseinandergeht. „Steht nicht mehr
       // dasselbe" allein zwingt zum Nachbauen von Hand — und der Nachbau
       // trifft den Zustand nach dreissig vorangegangenen Handgriffen nie.
-      melde('fehler', `Nach dem Neuladen steht nicht mehr dasselbe im Brief. ${erstesAbweichen(vorher, nachher)}`)
+      /*
+        Und die Gegenprobe in der Datenbank: steht dort schon der alte
+        Wortlaut, ist die Änderung nie gespeichert worden — dann liegt es
+        am Speichern. Steht dort der neue und die Seite zeigt den alten,
+        liegt es am Laden. Ohne diese Unterscheidung ist der Befund nicht
+        zu verfolgen.
+      */
+      melde(
+        'fehler',
+        `Nach dem Neuladen steht nicht mehr dasselbe im Brief. ${erstesAbweichen(vorher, nachher)} ${await standInDerAblage(prueflingId, vorher)}`,
+      )
     }
   })
 
