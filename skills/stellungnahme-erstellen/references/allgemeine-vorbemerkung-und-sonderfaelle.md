@@ -24,6 +24,16 @@ Bei besonders unsubstanziierten oder pauschalen Prüfberichten kann die Vorbemer
 >
 > Fazit: Der vorliegende Prüfbericht ist untauglich, ein unabhängiges, freies Schadengutachten in Frage zu stellen.
 
+### Zusatzbaustein: automatisierte Erstellung und fehlender Sachbearbeiter
+
+Diese beiden Absätze ergänzen beide Fassungen und sind vor allem dann einzusetzen, wenn der Prüfbericht keinen namentlichen Sachbearbeiter ausweist:
+
+> Das AG Neustadt am Rübenberge sagt wörtlich im Urteil vom 23.09.2020, Az. 41 C 327/20: "Unstreitig wird der Prüfbericht computergesteuert und automatisch erstellt. Die Klägerin selbst hat vorgetragen, dass nur im Falle von Fehlern eine Tiefenprüfung stattfinde. Es handelt sich hierbei lediglich um pauschale Behauptungen, dass gewisse Reparaturpositionen und Arbeitsleistungen nicht erforderlich seien, ohne dass ausreichend auf den Einzelfall Bezug genommen und sich konkret mit dem Gutachten auseinandergesetzt wird. Man kann im Falle der Beilackierung stets pauschal behaupten, eine solche sei nicht erforderlich. Eine Auseinandersetzung mit dem hier geschädigten Fahrzeug findet nicht statt. Der Prüfbericht lässt auch nicht erkennen, ob im vorliegenden Fall eine Einzelprüfung durch eine qualifizierte Person stattgefunden hat oder nicht. Ferner ist zu berücksichtigen, dass eine Besichtigung nicht stattgefunden hat und auch eine Auseinandersetzung mit den vom Privatgutachter erstellten Fotos von den Beschädigungen fehlt."
+>
+> Auch enthält der vorliegende Prüfbericht keinen Namen eines Sachbearbeiters. Den kann er nach obigen Ausführungen auch nicht enthalten, denn das wäre der Programmierer. Automatisiert wird der Inhalt des Gutachtens mit den Vorgaben des auftraggebenden Versicherers verglichen; was nicht zur Vorgabe passt, wird gestrichen. Es wird also nicht auf fachliche Richtigkeit geprüft, sondern auf Übereinstimmung mit Vorgaben.
+
+**Wann einsetzen:** Vor dem Einsetzen im Prüfbericht nachsehen, ob wirklich kein Sachbearbeiter genannt ist – steht dort ein Name, fällt der zweite Absatz weg und der erste verliert an Wirkung. Im Bestand des Büros ist diese Erweiterung die Fassung, die gegen ControlExpert-Berichte verwendet wurde; die kürzere Fassung mit AG Kiel richtet sich gegen DEKRA-Berichte.
+
 **Hinweis:** Beide Fassungen sind im Bestand etwa gleich häufig. Die kürzere Fassung eignet sich für Standardfälle; die ausführliche Fassung mit AG Kiel/AG Stuttgart/AG Berlin-Mitte eignet sich, wenn bereits ein Rechtsstreit im Raum steht (z.B. Anfrage kommt über eine Rechtsanwaltskanzlei) oder der Prüfbericht besonders dünn begründet ist.
 
 ---

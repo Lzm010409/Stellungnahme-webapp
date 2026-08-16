@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { eq, and } from 'drizzle-orm'
 import type { db as DbTyp } from '@/db'
 import {
@@ -13,16 +14,53 @@ import type { GeparsterEintrag } from './parser'
 export interface SchreibErgebnis {
   neu: number
   ersetzt: number
+  unveraendert: number
+}
+
+/**
+ * Der Fingerabdruck eines geparsten Eintrags.
+ *
+ * Bewusst über die Felder und nicht über den Rohtext der Datei: Was zählt,
+ * ist der Inhalt, der in der Datenbank landet. Eine umformulierte Überschrift
+ * der Sektion oder eine verschobene Leerzeile ändern ihn nicht — ein
+ * geänderter Gegenargument-Satz sehr wohl. Die Reihenfolge der Unterlisten
+ * geht mit ein, weil sie im Dokument sichtbar wird.
+ */
+export function fingerabdruck(e: GeparsterEintrag): string {
+  const inhalt = JSON.stringify([
+    e.titel,
+    e.abschnitt,
+    e.typischeBegruendung,
+    e.gegenargument,
+    e.vorgehen,
+    e.hinweise,
+    e.haeufigkeitText,
+    e.quelldatei,
+    e.varianten.map((v) => [v.bezeichnung, v.text]),
+    e.ergaenzungen.map((x) => [x.titel, x.text]),
+    e.platzhalter.map((p) => [p.schluessel, p.art]),
+    e.vorbedingungsKandidaten,
+    e.belege.map((b) => [b.gericht, b.aktenzeichen]),
+  ])
+  return createHash('sha256').update(inhalt).digest('hex')
 }
 
 /**
  * Schreibt geparste Einträge in die Datenbank.
  *
- * Ein Eintrag wird über (Bereich, Nummer) identifiziert. Existiert er schon,
- * werden er und seine Unterdatensätze ersetzt — die Migration ist damit
- * wiederholbar, ohne Dubletten zu erzeugen. Ein bereits freigegebener Eintrag
- * behält seinen Status nicht: er fällt zurück auf `entwurf`, weil sich sein
- * Text geändert hat und die Freigabe sich auf den alten Stand bezog.
+ * Ein Eintrag wird über (Bereich, Nummer) identifiziert. Hat sich sein Inhalt
+ * geändert, werden er und seine Unterdatensätze ersetzt — der Einlesevorgang
+ * ist damit wiederholbar, ohne Dubletten zu erzeugen. Ein bereits
+ * freigegebener Eintrag behält seinen Status dann nicht: er fällt zurück auf
+ * `entwurf`, weil sich sein Text geändert hat und die Freigabe sich auf den
+ * alten Stand bezog.
+ *
+ * Hat sich **nichts** geändert, wird der Eintrag nicht angefasst. Das ist
+ * kein Feinschliff, sondern der Unterschied zwischen einem benutzbaren und
+ * einem gefürchteten Einlesevorgang: vorher kostete ein einziger neuer
+ * Baustein die Freigabe der gesamten Bibliothek, weil alle anderen Einträge
+ * gelöscht und neu angelegt wurden. Wer die Bibliothek erweitern will, soll
+ * das tun können, ohne den Bestand zu entwerten.
  */
 export async function schreibeEintraege(
   db: typeof DbTyp,
@@ -30,14 +68,22 @@ export async function schreibeEintraege(
 ): Promise<SchreibErgebnis> {
   let neu = 0
   let ersetzt = 0
+  let unveraendert = 0
 
   for (const e of eintraege) {
+    const abdruck = fingerabdruck(e)
+
     await db.transaction(async (tx) => {
       const vorhanden = await tx
-        .select({ id: eintrag.id })
+        .select({ id: eintrag.id, abdruck: eintrag.inhaltsfingerabdruck })
         .from(eintrag)
         .where(and(eq(eintrag.bereich, e.bereich), eq(eintrag.nummer, e.nummer)))
         .limit(1)
+
+      if (vorhanden[0]?.abdruck === abdruck) {
+        unveraendert++
+        return
+      }
 
       const bestehendeId = vorhanden[0]?.id
       if (bestehendeId) {
@@ -63,6 +109,7 @@ export async function schreibeEintraege(
           status: 'entwurf',
           herkunft: 'migration',
           quelldatei: e.quelldatei,
+          inhaltsfingerabdruck: abdruck,
         })
         .returning({ id: eintrag.id })
 
@@ -127,5 +174,5 @@ export async function schreibeEintraege(
     })
   }
 
-  return { neu, ersetzt }
+  return { neu, ersetzt, unveraendert }
 }

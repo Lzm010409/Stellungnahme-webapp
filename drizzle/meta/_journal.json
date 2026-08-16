@@ -43,6 +43,13 @@
       "when": 1786875243275,
       "tag": "0005_aromatic_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786961643275,
+      "tag": "0006_bibliothek_fingerabdruck",
+      "breakpoints": true
     }
   ]
 }

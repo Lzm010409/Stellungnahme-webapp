@@ -31,8 +31,10 @@ async function main() {
 
   const ergebnis = await schreibeEintraege(db, eintraege)
   console.log(
-    `  Geschrieben: ${ergebnis.neu} neu, ${ergebnis.ersetzt} ersetzt.\n` +
-      `  Alle im Status „entwurf" — Freigabe über die Oberfläche.\n`,
+    `  Geschrieben: ${ergebnis.neu} neu, ${ergebnis.ersetzt} geändert, ` +
+      `${ergebnis.unveraendert} unverändert übersprungen.\n` +
+      `  Neue und geänderte Einträge stehen auf „entwurf" — Freigabe über die\n` +
+      `  Oberfläche. Unveränderte behalten ihren Status samt Freigabe.\n`,
   )
   process.exit(0)
 }

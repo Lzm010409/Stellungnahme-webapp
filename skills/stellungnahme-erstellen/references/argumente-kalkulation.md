@@ -81,6 +81,11 @@ Format je Eintrag: **Kürzungsgrund** → typische Versicherer-Begründung → e
 
 **Variante Motorhaube – Komplettteil ohne werkseitige Teilfläche:** "Die Motorhaube wird werksseitig nicht abschnittsweise lackiert, sondern übergangslos als Komplettteil – von Kante zu Kante, innen und außen. Eine Teillackierung im Schadenbereich ist daher technisch nicht nur nicht ausreichend, sondern schlicht nicht durchführbar, wenn der vorherige Zustand wiederhergestellt werden soll. Im Übrigen befindet sich der Lackschaden eindeutig auf dem Außenblech der Motorhaube und nicht am Innenteil – der Versuch des Prüfdienstleisters, eine SmartRepair oder Teilreparatur zu begründen, entbehrt damit jeglicher technischer Grundlage. Der Abzug ist nicht nachvollziehbar; die Kosten der vollständigen Lackierung sind zu erstatten." (Anwendbar auf andere Komplettbauteile analog, die werksseitig immer als Einheit lackiert werden.)
 
+**Rechtsanker BGH:** Wenn der Prüfdienstleister die Beilackierung dem Grunde nach bestreitet, ist zunächst auf die Entscheidung des BGH zur Beilackierung bei der fiktiven Abrechnung zu verweisen, die in all ihren beweisrechtlichen Ausführungen auch auf die konkrete Abrechnung zu übertragen ist (BGH, Urteil vom 17.09.2019, Az. VI ZR 396/18):
+> Das Beweismaß ist § 287 ZPO zu entnehmen; es genügt daher, dass das Gericht sich die Überzeugung gebildet hat, dass die farbangleichende Beilackierung mit überwiegender Wahrscheinlichkeit technisch notwendig ist (BGH a.a.O., Rz. 14). Im Übrigen sind Farbangleichungsmaßnahmen über das beschädigte Bauteil hinaus Teil des Schadens (BGH a.a.O., Rz. 14), denn es geht laut § 249 Abs. 2 S. 1 BGB nicht um die Wiederherstellung des beschädigten Bauteils, sondern um die Wiederherstellung des vorherigen Zustands. Wenn der vorherige Zustand eine einheitliche Farbanmutung war, ist der Zustand danach eine einheitliche Farbanmutung – die instandgesetzten und lackierten Flächen sollen nicht farblich anders wirken als ihre Karosserieumgebung.
+
+**Herkunftshinweis:** Dieser Absatz stammt aus der eigenen Fassung des Büros (`Word/Beilackierung1.docx`). Die inhaltsgleiche Musterformulierung „RA028" aus *Unfallregulierung effektiv* (IWW) liegt im Textbestand ebenfalls, ist aber fremdes Urheberrecht und für eine Klageschrift geschrieben ("Beweis unter Verwahrung gegen die Beweislast") – für die Stellungnahme wird die eigene Fassung verwendet.
+
 ### 2.2 Widersprüchliche Doppelargumentation des Prüfdienstleisters
 **Typische Begründung:** Der Prüfdienstleister behauptet gleichzeitig (a) Beilackierung eines Nachbarbauteils sei nicht nötig, weil Ausnebeln reiche, UND (b) die Lackierung des eigentlichen Schadenbauteils sei insgesamt nicht nötig, weil der Schaden "nicht im unmittelbaren Sichtbereich" liege (oft mit Vorschlag von SmartRepair/Spot-Repair).
 
@@ -154,6 +159,14 @@ Format je Eintrag: **Kürzungsgrund** → typische Versicherer-Begründung → e
 
 **Hinweise:** Tritt vor allem bei Instandsetzungspositionen mit Richtarbeit an Außenblechen auf. Klar abzugrenzen von §2.8 (Korrosionsschutz): Dieser betrifft die elektrolytische Schutzschicht nach Blechbearbeitung; §2.11 betrifft die makroskopische Flächenherstellung als Lackiervoraussetzung. Beide Positionen können gleichzeitig auftreten.
 
+### 2.12 Lackierstufe / Datensätze des Kalkulationsanbieters bestritten
+**Typische Begründung:** Die im Gutachten angesetzte Lackierstufe sei zu hoch; das Neuteil sei bereits grundiert bzw. der Datensatz gebe eine niedrigere Stufe her.
+
+**Gegenargument:**
+> Die vorliegende Kalkulation wurde auf Grundlage der Datensätze von [DAT/Audatex] erstellt. Hierbei handelt es sich um einen etablierten und über alle Bereiche hinweg anerkannten Schadenkalkulations-Anbieter; die Ergebnisse sind aus Sachverständigensicht zunächst nicht zu beanstanden. Nachfragen beim Hersteller haben die Behauptung des Prüfdienstleisters ebenfalls nicht bestätigen können. Eine Inaugenscheinnahme des Neuteils ist derzeit nicht möglich, sodass der Prüfdienstleister seine Behauptung auch nicht belegen kann.
+
+**Hinweise:** Kurzes Beweislast-Argument. Es kehrt die Darlegungslast um: nicht der Sachverständige muss die Stufe begründen, sondern der Prüfdienstleister müsste den abweichenden Datensatz vorlegen. Nur einsetzen, wenn tatsächlich beim Hersteller nachgefragt wurde – sonst den entsprechenden Satz streichen.
+
 ---
 
 ## 3. Lackvorbereitung / Abdeckarbeiten
@@ -175,6 +188,22 @@ Format je Eintrag: **Kürzungsgrund** → typische Versicherer-Begründung → e
 **Variante Panoramadach / Glasdach / Stoffdach – erschwerte Haftung des Abdeckbands:** Wenn das Fahrzeug über ein Panoramaglasdach, ein Textil-/Stoffdach oder eine Dachreling verfügt und dies den Abdeckaufwand erhöht: "Abdeckarbeiten an Panoramadächern, Glasdächern, Dachrelings oder Textil-/Stoffdächern bedeuten gegenüber metallischen Dachflächen einen erheblich höheren Aufwand. Einerseits erschwert die eingeschränkte Zugänglichkeit das präzise Setzen des Konturenbands; andererseits weist Konturenband auf Glas, Dichtungslippen und Textiloberflächen eine deutlich schlechtere Haftung auf als auf Metall. Bei nicht ausreichend haftendem Band besteht das Risiko, dass Lack unter die Abdeckung läuft und zur Neulackierung angrenzender Bauteile zwingt. Der für dieses Fahrzeug kalkulierte gesonderte Ansatz für Abdeckarbeiten an [Panoramadach/Glasdach/Stoffdach] ist daher sachlich begründet und schadenbedingt zu erstatten; eine pauschale Einordnung in die allgemeinen Lackvorbereitungszeiten ist technisch nicht zu rechtfertigen."
 
 **AZT-Direktivzitat (direkt verwendbar):** "Da Kunststoffteile in der Regel im abgebauten Zustand lackiert werden, sind in den jeweiligen Kalkulationswerten Abdeckarbeiten nur begrenzt berücksichtigt." (Systembeschreibung AZT) – Dieses Zitat belegt ausdrücklich, dass Abdeckarbeiten an Kunststoffteilen nicht pauschal als „bereits enthalten" behandelt werden können, sondern separat ausgewiesen werden müssen, wenn im konkreten Fall tatsächliche Abdeckarbeiten anfallen (z.B. Konturenbänder für Klebebereiche, Spoilerkanten, Linienverlauf). Einsatz: wenn der Prüfdienstleister ausdrücklich auf "bereits in Vorbereitungszeiten enthalten" oder AZT-Pauschalzeiten verweist.
+
+### 3.2 Nicht wasserlöslichen Schmutz entfernen
+**Typische Begründung:** Die Position sei nicht erforderlich bzw. in der Lackvorbereitungszeit bereits enthalten; eine gewöhnliche Reinigung genüge.
+
+**Gegenargument:**
+> Bei dieser Arbeitsposition handelt es sich um eine Herstellervorgabe, die bei Altteilen anzuwenden ist, welche lackiert werden müssen. Auf [Bauteil] befindet sich regelmäßig überschüssiges Wachs, das in den heißen Sommermonaten aus den Wasserabläufen der überlappenden Bleche herausläuft; zudem ist der Kantenbereich zum Unterboden oft mit wachshaltigem Unterbodenschutz benetzt. Wenn nun der Schmutz der Straße über Jahre anhaftet, wird daraus eine hartnäckige und aufwendig zu beseitigende Schmutzschicht, die mit klarem Wasser nicht zu entfernen ist. Der Abzug dieser Herstellervorgabe ist technisch nicht nachvollziehbar; die Position ist als schadenbedingt zu erstatten.
+
+**Hinweise:** Greift vor allem an Heckblechen, Schwellern und im Kantenbereich zum Unterboden. Wenn die Position im Kalkulationsprogramm als Herstellervorgabe geführt ist, den Screenshot beilegen – dann trägt das Argument allein.
+
+### 3.3 Konturabdeckung Dachreling (statt Ausbau) pauschal gekürzt
+**Typische Begründung:** Der Aufwand zum Abdecken der Dachreling sei zu hoch angesetzt; eine geringere Pauschale genüge.
+
+**Gegenargument:**
+> Zunächst ist es erforderlich, die Fuge zwischen der Reling und dem Dachholm sorgfältig zu reinigen. So wird verhindert, dass das Abdeckmaterial während des Lackierprozesses an Haftung verliert und sich in der Folge Farbnebel unter der Folie auf die zu schützenden Flächen legt. Die Schwierigkeit und damit der berechnete Aufwand begründen sich in Art und Ausformung der Reling: Sie liegt eng und schräg am Dachholm an und ist zusätzlich mit einer feinen Dichtlippe versehen. Das birgt ein großes Risiko, bei flüchtiger Abdeckarbeit ein hohes Maß an Nacharbeit zu produzieren. Alternativ zu den angesetzten [Arbeitswerte] AW kann aus Sachverständigensicht auch der Ausbau der Reling kalkuliert werden, wie es in der Praxis von vielen Lackierfachbetrieben gemacht wird – dieser wäre jedoch nicht günstiger. Eine Reduzierung dieser diffizilen Arbeit auf [gekürzte Arbeitswerte] AW kann nicht nachvollzogen werden; die Position ist wie kalkuliert zu erstatten.
+
+**Hinweise:** Abzugrenzen von §4.12 (Ausbau der Dachreling). Hier wird nicht der Ausbau verteidigt, sondern der Aufwand für das Abdecken, wenn die Reling verbleibt. Das Alternativ-Argument („Ausbau wäre auch nicht billiger") ist der Kern – es nimmt dem Prüfdienstleister beide Wege. Ein Foto der Fuge zwischen Reling und Dachholm ist hier besonders wirksam.
 
 ---
 
@@ -312,6 +341,22 @@ Format je Eintrag: **Kürzungsgrund** → typische Versicherer-Begründung → e
 
 **Hinweise:** Gilt für größere Rad-/Reifenkombinationen; die konkrete Mindestgröße (hier 17") ist herstellerabhängig – immer mit Audatex-/DAT-Screenshot der Herstellerposition belegen. Abzugrenzen von §4.14 (Sicherheitsmaßnahmen vor Ofentrocknung): Dort geht es um Fahrzeuginnenraum-Schutzmaßnahmen beim Einfahren; hier um den Reifenschutz bei größeren Felgen. Anwendbar analog auf andere Hersteller mit entsprechender Vorgabe.
 
+### 4.18 Vorrichten des Bauteils vor dem Austrennen
+**Typische Begründung:** Ein Bauteil, das ohnehin erneuert wird, müsse vor dem Austrennen nicht mehr vorgerichtet werden.
+
+**Gegenargument:**
+> Der Irrglaube, dass zu erneuernde Bauteile vor dem Austrennen nicht vorgerichtet werden müssten, hält sich hartnäckig. Im vorliegenden Fall wurde ein Vorrichten aufgrund der veränderten Spaltmaße sowie der ebenfalls verformten angrenzenden Karosseriepartien erforderlich – die innere Radhaus- bzw. Radlaufkontur muss wiederhergestellt werden. Nur solange sich die beschädigte [Seitenwand/Bauteil] im Karosseriegefüge befindet, kann das Zugwerkzeug überall angesetzt werden, um die angrenzenden Karosseriepartien wie z.B. das Radhaus wieder in die Ursprungsposition zu bringen. Wird das Bauteil vorher ausgetrennt, fehlt der Kraftangriffspunkt, und die Rückverformung der verbliebenen Partien ist ungleich aufwendiger. So werden abschließend nur noch geringe Instandsetzungs- und Anpassungsarbeiten erforderlich.
+
+**Hinweise:** Abzugrenzen von §4.6 (Einsatz Richtgerät) – dort geht es um das Werkzeug, hier um den Zeitpunkt. Beides kann in einem Fall nebeneinander stehen. Herkunft: Argumentationshilfe eines Sachverständigenkollegen aus 2019; im Textbestand lag dazu ausdrücklich kein fertiger Baustein, der Text ist für die Bibliothek neu formuliert.
+
+### 4.19 Reinigung der Felge vor der Lackierung
+**Typische Begründung:** Die Reinigung sei in der Lackvorbereitungszeit enthalten bzw. mit klarem Wasser zu erledigen.
+
+**Gegenargument:**
+> Bei einem Fahrzeug mit einer Laufleistung von [Laufleistung] km dürfte bereits der zweite Satz Bremsbeläge vorne verschlissen sein; die Verunreinigung mit Bremsstaub ist somit unstrittig. Dieser ist allerdings nicht einfach durch klares Wasser und ein geeignetes Tuch abzuwaschen. Hier bedarf es eines zusätzlichen Aufwandes, um eine von Dreckeinschlüssen freie Lackierung herzustellen. Da im Gutachten lediglich die reine Lackierzeit von [Arbeitswerte] AW für die Felge berücksichtigt wurde und nicht zusätzlich eine Lackvorbereitungszeit für die zweite Farbe, verfängt auch das Argument mit der bereits enthaltenen Vorbereitungszeit nicht. Die angesetzten Arbeitswerte sind erforderlich und als schadenbedingte Kosten zu erstatten.
+
+**Hinweise:** Der zweite Halbsatz ist entscheidend und wird oft übersehen: Prüfen, ob im Gutachten für die Felge tatsächlich nur Lackierzeit und keine Vorbereitungszeit angesetzt ist. Ist doch eine Vorbereitungszeit kalkuliert, den Satz streichen – sonst greift der Prüfdienstleister ihn an. Abzugrenzen von §4.3 (Sichtprüfung Felge), die einen anderen Arbeitsschritt betrifft.
+
 ---
 
 ## 5. Nebenkosten
@@ -369,6 +414,18 @@ Format je Eintrag: **Kürzungsgrund** → typische Versicherer-Begründung → e
 
 **Gegenargument:**
 > Die Behauptung des Prüfdienstleisters, die Kosten der Teilfolierung seien zu hoch angesetzt, entbehrt jeglicher Grundlage. Bei dem betroffenen Bauteil handelt es sich um ein komplexes Bauteil mit vielen Ecken, Kanten und Anbauteilen, die aufwendig eingeschnitten und/oder ausgespart werden müssen. Zudem war das Fahrzeug mit einer qualitativ hochwertigen Folie eines namhaften Folienherstellers foliert. Eine solche Teilfolierung ist mit dem entsprechenden Material- und Arbeitseinsatz nicht für [Pauschalbetrag]€ netto zu erhalten.
+
+### 5.8 Schutzmaßnahmen COVID-19 / Desinfektionskosten
+**Typische Begründung:** Die Kosten für Schutzmaßnahmen (Masken, Handschuhe, Desinfektion, Reinigung) seien in den Gemeinkosten des Betriebes und damit in den Stundenverrechnungssätzen bereits enthalten; bei fiktiver Abrechnung fielen sie ohnehin nicht an.
+
+**Gegenargument:**
+> Zahlreich geführte Gespräche mit Werkstätten, Partnerwerkstätten der Versicherer und Sachverständigenkollegen aus dem Fachbereich Karosserieinstandsetzung haben gezeigt, dass die Schutzmaßnahmen in Verbindung mit COVID-19 (Handschuhe, Masken, Desinfektion, Reinigung) nicht nur überwiegend Anwendung finden, sondern auch durch die Versicherer in der anschließenden Abrechnung akzeptiert und ausgeglichen werden. Zu behaupten, dies sei in den Gemeinkosten des jeweiligen Unternehmens und somit in den Stundenverrechnungssätzen bereits enthalten, trifft nicht zu: Keines der befragten Unternehmen hat aufgrund der Pandemie seine Stundenverrechnungssätze erhöht, also auch keinen zusätzlichen Aufwand eingerechnet.
+
+**Variante – Rechnungsprüfung, konkrete Reparatur:** "Gerne klären wir auf, wo Sinn und Notwendigkeit der berechneten Schutzmaßnahmen COVID-19 liegen. Zur Zeit der Reparatur des Kundenfahrzeuges gab es bundesweit zeitweise eine Inzidenz von annähernd 2000 Fällen auf 100.000 Einwohner in sieben Tagen. Da empfahl es sich für jedes Unternehmen, einen erheblichen Aufwand zum Schutz vor Infektionen in der Belegschaft und damit zur Aufrechterhaltung der Betriebstätigkeit zu betreiben. Hierzu zählen das Tragen und Bereitstellen von Masken, das regelmäßige Desinfizieren von Händen und Kontaktflächen und der besondere Umgang mit dem Kundenfahrzeug bei der Übergabe nach erfolgter Reparatur. Ferner waren Betriebe verpflichtet, ihren Mitarbeitern mindestens zweimal pro Woche einen Selbsttest zur Verfügung zu stellen. Dass dies mit erheblichen Mehrkosten einhergeht, ist unmittelbar verständlich."
+
+**Variante – fiktive Abrechnung, mit AZT/ZKF/IFL-Studie:** "Der Schadengutachter ist gemäß der Entscheidung des BGH vom 13.01.2005 verpflichtet, das Schadengutachten am geltenden Schadenersatzrecht auszurichten. Übertragen auf die Situation mit COVID-19 bedeutet dies, dass Maßnahmen, die Werkstätten zur Aufrechterhaltung der Betriebstätigkeit per Auflage durchführen müssen, gesondert in Rechnung gestellt werden und damit in ein Gutachten gehören, welches zur Schadenschätzung zum Zwecke der Schadenregulierung herangezogen wird. Da die überwiegende Zahl der Werkstätten diese Kostenposition berechnet, ist sie auch im fiktiven Abrechnungsfall zu erstatten – denn laut BGH-Urteil, Az. VI ZR 401/12, ist es grundsätzlich nicht zulässig, nach angefallenen und nicht angefallenen Kosten zu unterscheiden. Die Berechnung erfolgte hier nach der Studie des versicherernahen Allianz-Zentrums für Technik. In der gemeinsamen Studie des AZT, ZKF und IFL heißt es: 'Durch die Corona-Pandemie bedingt kann die Desinfektion von Kundenfahrzeugen bei der Fahrzeugreparatur einen notwendigen Arbeitsaufwand darstellen… Der erforderliche Arbeitsaufwand beträgt durchschnittlich 3 AW/10er-Teilung. Die Kosten für benötigtes Verbrauchsmaterial betragen einmalig 7,50 € pro Auftrag.'"
+
+**Hinweise:** Nur für Schadenfälle aus der Pandemiezeit einschlägig – bei aktuellen Fällen entfällt die Position. Die dritte Variante ist die stärkste, weil sie mit dem AZT eine versicherernahe Quelle gegen den Versicherer wendet; die Zahlen 3 AW und 7,50 € stammen direkt aus der Studie. Belege liegen im Textbestand des Büros: die AZT-Studie, das Papier der HUK und die IFL-Unterlage. Die Verweisung auf BGH VI ZR 401/12 ist dieselbe wie bei den Verbringungskosten (§5.3).
 
 ---
 
@@ -465,6 +522,20 @@ Format je Eintrag: **Kürzungsgrund** → typische Versicherer-Begründung → e
 
 **Hinweise:** Anwendbar, wenn (a) die SVS im Gutachten die Aushanglöhne der Besichtigungswerkstatt sind und (b) der Anspruchsteller während der Begutachtung die Reparaturabsicht in eben dieser Werkstatt geäußert hat. Diese Absicht sollte in den Gutachtenunterlagen oder aktenmäßig belegt sein. Abzugrenzen von §7.1 (dort geht es um falsch ausgewiesene Löhne der Referenzwerkstatt) und §7.3 (dort geht es um Scheckheft-Markenwerkstatt). Hier ist das Argument ausschließlich das Dispositionsrecht des Geschädigten, unabhängig von Fahrzeugalter oder Wartungshistorie.
 
+### 7.8 Materialzuschlag Lack: Versicherer erstattet pauschal nur bis 30 %
+**Typische Begründung:** Der Versicherer erstattet grundsätzlich nur einen Materialaufschlag auf Lacklohn bis zu einer festen Obergrenze (regelmäßig 30 %), unabhängig davon, welchen Aufschlag die Werkstatt tatsächlich erhebt.
+
+**Gegenargument:**
+> Der Verweis auf die durch den Prüfdienstleister ermittelte Referenzwerkstatt ist bei der fiktiven Abrechnung dem Grunde nach im Sinne der Schadenminderung erlaubt. Hier ist die Abrechnung des Schadens jedoch mit einem falschen Materialaufschlag erfolgt. Die Aushanglöhne der genannten Werkstatt lauten auf Nachfrage vom [Datum der Nachfrage]: Mechanik [Stundensatz Mechanik] €, Karosserie [Stundensatz Karosserie] €, Lack inkl. Material [Stundensatz Lack] €, Materialaufschlag [Materialaufschlag] %. Die Einlassung des Versicherers, er erstatte grundsätzlich nur bis 30 % Zuschlag auf Lohn, ergibt vor dem Hintergrund des Verweises auf eine konkrete Werkstatt, in der dieser Aufschlag höher liegt, keinen Sinn. Sollte der Geschädigte dort tatsächlich reparieren lassen, fiele dieser Zuschlag an – und ist somit auch bei fiktiver Abrechnung zu erstatten. Schadenrecht funktioniert nicht nach dem Motto „Versicherer, wünsch Dir was".
+
+**Variante – Markenwerkstatt, ohne konkrete Referenz:** "Es wird dem Versicherer nicht gelingen, einen [Marke]-Markenbetrieb in zumutbarer Nähe des Anspruchstellers zu benennen, der einen derart geringen Zuschlag für Lackmaterial ansetzt. Da im Schadenrecht mit Verrechnungssatz und Zuschlägen der Markenwerkstatt abgerechnet wird, entspricht die Abrechnung des Versicherers nicht der geltenden Rechtsprechung."
+
+**Variante – Werkstatt am Wohnort:** "Wenn, wie in diesem Fall, die Werkstatt am Wohnort des Anspruchstellers einen prozentualen Materialzuschlag auf Lackierkosten von [Materialaufschlag] % erhebt, dann ist dies in der Logik eines verständigen, wirtschaftlich denkenden Menschen auch zu erstatten."
+
+**Ergänzung – Löhne anpassen, falls der Verweis Bestand hat:** Als Hilfsargument am Ende der Position, wenn der Verweis auf die Referenzwerkstatt nicht insgesamt angegriffen werden soll: "Auf Nachfrage vom [Datum der Nachfrage] bei der genannten Referenzwerkstatt wurden folgende Aushanglöhne bestätigt: Mechanik [Stundensatz Mechanik] €, Karosserie [Stundensatz Karosserie] €, Lack inkl. Material [Stundensatz Lack] €. Sollte der Verweis rechtlich Bestand haben, so sind die Löhne wie oben ausgewiesen der Abrechnung anzupassen." Dieselbe Formulierung eignet sich auch als Ergebnis-Satz (siehe Hausstil §8).
+
+**Hinweise:** Abzugrenzen von §7.1: Dort geht es um falsche Stundenverrechnungssätze, hier um den Materialaufschlag auf den Lacklohn – beide treten oft gemeinsam auf und werden dann in einer Position zusammengezogen. Die eigene Nachfrage bei der Referenzwerkstatt ist eine Vorbedingung: ohne sie darf die Aufzählung der Löhne nicht behauptet werden.
+
 ---
 
 ## 8. Wertverbesserung / Neu-für-Alt (NfA)
@@ -510,6 +581,10 @@ Diese Sektion wird herangezogen, wenn der Versicherer die im Gutachten ausgewies
 
 **Gegenargument:**
 > Die im Gutachten ausgewiesene Reparaturdauer ergibt sich aus einer praxisnahen Methodik: Die kalkulierten Arbeitswerte (AW) werden auf Basis einer realistischen Tagesleistung von 6 Arbeitsstunden (entspricht 12 AW) umgerechnet; hinzu kommen fahrzeugspezifische Ablüftzeiten, insbesondere für Lackvorbereitung, Grundierung, Lackschichten und Klarlack, die im Lackierbereich zwingend einzuhalten sind und sich nicht mit anderen Arbeitspositionen überschneiden lassen. Diese Zeiten sind weder dispositionsfrei noch verkürzbar: Eine Unterschreitung der Ablüftzeiten führt zu Lackhaftungsfehlern und ggf. zur vollständigen Neulackierung. Die vom Prüfdienstleister vorgeschlagene verkürzte Reparaturdauer berücksichtigt diese Zeiten nicht und ist damit praxisfern.
+
+**Variante – reine AW-Addition des Prüfberichts widerlegen:** Wenn der Prüfbericht die Reparaturdauer allein aus der Summe der Arbeitswerte herleitet: "Wenn man, wie im vorliegenden Prüfbericht, nur die reinen Arbeitswerte addiert, kommt man zu diesem theoretischen Ergebnis von [Reparaturdauer laut Prüfbericht]. Aus technischer Sicht ist aber klar, dass mit den Ablüftzeiten von Spachtelmasse, Füller, Lack und einem abschließenden Finish eine derartige Reparatur nicht in dieser Zeit abgewickelt werden kann. Die im Gutachten ausgewiesenen [Reparaturdauer laut Gutachten] sind aus sachverständiger Sicht auch bei optimalem Verlauf der Reparatur nicht zu unterbieten."
+
+**Variante – die Rechnung ausschreiben:** "Bei den Berechnungsmodellen zur Reparaturdauer geht man davon aus, dass bei optimaler Werkstattplanung pro Werktag 6 Stunden an einem Fahrzeug gearbeitet werden kann. Zusammengenommen kommt man bei der Reparatur des Anspruchstellerfahrzeuges auf insgesamt [Summe der Arbeitswerte] Stunden. Dies bedeutet rein rechnerisch eine Reparaturdauer von [errechnete Tage] Tagen. Der zweite Tag ist also bereits voll ausgeschöpft, und der Reparaturbetrieb rutscht mit der Fertigstellung unweigerlich in den dritten Tag." (Die ausgeschriebene Rechnung wirkt in der Praxis stärker als die bloße Behauptung – sie macht den Rundungssprung sichtbar, den der Prüfbericht unterschlägt.)
 
 **Berechnungsbeispiel (im Einzelfall anpassen):**
 - Gesamt-AW laut Kalkulation: [X] AW

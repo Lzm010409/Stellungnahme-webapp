@@ -97,8 +97,8 @@ describe('Kalkulationsdatei', () => {
   const konfig = STANDARD_DATEIEN[0]!
   const eintraege = lade(konfig)
 
-  it('findet alle 55 Einträge', () => {
-    expect(eintraege).toHaveLength(55)
+  it('findet alle 62 Einträge', () => {
+    expect(eintraege).toHaveLength(62)
   })
 
   it('vergibt für jeden Eintrag Nummer, Titel und Abschnitt', () => {
@@ -183,9 +183,11 @@ describe('Sonderfälle', () => {
     expect(a).toBeDefined()
     expect(a!.gegenargument.length).toBeGreaterThan(100)
     expect(a!.abschnitt).toMatch(/Teil A/)
-    // Die ausführlichere Fassung mit Gerichtszitaten hängt als Variante daran.
-    expect(a!.varianten).toHaveLength(1)
+    // Die ausführlichere Fassung mit Gerichtszitaten und der Zusatzbaustein
+    // zur automatisierten Erstellung hängen als Varianten daran.
+    expect(a!.varianten).toHaveLength(2)
     expect(a!.varianten[0]!.bezeichnung).toMatch(/Gerichtszitate/)
+    expect(a!.varianten[1]!.bezeichnung).toMatch(/Sachbearbeiter/)
   })
 
   it('erfasst B.1 bis B.8 als Prüfhandlungen', () => {
@@ -207,8 +209,8 @@ describe('Sonderfälle', () => {
 describe('Gesamtbestand', () => {
   const alle = [...STANDARD_DATEIEN.flatMap(lade), ...ladeSonderfaelle()]
 
-  it('überführt 68 Einträge', () => {
-    expect(alle).toHaveLength(68)
+  it('überführt 90 Einträge', () => {
+    expect(alle).toHaveLength(90)
   })
 
   it('lässt keinen Eintrag ohne Gegenargument und ohne Vorgehen zurück', () => {

@@ -17,7 +17,7 @@ import { baueReferenzdatei, type ExportEintrag } from '../src/bibliothek/markdow
 import { referenzVerzeichnis } from '../src/bibliothek/migration'
 
 interface Zieldatei {
-  bereich: 'kalkulation' | 'wertminderung'
+  bereich: 'kalkulation' | 'wertminderung' | 'wbw'
   datei: string
   titel: string
   einleitung: string
@@ -46,6 +46,17 @@ const ZIELE: Zieldatei[] = [
       'Kanonische Gegenargumente zu Kürzungen des merkantilen Minderwerts.\n\n' +
       '_Erzeugt aus der Kürzungsabwehr-Werkbank. Änderungen bitte dort vornehmen._',
     eintragEbene: 2,
+  },
+  {
+    bereich: 'wbw',
+    datei: 'argumente-wbw-bausteine.md',
+    titel: 'Argumentbibliothek: Wiederbeschaffungswert',
+    einleitung:
+      'Die einzelnen Bausteine für Stellungnahmen zum Wiederbeschaffungswert. Den ' +
+      'Aufbau des Schreibens beschreibt daneben `argumente-wbw.md` — diese Datei wird ' +
+      'vom Rückweg nicht angefasst, weil sie Vorlagen und keine Einträge enthält.\n\n' +
+      '_Erzeugt aus der Kürzungsabwehr-Werkbank. Änderungen bitte dort vornehmen._',
+    eintragEbene: 3,
   },
 ]
 

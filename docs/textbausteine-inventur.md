@@ -115,8 +115,13 @@ Lackierräder. Diese belegen Bausteine, sind aber selbst keine.
 
 ## 3 Wo die Bibliothek der App heute abweicht
 
-Die Bibliothek zählt heute **91 Einträge**: 71 im Bereich `kalkulation`, 11 in `wertminderung`,
-9 in `sonderfall`. Die Bereiche **`wbw` und `restwert` sind leer.**
+Die Bibliothek zählte vor dem Abgleich **68 echte Einträge**: 55 im Bereich `kalkulation`, 4 in
+`wertminderung`, 9 in `sonderfall`. Die Bereiche **`wbw` und `restwert` waren leer.**
+
+> Berichtigung zur ersten Zählung: In der Entwicklungsdatenbank standen 91 Zeilen. Die Differenz
+> sind 21 Wegwerf-Einträge aus den UI-Prüfläufen (`PA.3 … PG.3`, „Zurückgezogen ohne
+> Gegenargument") und 2 Einträge, die aus einer Stellungnahme übernommen wurden. Die
+> maßgebliche Zahl der aus den Referenzdateien migrierten Einträge ist 68.
 
 Der Vergleich mit dem OneDrive zeigt: die vorhandenen Einträge stammen erkennbar aus genau diesen
 Dokumenten. Die Sorge, die Bausteine könnten unvollständig übernommen worden sein, bestätigt sich —

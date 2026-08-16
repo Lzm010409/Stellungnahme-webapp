@@ -197,6 +197,21 @@ export const eintrag = pgTable(
     embedding: jsonb(),
 
     quelldatei: text(),
+    /**
+     * Fingerabdruck des Inhalts, wie er aus der Referenzdatei gelesen wurde.
+     *
+     * Der Einlesevorgang ersetzt einen Eintrag samt Unterdatensätzen, und das
+     * setzt ihn auf `entwurf` zurück — mit gutem Grund, denn eine Freigabe
+     * bezieht sich auf einen bestimmten Wortlaut. Ohne diesen Fingerabdruck
+     * traf das aber **jeden** Eintrag bei **jedem** Lauf, auch die, an denen
+     * sich kein Zeichen geändert hatte: ein einziger neuer Baustein hätte die
+     * Freigabe der ganzen Bibliothek einkassiert.
+     *
+     * Stimmt der Fingerabdruck überein, bleibt der Eintrag unangetastet —
+     * Status, Freigabe und Datum inbegriffen. Ist er `null` (Einträge aus der
+     * Zeit vor dieser Spalte), wird einmal ersetzt und dabei gesetzt.
+     */
+    inhaltsfingerabdruck: text(),
     erstelltVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
     freigegebenVon: uuid().references(() => benutzer.id, { onDelete: 'set null' }),
     freigegebenAm: timestamp({ withTimezone: true }),

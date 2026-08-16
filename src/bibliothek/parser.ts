@@ -82,20 +82,30 @@ export interface DateiKonfiguration {
 export const STANDARD_DATEIEN: DateiKonfiguration[] = [
   { datei: 'argumente-kalkulation.md', bereich: 'kalkulation', eintragEbene: 3 },
   { datei: 'argumente-wertminderung.md', bereich: 'wertminderung', eintragEbene: 2 },
+  { datei: 'argumente-wbw-bausteine.md', bereich: 'wbw', eintragEbene: 3 },
 ]
 
 /**
  * `argumente-wbw.md` wird bewusst nicht als Argumenteinträge migriert: die
  * Datei enthält zwei Szenario-Vorlagen mit Einleitungssatz, Tabellenblock und
- * Abschlussformel, keine Kürzungsgrund/Gegenargument-Paare. Sie kommt in P3
- * mit dem WBW-Routing als eigenes Vorlagenmodell dazu. Der Migrationsbericht
- * weist sie ausdrücklich als „nicht migriert" aus, damit sie nicht still unter
- * den Tisch fällt.
+ * Abschlussformel, keine Kürzungsgrund/Gegenargument-Paare. Der
+ * Migrationsbericht weist sie ausdrücklich als „nicht migriert" aus, damit sie
+ * nicht still unter den Tisch fällt.
+ *
+ * Das war lange die einzige WBW-Datei — und damit stand der Bereich `wbw` in
+ * der Bibliothek leer da, obwohl das Büro sehr wohl WBW-Argumente verwendet.
+ * Sie lagen nur nicht in dieser Datei, sondern in fünf vollständigen
+ * Schreiben im Textbestand. Daraus ist `argumente-wbw-bausteine.md`
+ * entstanden; die Szenario-Datei bleibt daneben stehen, weil sie etwas
+ * anderes leistet: sie beschreibt den Aufbau des Schreibens, nicht die
+ * einzelnen Argumente.
  */
 export const NICHT_MIGRIERT = [
   {
     datei: 'argumente-wbw.md',
-    grund: 'Szenario-Vorlagen statt Argumenteinträge — folgt in P3 mit dem WBW-Routing.',
+    grund:
+      'Szenario-Vorlagen für den Aufbau des Schreibens statt Argumenteinträge — ' +
+      'die WBW-Argumente selbst stehen in argumente-wbw-bausteine.md.',
   },
 ] as const
 
@@ -429,7 +439,15 @@ export function parseSonderfaelle(inhalt: string, datei: string): GeparsterEintr
   const eintraege: GeparsterEintrag[] = []
 
   let teilAText: string[] = []
-  let teilAVariante: { bezeichnung: string; text: string[] } | null = null
+  /*
+    Alle Fassungen des Vorbemerkungsblocks, nicht nur eine.
+
+    Hier stand ein einzelner Platz, der beim zweiten `###` unter Teil A
+    stillschweigend überschrieben wurde — die vorherige Fassung fiel ersatzlos
+    aus der Bibliothek, ohne Warnung. Aufgefallen ist es erst, als eine dritte
+    Fassung dazukam. Eine Liste kann nichts verlieren.
+  */
+  const teilAVarianten: { bezeichnung: string; text: string[] }[] = []
   let inTeilA = false
 
   let offeneRegel: string | null = null
@@ -474,10 +492,11 @@ export function parseSonderfaelle(inhalt: string, datei: string): GeparsterEintr
 
     if (inTeilA) {
       if (zeile.startsWith('### ')) {
-        teilAVariante = { bezeichnung: zeile.slice(4).trim(), text: [] }
+        teilAVarianten.push({ bezeichnung: zeile.slice(4).trim(), text: [] })
         continue
       }
-      if (teilAVariante) teilAVariante.text.push(zeile)
+      const offen = teilAVarianten.at(-1)
+      if (offen) offen.text.push(zeile)
       else teilAText.push(zeile)
       continue
     }
@@ -498,9 +517,13 @@ export function parseSonderfaelle(inhalt: string, datei: string): GeparsterEintr
 
   const vorbemerkung = entferneZitatzeichen(teilAText.join('\n')).trim()
   if (vorbemerkung) {
-    const variantenText = teilAVariante
-      ? entferneZitatzeichen(teilAVariante.text.join('\n')).trim()
-      : ''
+    const varianten = teilAVarianten
+      .map((v) => ({
+        bezeichnung: v.bezeichnung,
+        text: entferneZitatzeichen(v.text.join('\n')).trim(),
+      }))
+      .filter((v) => v.text)
+    const variantenTexte = varianten.map((v) => v.text)
     eintraege.unshift({
       nummer: 'A',
       titel: 'Prüfberichte allgemein — wiederverwendbarer Einleitungsblock',
@@ -511,13 +534,11 @@ export function parseSonderfaelle(inhalt: string, datei: string): GeparsterEintr
       vorgehen: null,
       hinweise: null,
       haeufigkeitText: null,
-      varianten: teilAVariante && variantenText
-        ? [{ bezeichnung: teilAVariante.bezeichnung, text: variantenText }]
-        : [],
+      varianten,
       ergaenzungen: [],
-      platzhalter: findePlatzhalter(vorbemerkung, variantenText),
+      platzhalter: findePlatzhalter(vorbemerkung, ...variantenTexte),
       vorbedingungsKandidaten: [],
-      belege: findeBelege(vorbemerkung, variantenText),
+      belege: findeBelege(vorbemerkung, ...variantenTexte),
       quelldatei: datei,
       warnungen: [],
     })
