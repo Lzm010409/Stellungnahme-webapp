@@ -850,6 +850,20 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     await seite.locator('.brief-flaeche .d-abschnitt p').first().click()
     await seite.keyboard.press('End')
   }
+
+  /*
+    Bevor irgendetwas am Brief geprüft wird: ist er überhaupt offen?
+    Ein versendetes Schreiben weist jede Eingabe ab — richtig so, aber dann
+    ist jeder folgende Befund einer über den Prüfling und keiner über die
+    Anwendung. Einmal sagen ist besser als zwanzigmal raten.
+  */
+  if ((await seite.locator('.brief-flaeche').getAttribute('contenteditable')) === 'false') {
+    melde(
+      'unschoen',
+      'Der Prüfling ist als versendet vermerkt und deshalb geschlossen — ' +
+        'alle folgenden Befunde am Brief sagen nichts über die Anwendung.',
+    )
+  }
   const briefText = () =>
     seite.evaluate(() => (document.querySelector('.brief-flaeche') as HTMLElement).innerText)
   const wartetAufSpeichern = async () => {
@@ -1423,7 +1437,7 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     }
   })
 
-  await pruefe('Versendet vermerken', async () => {
+  await pruefe('Versendet vermerken und zurücknehmen', async () => {
     const knopf = seite.locator('button:has-text("Versendet")')
     if ((await knopf.count()) === 0) return
     await knopf.click()
@@ -1435,6 +1449,37 @@ async function teilSchreibtisch(seite: Page, bildPfad: string) {
     await seite.reload({ waitUntil: 'networkidle' })
     await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
     await seite.waitForTimeout(600)
+
+    // Ein versendetes Schreiben ist geschlossen — das gehört mitgeprüft.
+    const beschreibbar = await seite
+      .locator('.brief-flaeche')
+      .getAttribute('contenteditable')
+      .catch(() => null)
+    if (beschreibbar !== 'false') {
+      melde('fehler', 'Ein versendetes Schreiben nimmt weiterhin Eingaben an.')
+    }
+
+    /*
+      Und wieder zurücknehmen. Nicht aus Höflichkeit, sondern aus Not: die
+      Probe hat sich sonst ihren eigenen Prüfling verbraucht. Sie liess ihn
+      als versendet zurück, der nächste Lauf griff sich denselben, und weil
+      ein versendetes Schreiben keine Eingabe annimmt, meldete er „Ein
+      gezogener Baustein landet nicht im Brief" — ein Befund über den
+      Prüfstand, der wie einer über die Anwendung aussah. Nebenbei wird so
+      auch der Rückweg geprüft, den es vorher gar nicht gab.
+    */
+    const zurueck = seite.locator('button:has-text("Versandvermerk zurücknehmen")')
+    if ((await zurueck.count()) === 0) {
+      melde('fehler', 'Aus „versendet" führt kein Weg zurück.')
+      return
+    }
+    await zurueck.click()
+    await seite.waitForTimeout(2000)
+    await seite.reload({ waitUntil: 'networkidle' })
+    await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
+    if ((await seite.locator('.brief-flaeche').getAttribute('contenteditable')) === 'false') {
+      melde('fehler', 'Nach dem Zurücknehmen bleibt das Schreiben geschlossen.')
+    }
   })
 }
 
