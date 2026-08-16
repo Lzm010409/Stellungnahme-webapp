@@ -1392,10 +1392,38 @@ async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: stri
     }
     const ziel = seite.locator('.brief-flaeche .d-abschnitt p').first()
     const vorher = await seite.locator('.brief-flaeche .d-quelle').count()
+
+    /*
+      Mitschrift der Zieh-Ereignisse.
+
+      Ohne sie war „landet nicht im Brief" nicht zu deuten: es kann am
+      Ziehen liegen, am Ziel oder daran, dass der Brief gar keine Eingabe
+      annimmt. Der Browser verrät es — bleibt `drop` aus, hat das Ziel den
+      Wurf abgelehnt; kommt `drop` an und es passiert trotzdem nichts, liegt
+      es an der Anwendung.
+    */
+    await seite.evaluate(`(() => {
+      window.ziehspur = []
+      var merke = function (name) {
+        return function (e) {
+          var dt = e.dataTransfer
+          window.ziehspur.push(name + (dt ? '(' + dt.types.join(',') + ')' : ''))
+        }
+      }
+      document.addEventListener('dragstart', merke('start'), true)
+      document.addEventListener('dragover', merke('ueber'), true)
+      document.addEventListener('drop', merke('wurf'), true)
+    })()`)
+
     await griff.dragTo(ziel)
     await seite.waitForTimeout(1800)
     if ((await seite.locator('.brief-flaeche .d-quelle').count()) <= vorher) {
-      melde('fehler', 'Ein gezogener Baustein landet nicht im Brief.')
+      const spur = ((await seite.evaluate(`window.ziehspur`)) as string[]) ?? []
+      const offen = await seite.locator('.brief-flaeche').getAttribute('contenteditable')
+      melde(
+        'fehler',
+        `Ein gezogener Baustein landet nicht im Brief. (Ereignisse: ${spur.join(' → ') || 'keine'}; Brief beschreibbar: ${offen ?? '?'})`,
+      )
     }
   })
 
