@@ -74,7 +74,22 @@ export async function speichereKopf(
     })
     .where(eq(stellungnahme.id, stellungnahmeId))
 
-  revalidatePath(`/stellungnahmen/${stellungnahmeId}`)
+  /*
+    Ausdrücklich **kein** `revalidatePath` auf die Detailseite.
+
+    Es sah harmlos aus und war ein Wettlauf: das Neuzeichnen lässt den
+    Server die Seite neu bauen, dabei läuft `stelleDokumentBereit` — und
+    trägt seinerseits Anrede und Einleitungssatz nach, sobald die Felder
+    gefüllt sind. Es schreibt also das Dokument und erhöht dessen Stand,
+    während der Editor im Browser dasselbe gerade selbst tut. Dessen
+    Speicherung trifft dann auf einen fremden Stand und wird abgewiesen:
+    der nachgetragene Satz stand auf dem Schirm, aber nicht in der Ablage —
+    und die Anzeige meldete „gespeichert".
+
+    Zwei Schreiber für dieselbe Sache sind einer zu viel. Hier gewinnt der
+    Editor: er hat den Brief, wie er gerade aussieht. Beim nächsten Öffnen
+    findet der Server den Satz vor und lässt ihn in Ruhe.
+  */
   return { hinweis: 'Gespeichert.' }
 }
 
