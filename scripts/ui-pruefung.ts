@@ -128,10 +128,21 @@ async function legeWegwerfAn(): Promise<string[]> {
       .values({ betreff: `Wegwerfschreiben der Bedienprobe ${nummer}` })
       .returning({ id: stellungnahme.id })
     if (!neu) continue
+    /*
+      Die Begründung des Prüfdienstleisters ist der Schlüssel, über den die
+      Randspalte einen Baustein vorschlägt. Ohne sie stünde in jeder
+      Anmerkung „nichts gefunden", und die halbe Prüfung des Schreibtischs
+      liefe ins Leere — sie prüfte dann die Abwesenheit von Daten.
+    */
     await db.insert(position).values(
-      ['Verbringungskosten', 'Lackierlohn', 'Ersatzteilaufschlag'].map((bezeichnung, i) => ({
+      [
+        ['Verbringungskosten', 'Die Halterung sei zerstörungsfrei zu demontieren.'],
+        ['Lackierlohn', 'Eine Beilackierung sei nicht erforderlich.'],
+        ['Ersatzteilaufschlag', 'Eine Wertminderung sei nicht anzusetzen.'],
+      ].map(([bezeichnung, begruendung], i) => ({
         stellungnahmeId: neu.id,
-        bezeichnung,
+        bezeichnung: bezeichnung!,
+        begruendungVersicherer: begruendung!,
         reihenfolge: i,
         differenz: String((i + 1) * 25),
       })),
@@ -139,6 +150,15 @@ async function legeWegwerfAn(): Promise<string[]> {
     ids.push(neu.id)
   }
   return ids
+}
+
+/** Räumt die übrig gebliebenen Wegwerf-Schreiben weg. */
+async function raeumeWegwerfWeg(ids: string[]): Promise<void> {
+  if (!process.env.DATABASE_URL || ids.length === 0) return
+  const { db } = await import('../src/db/index')
+  const { stellungnahme } = await import('../src/db/schema')
+  const { inArray } = await import('drizzle-orm')
+  await db.delete(stellungnahme).where(inArray(stellungnahme.id, ids))
 }
 
 async function anmelden(seite: Page): Promise<void> {
@@ -185,8 +205,23 @@ async function main() {
   await teilBilder(seite, bild)
   await teilFarben(seite)
   await teilStellungnahmenliste(seite)
-  await teilSchreibtisch(seite, bild)
-  await teilZerstoerend(seite, await legeWegwerfAn())
+
+  /*
+    Der Schreibtisch bekommt sein eigenes, frisches Schreiben.
+
+    Vorher griff er sich das oberste der Übersicht — also bei jedem Lauf
+    ein anderes, und jedes mit den Spuren des letzten Laufs: einmal war es
+    als versendet vermerkt und damit geschlossen, einmal steckten dreissig
+    fremde Handgriffe darin. Die Befunde wanderten entsprechend („Baustein
+    landet nicht im Brief", „Rückgängig wirkt nicht", „nach dem Neuladen
+    steht etwas anderes da") und liessen sich einzeln nie nachstellen. Ein
+    Prüfstand, der bei jedem Lauf etwas anderes misst, ist schlimmer als
+    keiner.
+  */
+  const wegwerf = await legeWegwerfAn()
+  await teilSchreibtisch(seite, bild, wegwerf[2] ?? null)
+  await teilZerstoerend(seite, wegwerf)
+  await raeumeWegwerfWeg(wegwerf.slice(2))
 
   await seite.screenshot({ path: `${ZIEL}/schluss.png`, fullPage: true })
   await browser.close()
@@ -853,12 +888,20 @@ async function offeneZeile(seite: Page) {
 
 /* ---------------- Schreibtisch ---------------- */
 
-async function teilSchreibtisch(seite: Page, bildPfad: string) {
+async function teilSchreibtisch(seite: Page, bildPfad: string, prueflingId: string | null) {
   abschnitt('Schreibtisch')
 
   const oeffne = async () => {
-    await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
-    await (await offeneZeile(seite)).click()
+    if (prueflingId) {
+      await seite.goto(`${BASIS}/stellungnahmen/${prueflingId}`, { waitUntil: 'networkidle' })
+    } else {
+      // Ohne Datenbankzugang bleibt der alte Weg: das oberste offene
+      // Schreiben mit Positionen. Dann sagt der Bericht aber auch, dass der
+      // Prüfling nicht frisch ist.
+      melde('unschoen', 'Ohne Datenbankzugang prüft der Schreibtisch an einem fremden Schreiben.')
+      await seite.goto(`${BASIS}/stellungnahmen`, { waitUntil: 'networkidle' })
+      await (await offeneZeile(seite)).click()
+    }
     await seite.waitForSelector('.brief-flaeche', { timeout: 20000 })
     await seite.waitForTimeout(900)
   }
