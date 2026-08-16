@@ -408,6 +408,22 @@ export const Platzhalterwandler = Extension.create({
   },
 })
 
+/**
+ * Das Ereignis, mit dem der Kopfbereich seine Angaben ansagt.
+ *
+ * Der Kopf ist ein Formular für sich, der Brief steht im Editor daneben —
+ * beide wissen voneinander nichts. Damit ein nachgetragenes Datum im Brief
+ * ankommt, meldet der Kopf es nach dem Speichern an; der Schreibtisch
+ * hört zu und trägt nach, wo noch die Vorlage steht.
+ */
+export const EREIGNIS_KOPF = 'kopfdaten'
+
+export interface Kopfmeldung {
+  empfaengerName: string
+  einleitungDatum: string
+  einleitungMedium: string
+}
+
 /** Das Ereignis, mit dem eine Marke im Brief ihre Position meldet. */
 export const EREIGNIS_MARKE = 'abschnittsmarke'
 

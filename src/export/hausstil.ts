@@ -28,6 +28,84 @@ export interface Kopfdaten {
   vorbemerkungEinfuegen: boolean
 }
 
+/** Die Anrede, wenn zum Empfänger nichts Näheres bekannt ist. */
+export const STANDARD_ANREDE = 'Sehr geehrte Damen und Herren,'
+
+/*
+  Aus der Empfängerzeile wird die Anrede — aber nur, wenn die Zeile sie
+  ausdrücklich hergibt.
+
+  „Rechtsanwältin Claudia Busch" ergibt „Sehr geehrte Frau Busch,". Der
+  Schluss läuft ausschliesslich über die **Anredeform** in der Zeile
+  („Frau", „Rechtsanwältin", „Herrn", „Rechtsanwalt"), niemals über den
+  Vornamen. Aus einem Vornamen auf die Anrede zu schliessen geht regelmässig
+  schief — und ein Brief, der den Empfänger falsch anredet, ist schlimmer
+  als einer, der ihn gar nicht anredet. Fehlt die Form, bleibt es bei
+  „Sehr geehrte Damen und Herren,".
+*/
+const FORMEN: [RegExp, 'frau' | 'herr'][] = [
+  [/\b(frau|rechtsanwältin|anwältin|rain|ra'in)\b/i, 'frau'],
+  [/\b(herrn?|rechtsanwalt|anwalt)\b/i, 'herr'],
+]
+
+/* Zeichen, an denen eine Firma erkennbar ist — dort wird niemand angeredet. */
+const FIRMA =
+  /\b(gmbh|mbh|ag|kg|ohg|se|mbb|partg|partner|partnerschaft|kanzlei|versicherung|versicherungen|autohaus|werkstatt|karosserie|e\.?\s?v\.?|&)\b/i
+
+/**
+ * Baut die Anrede aus der Empfängerzeile.
+ *
+ * Gibt `null` zurück, wenn sich nichts Belastbares ableiten lässt — dann
+ * gilt die Standardanrede.
+ */
+export function baueAnrede(empfaengerName: string | null | undefined): string | null {
+  const zeile = empfaengerName?.trim()
+  if (!zeile) return null
+  if (FIRMA.test(zeile)) return null
+
+  const form = FORMEN.find(([muster]) => muster.test(zeile))?.[1]
+  if (!form) return null
+
+  // Der Nachname ist das letzte Wort, das keine Anredeform und kein Titel ist.
+  const woerter = zeile
+    .split(/\s+/)
+    .filter((w) => !/^(frau|herrn?|rechtsanwältin|rechtsanwalt|anwältin|anwalt|rain|ra'in|dr\.?|prof\.?|dipl\.-?ing\.?)$/i.test(w))
+  const nachname = woerter.at(-1)?.replace(/[,;]+$/, '')
+  if (!nachname || nachname.length < 2) return null
+
+  return form === 'frau' ? `Sehr geehrte Frau ${nachname},` : `Sehr geehrter Herr ${nachname},`
+}
+
+/**
+ * Ob eine Anrede offensichtlich aus der Vorlage stammt und nicht von Hand
+ * geschrieben wurde.
+ *
+ * Nur eine solche darf ersetzt werden, wenn sich der Empfänger ändert. Was
+ * jemand selbst formuliert hat, bleibt stehen — auch wenn es dann nicht
+ * mehr zum Empfängerfeld passt.
+ */
+export function istVorlagenAnrede(anrede: string): boolean {
+  const t = anrede.trim()
+  if (!t) return true
+  if (t === STANDARD_ANREDE) return true
+  return /^Sehr geehrter? (Frau|Herr) \S+,$/.test(t)
+}
+
+/**
+ * Ob ein Absatz der gebaute Einleitungssatz ist.
+ *
+ * Erkennbar an Anfang und Ende des festen Bausteins. Ein selbst
+ * geschriebener Einleitungsabsatz sieht anders aus und wird deshalb beim
+ * Ändern der Kopfdaten nicht überschrieben.
+ */
+export function istVorlagenEinleitung(absatz: string): boolean {
+  const t = absatz.trim()
+  if (!t) return true
+  return /^mit (dem Schreiben|der Mail) vom .{4,12} überliessen|^mit (dem Schreiben|der Mail) vom .{4,12} überließen/i.test(
+    t,
+  )
+}
+
 export interface Positionstext {
   nummer: number
   ueberschrift: string

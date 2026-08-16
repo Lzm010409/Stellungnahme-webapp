@@ -8,7 +8,12 @@
  * eines fertigen Dokuments gibt.
  */
 
-import { baueEinleitung, ERGEBNIS_ABSAETZE, type Kopfdaten } from '@/export/hausstil'
+import {
+  baueEinleitung,
+  ERGEBNIS_ABSAETZE,
+  STANDARD_ANREDE,
+  type Kopfdaten,
+} from '@/export/hausstil'
 import {
   KNOTEN,
   abschnitt,
@@ -52,7 +57,6 @@ export interface DokumentQuelle {
   ergebnisAbsatz?: string | null
 }
 
-const STANDARD_ANREDE = 'Sehr geehrte Damen und Herren,'
 const STANDARD_BETREFF = 'Betreff: Stellungnahme'
 
 function normalisiereHerkunft(wert: string): Herkunftsmarke['herkunft'] {

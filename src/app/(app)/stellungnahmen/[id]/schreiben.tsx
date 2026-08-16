@@ -3,10 +3,23 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { EREIGNIS_MARKE, briefErweiterungen } from '@/dokument/editor-schema'
+import {
+  EREIGNIS_KOPF,
+  EREIGNIS_MARKE,
+  briefErweiterungen,
+  type Kopfmeldung,
+} from '@/dokument/editor-schema'
+import {
+  baueAnrede,
+  baueEinleitung,
+  istVorlagenAnrede,
+  istVorlagenEinleitung,
+  STANDARD_ANREDE,
+} from '@/export/hausstil'
 import {
   abschnittsReihenfolge,
   abschnittsText,
+  einleitungsstelle,
   aktiverAbschnitt,
   dokumentJson,
   ankerHoehe,
@@ -24,6 +37,7 @@ import {
 } from '@/dokument/editor-hilfen'
 import {
   BILD_BREITE_STANDARD,
+  KNOTEN,
   absaetzeAusText,
   bildknoten,
   herkunftsmarke,
@@ -316,6 +330,88 @@ export function Schreibtisch({
     }
     brief.addEventListener(EREIGNIS_MARKE, hoere)
     return () => brief.removeEventListener(EREIGNIS_MARKE, hoere)
+  }, [editor])
+
+  /**
+   * Trägt Anrede und Einleitungssatz nach, wenn der Kopf gespeichert wurde.
+   *
+   * Beides sind feste Bausteine des Hausstils und wurden bisher **einmal**
+   * beim Anlegen gebaut. Das Datum des Anschreibens ist zu diesem Zeitpunkt
+   * aber oft noch gar nicht bekannt: wer es später nachtrug, änderte damit
+   * nur die Aktennotiz — im Brief blieb die Stelle leer, und im versandten
+   * Schreiben fehlte der Einleitungssatz. Genauso beim Empfänger: die
+   * Anrede blieb „Sehr geehrte Damen und Herren,", auch wenn im Feld
+   * daneben längst eine Rechtsanwältin stand.
+   *
+   * Überschrieben wird nur, was noch aus der Vorlage stammt. Was der
+   * Verfasser selbst geschrieben hat, bleibt stehen — der Rahmen gehört dem
+   * Fall, der Text dem Verfasser. Und die Änderung geht als gewöhnliche
+   * Änderung durch: sie landet in der Rückgängig-Kette und wird gespeichert
+   * wie jede andere.
+   */
+  useEffect(() => {
+    if (!editor) return
+
+    const hoere = (ereignis: Event) => {
+      const daten = (ereignis as CustomEvent<Kopfmeldung>).detail
+      if (!daten) return
+
+      const anredeNeu = baueAnrede(daten.empfaengerName) ?? STANDARD_ANREDE
+      const einleitungNeu =
+        baueEinleitung({
+          einleitungDatum: daten.einleitungDatum || null,
+          einleitungMedium: daten.einleitungMedium === 'mail' ? 'mail' : 'schreiben',
+        } as Parameters<typeof baueEinleitung>[0]) ?? ''
+
+      const tr = editor.state.tr
+      let geaendert = false
+
+      editor.state.doc.descendants((knoten, pos) => {
+        if (knoten.type.name === KNOTEN.anrede) {
+          if (istVorlagenAnrede(knoten.textContent) && knoten.textContent.trim() !== anredeNeu) {
+            tr.replaceWith(pos + 1, pos + knoten.nodeSize - 1, editor.schema.text(anredeNeu))
+            geaendert = true
+          }
+          return false
+        }
+        return knoten.type.name === KNOTEN.dokument
+      })
+
+      /*
+        Der Einleitungsabsatz ist der erste Absatz nach der Anrede — er
+        trägt kein eigenes Merkmal, denn im Brief ist er gewöhnlicher Text.
+        Deshalb wird er über seine Stelle bestimmt, genau wie beim
+        Wiederherstellen nach einem Rundumschnitt.
+      */
+      const strecke = einleitungsstelle(editor)
+      if (strecke && istVorlagenEinleitung(strecke.text) && strecke.text !== einleitungNeu) {
+        /*
+          Durch die Abbildung der Änderung geführt: die Anrede darüber ist
+          gerade womöglich kürzer geworden — „Sehr geehrte Damen und
+          Herren," gegen „Sehr geehrte Frau Busch," sind sechs Zeichen —,
+          und die vorher gemessenen Stellen wären um genau diese Differenz
+          verschoben. Der Einleitungssatz landete dann irgendwo oder gar
+          nicht. Genau so ist es beim ersten Speichern passiert: die Anrede
+          stand richtig da, die Einleitung blieb leer.
+        */
+        tr.replaceWith(
+          tr.mapping.map(strecke.von),
+          tr.mapping.map(strecke.bis),
+          einleitungNeu
+            ? editor.schema.nodes.paragraph!.create(null, editor.schema.text(einleitungNeu))
+            : editor.schema.nodes.paragraph!.create(),
+        )
+        geaendert = true
+      }
+
+      if (geaendert) {
+        editor.view.dispatch(tr)
+        setzeMeldung('Anrede und Einleitungssatz im Brief nachgetragen.')
+      }
+    }
+
+    window.addEventListener(EREIGNIS_KOPF, hoere)
+    return () => window.removeEventListener(EREIGNIS_KOPF, hoere)
   }, [editor])
 
   /**

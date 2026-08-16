@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { speichereKopf } from '@/stellungnahme/export-aktionen'
 import { nachDeutsch, nachIso } from '@/export/datum'
+import { EREIGNIS_KOPF } from '@/dokument/editor-schema'
 
 /**
  * Empfänger und Anschreiben-Datum.
@@ -124,19 +125,19 @@ export function Kopfbereich(props: {
             TT.MM.JJJJ, mal MM/TT/JJJJ. Was im Brief steht, bestimmt das
             Büro. Deshalb steht es hier ausgeschrieben daneben.
 
-            Und zwar als das, was es ist. Hier stand „Im Brief: …" — eine
-            Zusage, die diese Felder nicht einhalten: der Einleitungssatz
-            wird beim **Anlegen** des Schreibens einmal aus Datum und
-            Übermittlungsweg gebaut (`erzeugen.ts`) und ist danach
-            gewöhnlicher Fliesstext. Wer hier das Datum ändert, ändert die
-            Aktennotiz — im Brief steht weiter der alte Satz, und auch die
-            Word-Ausgabe nimmt ihn von dort. Ein Feld, das etwas anderes
-            verspricht, führt genau in den Fehler, den es verhüten soll.
+            Lange stand hier eine Zusage, die die Felder nicht einhielten:
+            der Einleitungssatz wurde beim **Anlegen** einmal gebaut und
+            danach nie wieder. Wer das Datum später nachtrug — und beim
+            Anlegen ist es oft noch nicht bekannt —, änderte damit nur die
+            Aktennotiz; im Brief blieb die Stelle leer. Seit dem Speichern
+            trägt der Kopf den Satz nach: er wird in den Brief geschrieben,
+            solange dort noch der Satz aus der Vorlage steht. Selbst
+            geschriebenes bleibt unangetastet.
           */}
           <span className="unterzeile" style={{ margin: '4px 0 0' }}>
             {werte.einleitungDatum
-              ? `Einleitungssatz beim Anlegen: „mit ${werte.einleitungMedium === 'mail' ? 'der Mail' : 'dem Schreiben'} vom ${werte.einleitungDatum} …" — im schon geschriebenen Brief steht der Satz im Text und wird dort geändert.`
-              : 'Noch kein Datum — ein neu angelegtes Schreiben beginnt dann ohne Einleitungssatz.'}
+              ? `Im Brief: „mit ${werte.einleitungMedium === 'mail' ? 'der Mail' : 'dem Schreiben'} vom ${werte.einleitungDatum} überliessen Sie uns …" — beim Speichern nachgetragen, sofern der Absatz nicht selbst geschrieben ist.`
+              : 'Noch kein Datum — der Brief beginnt dann ohne Einleitungssatz.'}
           </span>
         </div>
         <div className="feld">
@@ -161,6 +162,26 @@ export function Kopfbereich(props: {
             starte(async () => {
               const e = await speichereKopf(props.stellungnahmeId, werte)
               setzeMeldung(e.fehler ?? e.hinweis ?? null)
+              /*
+                Der Brief steht im Editor daneben und weiss von diesem
+                Formular nichts. Damit die Kopfdaten dort ankommen, meldet
+                das Speichern sie an — der Schreibtisch trägt Anrede und
+                Einleitungssatz nach, soweit dort noch die Vorlage steht.
+                Ein Ereignis am Fenster ist hier der schmalste Weg: kein
+                gemeinsamer Zustand, keine Runde über den Server, und der
+                Kopf bleibt für sich prüfbar.
+              */
+              if (!e.fehler) {
+                window.dispatchEvent(
+                  new CustomEvent(EREIGNIS_KOPF, {
+                    detail: {
+                      empfaengerName: werte.empfaengerName,
+                      einleitungDatum: werte.einleitungDatum,
+                      einleitungMedium: werte.einleitungMedium,
+                    },
+                  }),
+                )
+              }
             })
           }
         >

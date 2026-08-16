@@ -501,3 +501,35 @@ export function ankerHoehe(behaelter: HTMLElement, positionId: string): number |
   if (!el) return null
   return el.getBoundingClientRect().top - behaelter.getBoundingClientRect().top
 }
+
+/**
+ * Die Strecke zwischen Anrede und erstem Abschnitt — der Einleitungsabsatz.
+ *
+ * Er trägt kein eigenes Merkmal: im Brief ist er gewöhnlicher Fliesstext,
+ * und genau das soll er auch sein. Bestimmt wird er deshalb über seine
+ * Stelle. Dieselbe Regel benutzt der Rahmen, wenn er ihn nach einem
+ * Rundumschnitt aus der Ablage zurückholt.
+ */
+export function einleitungsstelle(
+  editor: Editor,
+): { von: number; bis: number; text: string } | null {
+  let von: number | null = null
+  let bis: number | null = null
+  let text = ''
+
+  editor.state.doc.forEach((kind, versatz) => {
+    if (kind.type.name === KNOTEN.anrede) {
+      von = versatz + kind.nodeSize
+      return
+    }
+    if (von === null || bis !== null) return
+    if (kind.type.name === KNOTEN.abschnitt || kind.type.name === KNOTEN.ergebnis) {
+      bis = versatz
+      return
+    }
+    text += kind.textContent
+  })
+
+  if (von === null) return null
+  return { von, bis: bis ?? von, text: text.trim() }
+}

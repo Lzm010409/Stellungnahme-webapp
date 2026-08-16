@@ -1,4 +1,5 @@
 import type { Gutachten } from './typen'
+import { STANDARD_ANREDE, baueAnrede } from '@/export/hausstil'
 import { GUTACHTENTYPEN, ZUSTAENDE } from './typen'
 
 /**
@@ -224,10 +225,16 @@ export function schlageEmpfaengerVor(d: Falldaten): {
   const bezeichnung =
     d.anspruchsteller?.name || d.fahrzeug.kennzeichen || d.aktenzeichen || null
 
+  /*
+    Die Anrede folgt dem Empfänger, sofern seine Zeile sie hergibt:
+    „Rechtsanwältin Claudia Busch" wird zu „Sehr geehrte Frau Busch,".
+    Ohne ausdrückliche Anredeform bleibt es bei „Sehr geehrte Damen und
+    Herren," — geraten wird nicht, siehe `baueAnrede`.
+  */
   return {
     empfaenger: treffer?.[0] ?? null,
     herkunft: treffer?.[1] ?? null,
     betreff: bezeichnung ? `Stellungnahme Abrechnung ${bezeichnung}` : null,
-    anrede: 'Sehr geehrte Damen und Herren,',
+    anrede: baueAnrede(treffer?.[0]?.name) ?? STANDARD_ANREDE,
   }
 }
