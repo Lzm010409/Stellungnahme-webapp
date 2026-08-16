@@ -223,6 +223,16 @@ Freigabe bezieht sich auf einen bestimmten Wortlaut.
 
 Belegt: Der zweite Lauf desselben Bestands meldet „0 neu, 0 geändert, 90 unverändert übersprungen".
 
+**Damit verbunden: die Bibliothek erreicht die laufende Anwendung jetzt überhaupt.** Der
+Startvorgang (`scripts/starten.mjs`) hat die mitgelieferte Startbefüllung bisher nur eingespielt,
+solange die Bibliothek **leer** war. Eine erweiterte Bibliothek kam damit nie in der Anwendung an —
+jeder neue Baustein hätte von Hand nachgetragen werden müssen. Der Startvorgang gleicht jetzt bei
+jedem Start ab, nach derselben Fingerabdruck-Regel: unveränderte Einträge bleiben unangetastet,
+von Hand angelegte Einträge werden nie gelöscht. Geprüft an der Entwicklungsdatenbank: ein Lauf
+meldet „Bibliothek ist auf Stand — 90 Einträge unverändert"; nach künstlicher Änderung eines
+Eintrags meldet er „0 neu, 1 geändert, 89 unverändert", und ein danebenstehender freigegebener
+Eintrag behält seine Freigabe.
+
 **Zweiter Fund, ein stiller Textverlust:** Der Parser hielt für den Vorbemerkungsblock (Teil A) nur
 **einen** Platz für eine Zweitfassung. Beim Hinzufügen des ControlExpert-Zusatzbausteins
 überschrieb dieser die vorhandene ausführliche Fassung — ohne Warnung, ohne Fehler. Aufgefallen

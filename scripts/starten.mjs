@@ -90,26 +90,58 @@ async function befuelleBibliothek(sql) {
     return
   }
 
-  const [{ anzahl }] = await sql`select count(*)::int as anzahl from eintrag`
-  if (anzahl > 0) {
-    melde(`Bibliothek enthält ${anzahl} Einträge — Startbefüllung übersprungen.`)
-    return
-  }
-
   const { eintraege } = JSON.parse(readFileSync(STARTBEFUELLUNG, 'utf8'))
-  melde(`Bibliothek ist leer — ${eintraege.length} Einträge werden übernommen.`)
+
+  /*
+    Abgleich statt Erstbefüllung.
+
+    Früher lief dieser Schritt nur, solange die Bibliothek leer war. Damit
+    erreichte eine erweiterte Bibliothek die laufende Anwendung nie: Wer einen
+    Baustein ergänzte, musste ihn von Hand nachtragen. Jetzt wird bei jedem
+    Start abgeglichen — aber nur, was sich wirklich geändert hat.
+
+    Der Fingerabdruck entscheidet. Stimmt er, bleibt der Eintrag unangetastet:
+    Status, Freigabe und Datum. Sonst wird er ersetzt und fällt auf `entwurf`
+    zurück, denn eine Freigabe bezieht sich auf einen bestimmten Wortlaut.
+    Einträge, die in der Datenbank stehen, aber nicht in der Startbefüllung
+    (von Hand angelegte etwa), bleiben in jedem Fall unberührt — hier wird
+    nichts gelöscht.
+  */
+  const vorhanden = new Map(
+    (
+      await sql`select bereich, nummer, inhaltsfingerabdruck from eintrag where herkunft = 'migration'`
+    ).map((z) => [`${z.bereich}/${z.nummer}`, z.inhaltsfingerabdruck]),
+  )
+
+  let neuAngelegt = 0
+  let geaendert = 0
+  let unveraendert = 0
 
   for (const e of eintraege) {
+    const schluessel = `${e.bereich}/${e.nummer}`
+    const bekannt = vorhanden.has(schluessel)
+
+    if (bekannt && vorhanden.get(schluessel) === e.fingerabdruck) {
+      unveraendert++
+      continue
+    }
+    if (bekannt) geaendert++
+    else neuAngelegt++
+
     await sql.begin(async (tx) => {
+      // Unterdatensätze hängen per ON DELETE CASCADE am Eintrag.
+      if (bekannt) {
+        await tx`delete from eintrag where bereich = ${e.bereich} and nummer = ${e.nummer}`
+      }
       const [angelegt] = await tx`
         insert into eintrag (
           nummer, titel, bereich, abschnitt, typische_begruendung,
           gegenargument, vorgehen, hinweise, haeufigkeit_text,
-          status, herkunft, quelldatei
+          status, herkunft, quelldatei, inhaltsfingerabdruck
         ) values (
           ${e.nummer}, ${e.titel}, ${e.bereich}, ${e.abschnitt}, ${e.typischeBegruendung},
           ${e.gegenargument || null}, ${e.vorgehen}, ${e.hinweise}, ${e.haeufigkeitText},
-          'entwurf', 'migration', ${e.quelldatei}
+          'entwurf', 'migration', ${e.quelldatei}, ${e.fingerabdruck ?? null}
         )
         returning id
       `
@@ -148,7 +180,14 @@ async function befuelleBibliothek(sql) {
     })
   }
 
-  melde(`${eintraege.length} Einträge übernommen — alle im Status „entwurf".`)
+  if (neuAngelegt === 0 && geaendert === 0) {
+    melde(`Bibliothek ist auf Stand — ${unveraendert} Einträge unverändert.`)
+  } else {
+    melde(
+      `Bibliothek abgeglichen: ${neuAngelegt} neu, ${geaendert} geändert, ` +
+        `${unveraendert} unverändert. Neue und geänderte stehen auf „entwurf".`,
+    )
+  }
 }
 
 /**
