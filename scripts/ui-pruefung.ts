@@ -626,7 +626,15 @@ async function teilBilder(seite: Page, bildPfad: string) {
   })
 
   await pruefe('Bild aus der Bibliothek nehmen und zurückholen', async () => {
-    await seite.goto(`${BASIS}/bilder`, { waitUntil: 'networkidle' })
+    /*
+      An einem eigenen Bild, nicht am erstbesten.
+
+      Achtzehn der Bibliotheksbilder stehen in Schreiben, und die lassen
+      sich absichtlich nicht herausnehmen — sie fielen dort aus dem Brief.
+      Griff die Prüfung eines davon, meldete sie „lässt sich nicht wieder
+      aufnehmen", wo die Anwendung genau das Richtige tat.
+    */
+    await seite.goto(`${BASIS}/bilder?q=Probeaufnahme`, { waitUntil: 'networkidle' })
     const karte = seite.locator('.bildkarte').first()
     if ((await karte.count()) === 0) return
     await karte.locator('button.bildkarte-bild').click()
@@ -635,6 +643,25 @@ async function teilBilder(seite: Page, bildPfad: string) {
     if ((await raus.count()) === 0) return
     await raus.click()
     await seite.waitForTimeout(2200)
+
+    /*
+      Steht das Bild in einem Schreiben, verweigert die Anwendung das
+      Herausnehmen — mit gutem Grund: es fiele dort aus dem Brief, ohne
+      dass es jemand merkte. Dann ist der folgende Rückweg gegenstandslos,
+      und die Prüfung hätte ihn früher als Fehler gemeldet. Sie hat es
+      getan, sobald die Probe zuvor ein Bibliotheksbild in einen Brief
+      gesetzt hatte.
+    */
+    const abgewiesen = await seite
+      .locator('.hinweis.fehler, .bildkarte .hinweis')
+      .first()
+      .innerText()
+      .catch(() => '')
+    if (/Schreiben/.test(abgewiesen)) {
+      await seite.screenshot({ path: `${ZIEL}/bild-in-verwendung.png` })
+      return
+    }
+
     const zurueck = seite.locator('.bildkarte button:has-text("In die Bibliothek")').first()
     if ((await zurueck.count()) === 0) {
       melde('fehler', 'Ein herausgenommenes Bild lässt sich nicht wieder aufnehmen.')
