@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { ergaenzeFehlendeAbschnitte, wandlePlatzhalterInKnoten } from './reparatur'
+import {
+  ergaenzeFehlendeAbschnitte,
+  traegeKopfsaetzeNach,
+  wandlePlatzhalterInKnoten,
+} from './reparatur'
 import { KNOTEN, abschnitt, absatz, knotenText, text, type Elementknoten } from './typen'
 
 const POSITIONEN = [
@@ -181,5 +185,71 @@ describe('wandlePlatzhalterInKnoten', () => {
     expect(knotenText(dokument.content![0]!)).toBe(
       'Am Fahrzeug [Kennzeichen] ist die Lackierung von [Bauteil] nötig.',
     )
+  })
+})
+
+describe('traegeKopfsaetzeNach', () => {
+  const brief = (anrede: string, einleitung: string | null): Elementknoten => ({
+    type: 'doc',
+    content: [
+      { type: KNOTEN.betreff, content: [text('Stellungnahme')] },
+      { type: KNOTEN.anrede, content: [text(anrede)] },
+      einleitung ? absatz(einleitung) : { type: KNOTEN.absatz },
+      abschnitt({ positionId: 'p1', bezeichnung: 'Lackierung' }, 'Lackierung'),
+      { type: KNOTEN.ergebnis, content: [text('Ergebnis.')] },
+    ],
+  })
+
+  const SATZ =
+    'mit der Mail vom 17.07.2026 überließen Sie uns das Abrechnungsschreiben des Versicherers mit der Bitte um Stellungnahme. Hierzu machen wir folgende Feststellungen:'
+
+  it('trägt beides nach, wenn nur die Vorlage dasteht', () => {
+    const { dokument, nachgetragen } = traegeKopfsaetzeNach(
+      brief('Sehr geehrte Damen und Herren,', null),
+      { anrede: 'Sehr geehrte Frau Busch,', einleitung: SATZ },
+    )
+    expect(nachgetragen).toEqual(['anrede', 'einleitung'])
+    expect(knotenText(dokument.content![1]!)).toBe('Sehr geehrte Frau Busch,')
+    expect(knotenText(dokument.content![2]!)).toBe(SATZ)
+  })
+
+  /*
+    Der wichtigste Fall: was jemand selbst geschrieben hat, bleibt stehen —
+    auch wenn es dann nicht mehr zum Empfängerfeld passt. Der Rahmen gehört
+    dem Fall, der Text dem Verfasser.
+  */
+  it('lässt eine selbst geschriebene Anrede in Ruhe', () => {
+    const { dokument, nachgetragen } = traegeKopfsaetzeNach(
+      brief('Liebe Frau Busch,', null),
+      { anrede: 'Sehr geehrter Herr Müller,', einleitung: null },
+    )
+    expect(nachgetragen).toEqual([])
+    expect(knotenText(dokument.content![1]!)).toBe('Liebe Frau Busch,')
+  })
+
+  it('lässt einen selbst geschriebenen Einleitungsabsatz in Ruhe', () => {
+    const eigen = 'wie am Telefon besprochen, hier unsere Stellungnahme.'
+    const { nachgetragen } = traegeKopfsaetzeNach(
+      brief('Sehr geehrte Frau Busch,', eigen),
+      { anrede: 'Sehr geehrte Frau Busch,', einleitung: SATZ },
+    )
+    expect(nachgetragen).toEqual([])
+  })
+
+  it('tut nichts, wenn schon alles stimmt', () => {
+    const { nachgetragen } = traegeKopfsaetzeNach(brief('Sehr geehrte Frau Busch,', SATZ), {
+      anrede: 'Sehr geehrte Frau Busch,',
+      einleitung: SATZ,
+    })
+    expect(nachgetragen).toEqual([])
+  })
+
+  it('räumt den Satz weg, wenn das Datum verschwindet', () => {
+    const { dokument, nachgetragen } = traegeKopfsaetzeNach(
+      brief('Sehr geehrte Frau Busch,', SATZ),
+      { anrede: 'Sehr geehrte Frau Busch,', einleitung: null },
+    )
+    expect(nachgetragen).toEqual(['einleitung'])
+    expect(knotenText(dokument.content![2]!)).toBe('')
   })
 })

@@ -16,7 +16,17 @@
  * Browser und lässt sich ohne Browser prüfen.
  */
 
-import { KNOTEN, abschnitt, istText, text, type Elementknoten, type Knoten } from './typen'
+import {
+  KNOTEN,
+  abschnitt,
+  absatz,
+  istText,
+  knotenText,
+  text,
+  type Elementknoten,
+  type Knoten,
+} from './typen'
+import { istVorlagenAnrede, istVorlagenEinleitung } from '@/export/hausstil'
 import { ERGEBNIS_ABSAETZE } from '@/export/hausstil'
 import { zerlegeMitPlatzhaltern } from './platzhalter'
 import { klassifiziereKlammerausdruck } from '@/bibliothek/parser'
@@ -192,4 +202,81 @@ export function wandlePlatzhalterInKnoten(dokument: Elementknoten): {
 
   const ergebnis = gehe(dokument) as Elementknoten
   return { dokument: ergebnis, gewandelt }
+}
+
+/* ------------------------------------------------------------------ *
+ * Anrede und Einleitungssatz nachtragen
+ * ------------------------------------------------------------------ */
+
+export interface Kopfsaetze {
+  /** Die Anrede, wie sie sich aus dem Empfänger ergibt. */
+  anrede: string
+  /** Der Einleitungssatz, oder `null`, wenn das Datum fehlt. */
+  einleitung: string | null
+}
+
+/**
+ * Trägt Anrede und Einleitungssatz im Dokument nach.
+ *
+ * Beide sind feste Bausteine des Hausstils und wurden bisher **einmal**
+ * beim Anlegen gebaut. Das Datum des Anschreibens ist zu diesem Zeitpunkt
+ * aber oft noch nicht bekannt, und der Empfänger wird häufig später
+ * nachgetragen. Das Ergebnis stand im versandten Schreiben: keine
+ * Einleitung, und „Sehr geehrte Damen und Herren," an eine namentlich
+ * bekannte Rechtsanwältin.
+ *
+ * Läuft beim Öffnen, damit auch ein Schreiben von gestern in Ordnung kommt,
+ * ohne dass jemand den Kopfbereich anfassen muss. Beim Speichern des Kopfes
+ * macht der Schreibtisch dasselbe an der laufenden Fassung.
+ *
+ * Angefasst wird nur, was noch aus der Vorlage stammt — geprüft über
+ * `istVorlagenAnrede` und `istVorlagenEinleitung`. Selbst geschriebenes
+ * bleibt stehen, auch wenn es dann nicht mehr zum Empfängerfeld passt: der
+ * Rahmen gehört dem Fall, der Text dem Verfasser.
+ */
+export function traegeKopfsaetzeNach(
+  dokument: Elementknoten,
+  kopf: Kopfsaetze,
+): { dokument: Elementknoten; nachgetragen: string[] } {
+  const inhalt = [...(dokument.content ?? [])]
+  const nachgetragen: string[] = []
+
+  const anredeStelle = inhalt.findIndex((k) => !istText(k) && k.type === KNOTEN.anrede)
+  if (anredeStelle < 0) return { dokument, nachgetragen }
+
+  const anredeKnoten = inhalt[anredeStelle] as Elementknoten
+  const anredeText = knotenText(anredeKnoten).trim()
+  if (istVorlagenAnrede(anredeText) && anredeText !== kopf.anrede) {
+    inhalt[anredeStelle] = { ...anredeKnoten, content: [text(kopf.anrede)] }
+    nachgetragen.push('anrede')
+  }
+
+  // Die Einleitung ist alles zwischen Anrede und erstem Abschnitt.
+  let bis = inhalt.length
+  for (let i = anredeStelle + 1; i < inhalt.length; i++) {
+    const k = inhalt[i]!
+    if (!istText(k) && (k.type === KNOTEN.abschnitt || k.type === KNOTEN.ergebnis)) {
+      bis = i
+      break
+    }
+  }
+
+  const alteEinleitung = inhalt
+    .slice(anredeStelle + 1, bis)
+    .map((k) => knotenText(k))
+    .join(' ')
+    .trim()
+  const neueEinleitung = kopf.einleitung?.trim() ?? ''
+
+  if (istVorlagenEinleitung(alteEinleitung) && alteEinleitung !== neueEinleitung) {
+    inhalt.splice(
+      anredeStelle + 1,
+      bis - anredeStelle - 1,
+      neueEinleitung ? absatz(neueEinleitung) : { type: KNOTEN.absatz },
+    )
+    nachgetragen.push('einleitung')
+  }
+
+  if (nachgetragen.length === 0) return { dokument, nachgetragen }
+  return { dokument: { ...dokument, content: inhalt }, nachgetragen }
 }

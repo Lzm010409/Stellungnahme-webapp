@@ -5,7 +5,12 @@ import { eintrag, stellungnahme } from '@/db/schema'
 import type { Extraktion } from '@/pruefbericht/schema'
 import type { GeladeneStellungnahme } from '@/stellungnahme/abfragen'
 import { erzeugeDokument, type DokumentBaustein } from './erzeugen'
-import { ergaenzeFehlendeAbschnitte, wandlePlatzhalterInKnoten } from './reparatur'
+import {
+  ergaenzeFehlendeAbschnitte,
+  traegeKopfsaetzeNach,
+  wandlePlatzhalterInKnoten,
+} from './reparatur'
+import { STANDARD_ANREDE, baueAnrede, baueEinleitung } from '@/export/hausstil'
 import { istDokument, type Elementknoten } from './typen'
 
 /**
@@ -83,11 +88,32 @@ async function heileAbschnitte(
   */
   const gewandelt = wandlePlatzhalterInKnoten(repariert.dokument)
 
-  if (repariert.ergaenzt.length === 0 && gewandelt.gewandelt === 0) return { dokument, stand }
+  /*
+    Und der dritte: Anrede und Einleitungssatz auf den Stand der Kopfdaten
+    bringen. Sie wurden bisher einmal beim Anlegen gebaut — da ist das
+    Datum des Anschreibens aber oft noch unbekannt und der Empfänger noch
+    nicht eingetragen. Wer beides später nachtrug, änderte nur die
+    Aktennotiz; im Brief blieb die Einleitung leer und die Anrede allgemein.
 
-  const geschrieben = await schreibeDokument(s.id, gewandelt.dokument, stand)
+    Hier geschieht es beim Öffnen, damit auch ein Schreiben von gestern in
+    Ordnung kommt, ohne dass jemand den Kopfbereich anfassen muss.
+  */
+  const kopf = traegeKopfsaetzeNach(gewandelt.dokument, {
+    anrede: baueAnrede(s.empfaengerName) ?? (s.anrede?.trim() || STANDARD_ANREDE),
+    einleitung: baueEinleitung({
+      einleitungDatum: s.einleitungDatum,
+      einleitungMedium: s.einleitungMedium === 'mail' ? 'mail' : 'schreiben',
+      pruefdienstleister: (s.extraktion as Extraktion | null)?.pruefdienstleister ?? null,
+    } as Parameters<typeof baueEinleitung>[0]),
+  })
+
+  const etwasGetan =
+    repariert.ergaenzt.length > 0 || gewandelt.gewandelt > 0 || kopf.nachgetragen.length > 0
+  if (!etwasGetan) return { dokument, stand }
+
+  const geschrieben = await schreibeDokument(s.id, kopf.dokument, stand)
   return {
-    dokument: gewandelt.dokument,
+    dokument: kopf.dokument,
     stand: 'stand' in geschrieben ? geschrieben.stand : stand,
   }
 }
@@ -114,7 +140,14 @@ async function baueAusBausteinen(s: GeladeneStellungnahme): Promise<Elementknote
 
   return erzeugeDokument({
     betreff: s.betreff,
-    anrede: s.anrede,
+    /*
+      Die Anrede folgt dem Empfänger, wo seine Zeile das hergibt. In
+      `stellungnahme.anrede` steht, was bei der Auswertung des Prüfberichts
+      bekannt war — oft „Sehr geehrte Damen und Herren,", weil der Empfänger
+      erst danach eingetragen wurde. Sie ist deshalb der Rückfall, nicht die
+      erste Wahl.
+    */
+    anrede: baueAnrede(s.empfaengerName) ?? s.anrede,
     kopf: {
       einleitungDatum: s.einleitungDatum,
       einleitungMedium: s.einleitungMedium === 'mail' ? 'mail' : 'schreiben',
