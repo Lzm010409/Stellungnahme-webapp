@@ -264,11 +264,15 @@ Eintrag in `STANDARD_DATEIEN` — so ist die WBW-Datei dazugekommen.
 
 ## 8 Was offen bleibt
 
-- **`restwert` ist weiterhin leer.** Im OneDrive standen dazu keine eigenen Bausteine; das Thema
-  taucht nur mittelbar in den Nachbesichtigungs- und WBW-Schreiben auf. Hier fehlt Material, nicht
-  Infrastruktur.
-- **Die 25 vollständigen Briefvorlagen** sind weder aufbereitet noch übernommen — Entscheidung
-  steht beim Büro aus (Aufbaumuster oder Bibliothekseinträge).
+- **`restwert` bleibt leer — bewusst.** Im OneDrive standen dazu keine eigenen Bausteine, und
+  Restwert-Stellungnahmen kommen im Büro selten vor. Der Bereich existiert im Datenmodell und
+  lässt sich jederzeit füllen, wenn ein Fall es hergibt; ihn auf Vorrat mit Material zu bestücken,
+  das es nicht gibt, bringt nichts.
+- **Die 25 vollständigen Briefvorlagen bleiben aussen vor — entschieden.** Sie sind zu
+  fallspezifisch, um als Bausteine oder als Aufbaumuster zu taugen. Sie werden nicht aufbereitet
+  und nicht übernommen; der Aufbau eines Schreibens steht ohnehin in
+  `hausstil-aufbau-stellungnahme.md`. Damit bleiben zugleich die Dateien mit den meisten echten
+  Mandantendaten unangetastet.
 - **Belege sind unverifiziert.** 35 Gerichtszitate liegen als Beleg-Kandidaten in der Datenbank,
   keiner davon bestätigt; der Export bleibt dafür gesperrt (Konzept R1). Das Prüfen der Fundstellen
   ist Handarbeit und steht aus.
