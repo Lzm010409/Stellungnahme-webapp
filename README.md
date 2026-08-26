@@ -30,6 +30,8 @@ Pflege der Argumentbibliothek und Import von Falldaten aus autoiXpert.
 - [Konzept](docs/konzept.html) — Entscheidungen E1–E6, Risiken R1–R4,
   Features F1–F9, Phasenplan P0–P5
 - [Betrieb](docs/betrieb.md) — Coolify, Microsoft Entra, Einrichtung
+- [Mail-Zuordnung](docs/mail-zuordnung.md) — E-Mails zweifelsfrei an Pipedrive-Deals
+  hängen: Befund, drei Lösungswege, Empfehlung
 
 ## Schnellstart
 
